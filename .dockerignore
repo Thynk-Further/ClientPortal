@@ -1,0 +1,11 @@
+.git
+.cursor
+planning
+**/bin
+**/obj
+**/.angular
+**/node_modules
+**/dist
+**/.vscode
+**/.idea
+**/*.log

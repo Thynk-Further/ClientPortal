@@ -1,0 +1,41 @@
+services:
+  api:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    container_name: clientportal-api-dev
+    working_dir: /src/src/Api
+    command: >
+      sh -c "dotnet restore Api.csproj &&
+             dotnet run --no-launch-profile --urls http://0.0.0.0:5000"
+    volumes:
+      - ./:/src
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${USERPROFILE}/.aspnet/https:/https:ro
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:5000
+
+  client-app:
+    image: node:22-alpine
+    container_name: clientportal-client-app-dev
+    working_dir: /workspace/client-portal
+    command: >
+      sh -c "npm install &&
+             npm run start -- --host 0.0.0.0 --port 4200 --poll 2000"
+    volumes:
+      - ./frontend:/workspace
+      - /workspace/client-portal/node_modules
+    environment:
+      NODE_ENV: development
+
+  business-app:
+    image: node:22-alpine
+    container_name: clientportal-business-app-dev
+    working_dir: /workspace/business-portal
+    command: >
+      sh -c "npm install &&
+             npm run start -- --host 0.0.0.0 --port 4200 --poll 2000"
+    volumes:
+      - ./frontend:/workspace
+      - /workspace/business-portal/node_modules
+    environment:
+      NODE_ENV: development

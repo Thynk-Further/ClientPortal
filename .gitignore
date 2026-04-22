@@ -1,5 +1,6 @@
 .cursor/
 planning/
+.env.example
 
 # Build output
 bin/
