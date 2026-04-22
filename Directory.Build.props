@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <MicrosoftAspNetCoreOpenApiVersion>10.0.5</MicrosoftAspNetCoreOpenApiVersion>
+  </PropertyGroup>
+</Project>

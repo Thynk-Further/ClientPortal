@@ -1,0 +1,18 @@
+@theme {
+  --font-sans: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-500: #2563eb;
+  --color-brand-600: #1d4ed8;
+  --color-brand-700: #1e40af;
+
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
+
+  --radius-card: 0.75rem;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.08);
+}
