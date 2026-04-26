@@ -4,6 +4,7 @@ using Api.Contracts;
 using Api.HealthChecks;
 using Api.Middleware;
 using Api.Tenancy;
+using Infrastructure;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -71,6 +72,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddApplication();
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentTenant, HttpCurrentTenant>();
 builder.Services.AddScoped<ITenantDomainLookup, NullTenantDomainLookup>();
