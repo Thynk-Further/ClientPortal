@@ -5,6 +5,7 @@ using Api.HealthChecks;
 using Api.Middleware;
 using Api.Tenancy;
 using Infrastructure;
+using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -104,6 +105,12 @@ else
 healthChecksBuilder.AddCheck<S3ConnectivityHealthCheck>("s3", failureStatus: HealthStatus.Unhealthy);
 
 var app = builder.Build();
+
+using (IServiceScope scope = app.Services.CreateScope())
+{
+    IDbInitializer dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+    await dbInitializer.InitializeAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

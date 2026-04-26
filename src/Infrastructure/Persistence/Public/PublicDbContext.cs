@@ -9,6 +9,11 @@ public sealed class PublicDbContext : DbContext
 {
     private readonly string _postgresConnectionString;
 
+    public PublicDbContext(string postgresConnectionString)
+    {
+        _postgresConnectionString = Guard.NotEmpty(postgresConnectionString, nameof(postgresConnectionString));
+    }
+
     public PublicDbContext(IConfiguration configuration)
     {
         _postgresConnectionString = Guard.NotEmpty(

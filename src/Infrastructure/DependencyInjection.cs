@@ -14,6 +14,8 @@ public static class DependencyInjection
         services.AddDbContext<TenantDbContext>();
         services.AddDbContext<PublicDbContext>();
         services.AddScoped<ITenantDbContextFactory, TenantDbContextFactory>();
+        services.AddScoped<ITenantProvisioner, TenantProvisioner>();
+        services.AddScoped<IDbInitializer, DbInitializer>();
         services.AddScoped<ITenantRlsPolicyManager, TenantRlsPolicyManager>();
 
         return services;

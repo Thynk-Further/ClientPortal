@@ -15,6 +15,14 @@ public sealed class TenantDbContext : DbContext
     private string? _tenantSchema;
 
     public TenantDbContext(
+        string postgresConnectionString,
+        ICurrentTenant currentTenant)
+    {
+        _currentTenant = currentTenant;
+        _postgresConnectionString = Guard.NotEmpty(postgresConnectionString, nameof(postgresConnectionString));
+    }
+
+    public TenantDbContext(
         IConfiguration configuration,
         ICurrentTenant currentTenant)
     {
