@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddDbContext<PublicDbContext>();
         services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
         services.AddScoped<IClientRepository, ClientRepository>();
+        services.AddScoped<IOnboardingChecklistRepository, OnboardingChecklistRepository>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IRefreshTokenService, Argon2RefreshTokenService>();
         services.AddScoped<ITenantDbContextFactory, TenantDbContextFactory>();

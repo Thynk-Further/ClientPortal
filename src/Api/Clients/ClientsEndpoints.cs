@@ -1,5 +1,6 @@
 using Application.Clients;
 using Application.Clients.Dtos;
+using Application.Auth.Abstractions;
 using Api.Auth;
 using Api.Contracts;
 using Api.Tenancy;
@@ -7,6 +8,7 @@ using Domain;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using System.Security.Claims;
 using Shared;
 
 namespace Api.Clients;
@@ -36,6 +38,17 @@ public static class ClientsEndpoints
 
         group.MapPost("/{id:guid}/deactivate", DeactivateClientAsync)
             .WithName("ClientsDeactivate");
+
+        RouteGroupBuilder portalGroup = endpoints.MapGroup("/api/v1/client-portal")
+            .WithTags("Client Portal")
+            .RequireTenant()
+            .RequireAuthorization(AuthorizationPolicies.RequireClientUser);
+
+        portalGroup.MapGet("/onboarding-status", GetOnboardingStatusAsync)
+            .WithName("ClientPortalOnboardingStatus");
+
+        portalGroup.MapPost("/onboarding-steps/{stepKey}/complete", CompleteOnboardingStepAsync)
+            .WithName("ClientPortalCompleteOnboardingStep");
 
         return endpoints;
     }
@@ -116,6 +129,89 @@ public static class ClientsEndpoints
     {
         Result result = await sender.Send(new DeactivateClientCommand(id), cancellationToken);
         return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetOnboardingStatusAsync(
+        ClaimsPrincipal principal,
+        IUserAuthenticationRepository userAuthenticationRepository,
+        Application.Clients.Abstractions.IClientRepository clientRepository,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> clientIdResult = await ResolveCurrentClientIdAsync(
+            principal,
+            userAuthenticationRepository,
+            clientRepository,
+            cancellationToken);
+        if (clientIdResult.IsFailed)
+        {
+            return Failure(clientIdResult.Errors);
+        }
+
+        Result<OnboardingStatusDto> result = await sender.Send(
+            new GetOnboardingStatusQuery(clientIdResult.Value),
+            cancellationToken);
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> CompleteOnboardingStepAsync(
+        string stepKey,
+        ClaimsPrincipal principal,
+        IUserAuthenticationRepository userAuthenticationRepository,
+        Application.Clients.Abstractions.IClientRepository clientRepository,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> clientIdResult = await ResolveCurrentClientIdAsync(
+            principal,
+            userAuthenticationRepository,
+            clientRepository,
+            cancellationToken);
+        if (clientIdResult.IsFailed)
+        {
+            return Failure(clientIdResult.Errors);
+        }
+
+        Result result = await sender.Send(
+            new CompleteOnboardingStepCommand(clientIdResult.Value, stepKey),
+            cancellationToken);
+        return ToResponse(result);
+    }
+
+    private static async Task<Result<Guid>> ResolveCurrentClientIdAsync(
+        ClaimsPrincipal principal,
+        IUserAuthenticationRepository userAuthenticationRepository,
+        Application.Clients.Abstractions.IClientRepository clientRepository,
+        CancellationToken cancellationToken)
+    {
+        string? userIdClaimValue = principal.FindFirstValue("userId");
+        if (!Guid.TryParse(userIdClaimValue, out Guid userId))
+        {
+            return Result<Guid>.Failure(new Error(
+                "Auth.InvalidUserContext",
+                "Authenticated user context is invalid.",
+                ErrorType.Forbidden));
+        }
+
+        User? user = await userAuthenticationRepository.FindByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return Result<Guid>.Failure(new Error(
+                "Auth.UserNotFound",
+                "Authenticated user was not found.",
+                ErrorType.Forbidden));
+        }
+
+        Client? client = await clientRepository.GetByEmailAsync(user.Email, cancellationToken);
+        if (client is null)
+        {
+            return Result<Guid>.Failure(new Error(
+                "Clients.NotFound",
+                "Client record for the authenticated user was not found.",
+                ErrorType.NotFound));
+        }
+
+        return Result<Guid>.Success(client.Id);
     }
 
     private static IResult ToResponse(Result result)
