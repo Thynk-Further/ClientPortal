@@ -104,6 +104,7 @@ public sealed class Contract : AggregateRoot<Guid>
         EnsureNotExpiredAt(normalizedSignedAt);
         SignedAt = normalizedSignedAt;
         Status = ContractStatus.Signed;
+        AddDomainEvent(new ContractSignedEvent(Id, ClientId, normalizedSignedAt));
         MarkUpdated();
     }
 

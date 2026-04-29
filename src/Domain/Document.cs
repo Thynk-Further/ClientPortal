@@ -18,6 +18,8 @@ public sealed class Document : AggregateRoot<Guid>
 
     public int CurrentVersion { get; private set; } = 1;
 
+    public DocumentStatus Status { get; private set; } = DocumentStatus.Uploading;
+
     public IReadOnlyCollection<string> Tags => _tags.AsReadOnly();
 
     public Guid UploadedBy { get; private set; }
@@ -34,6 +36,7 @@ public sealed class Document : AggregateRoot<Guid>
         string type,
         string s3Key,
         int currentVersion,
+        DocumentStatus status,
         IEnumerable<string>? tags,
         Guid uploadedBy)
         : base(id)
@@ -44,6 +47,7 @@ public sealed class Document : AggregateRoot<Guid>
         Type = NormalizeType(type);
         S3Key = NormalizeS3Key(s3Key);
         CurrentVersion = NormalizeCurrentVersion(currentVersion);
+        Status = status;
         UploadedBy = uploadedBy;
         SetTags(tags);
     }
@@ -56,10 +60,11 @@ public sealed class Document : AggregateRoot<Guid>
         string type,
         string s3Key,
         int currentVersion,
+        DocumentStatus status,
         IEnumerable<string>? tags,
         Guid uploadedBy)
     {
-        return new Document(id, clientId, projectId, name, type, s3Key, currentVersion, tags, uploadedBy);
+        return new Document(id, clientId, projectId, name, type, s3Key, currentVersion, status, tags, uploadedBy);
     }
 
     public void Rename(string name)
@@ -89,6 +94,40 @@ public sealed class Document : AggregateRoot<Guid>
     public void SetCurrentVersion(int currentVersion)
     {
         CurrentVersion = NormalizeCurrentVersion(currentVersion);
+        MarkUpdated();
+    }
+
+    public int IncrementVersion()
+    {
+        if (Status == DocumentStatus.Deleted)
+        {
+            throw new InvalidOperationException("Deleted documents cannot create new versions.");
+        }
+
+        CurrentVersion++;
+        MarkUpdated();
+        return CurrentVersion;
+    }
+
+    public void MarkUploadConfirmed()
+    {
+        if (Status != DocumentStatus.Uploading)
+        {
+            throw new InvalidOperationException("Only uploading documents can be confirmed.");
+        }
+
+        Status = DocumentStatus.Active;
+        MarkUpdated();
+    }
+
+    public void SoftDelete()
+    {
+        if (Status == DocumentStatus.Deleted)
+        {
+            return;
+        }
+
+        Status = DocumentStatus.Deleted;
         MarkUpdated();
     }
 
