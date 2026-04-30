@@ -48,6 +48,7 @@ public sealed class GetThreadMessagesQueryHandler : IRequestHandler<GetThreadMes
             threadId: request.ThreadId,
             page: request.Page,
             pageSize: request.PageSize,
+            includeSoftDeleted: request.IncludeSoftDeleted,
             cancellationToken: cancellationToken);
 
         return Result<PagedResult<MessageHistoryItemDto>>.Success(messages);

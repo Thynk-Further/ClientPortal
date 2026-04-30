@@ -29,6 +29,7 @@ public interface IMessageRepository
         Guid threadId,
         int page,
         int pageSize,
+        bool includeSoftDeleted = false,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Message>> GetByThreadAfterSequenceAsync(
@@ -37,4 +38,6 @@ public interface IMessageRepository
         CancellationToken cancellationToken = default);
 
     void Add(Message message);
+
+    void Update(Message message);
 }

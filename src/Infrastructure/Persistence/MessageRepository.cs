@@ -73,11 +73,17 @@ public sealed class MessageRepository : IMessageRepository
         Guid threadId,
         int page,
         int pageSize,
+        bool includeSoftDeleted = false,
         CancellationToken cancellationToken = default)
     {
         IQueryable<Message> baseQuery = _tenantDbContext.Set<Message>()
             .AsNoTracking()
             .Where(message => message.ThreadId == threadId);
+
+        if (!includeSoftDeleted)
+        {
+            baseQuery = baseQuery.Where(message => !message.IsSoftDeleted);
+        }
 
         int totalCount = await baseQuery.CountAsync(cancellationToken);
 
@@ -94,6 +100,23 @@ public sealed class MessageRepository : IMessageRepository
                 message.ClientMessageId,
                 message.SequenceNumber,
                 message.Content,
+                message.ReplyToMessageId,
+                message.EmojiReaction,
+                message.AttachmentFileName == null
+                    ? null
+                    : new MessageAttachmentMetadataDto(
+                        message.AttachmentFileName,
+                        message.AttachmentContentType!,
+                        message.AttachmentSizeBytes!.Value,
+                        message.AttachmentUrl!),
+                message.AttachmentExpiresAt,
+                message.IsSoftDeleted,
+                message.DeletedAt,
+                message.DeletedBy,
+                message.DeletionReason,
+                message.ModeratedAt,
+                message.ModeratedBy,
+                message.ModerationReason,
                 message.Status,
                 message.SentAt,
                 message.DeliveredAt,
@@ -118,5 +141,10 @@ public sealed class MessageRepository : IMessageRepository
     public void Add(Message message)
     {
         _tenantDbContext.Set<Message>().Add(message);
+    }
+
+    public void Update(Message message)
+    {
+        _tenantDbContext.Set<Message>().Update(message);
     }
 }

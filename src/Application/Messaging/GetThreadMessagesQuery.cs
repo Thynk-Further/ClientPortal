@@ -8,4 +8,5 @@ public sealed record GetThreadMessagesQuery(
     Guid ThreadId,
     Guid ParticipantId,
     int Page = 1,
-    int PageSize = 50) : IRequest<Result<PagedResult<MessageHistoryItemDto>>>;
+    int PageSize = 50,
+    bool IncludeSoftDeleted = false) : IRequest<Result<PagedResult<MessageHistoryItemDto>>>;

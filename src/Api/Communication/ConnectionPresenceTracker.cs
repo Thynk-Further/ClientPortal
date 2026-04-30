@@ -11,6 +11,10 @@ public interface IConnectionPresenceTracker
     void JoinThread(string connectionId, Guid threadId);
 
     void LeaveThread(string connectionId, Guid threadId);
+
+    bool IsUserOnline(Guid userId);
+
+    DateTime? GetLastSeenUtc(Guid userId);
 }
 
 public sealed class ConnectionPresenceTracker : IConnectionPresenceTracker
@@ -113,6 +117,24 @@ public sealed class ConnectionPresenceTracker : IConnectionPresenceTracker
                     _threadConnections.TryRemove(threadId, out _);
                 }
             }
+        }
+    }
+
+    public bool IsUserOnline(Guid userId)
+    {
+        lock (_gate)
+        {
+            return _userConnections.TryGetValue(userId, out HashSet<string>? userSet) && userSet.Count > 0;
+        }
+    }
+
+    public DateTime? GetLastSeenUtc(Guid userId)
+    {
+        lock (_gate)
+        {
+            return _lastSeenUtc.TryGetValue(userId, out DateTime lastSeenUtc)
+                ? lastSeenUtc
+                : null;
         }
     }
 

@@ -7,6 +7,7 @@ using Application.Auth.Abstractions;
 using Application.Invoices.Abstractions;
 using Infrastructure.Auth;
 using Infrastructure.Invoices;
+using Infrastructure.Messaging;
 using Infrastructure.Meetings;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Public;
@@ -61,12 +62,16 @@ public static class DependencyInjection
                 ? timeoutSeconds
                 : options.RequestTimeoutSeconds;
         });
+        services.Configure<MessageAttachmentUploadOptions>(configuration.GetSection(MessageAttachmentUploadOptions.SectionName));
         services.AddDbContext<TenantDbContext>();
         services.AddDbContext<PublicDbContext>();
         services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
         services.AddScoped<IClientRepository, ClientRepository>();
         services.AddScoped<IMessageThreadRepository, MessageThreadRepository>();
         services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddSingleton<IMessageAttachmentUploadUrlService, MessageAttachmentUploadUrlService>();
+        services.AddSingleton<IMessageAttachmentMalwareScanService, MessageAttachmentMalwareScanHookService>();
+        services.AddScoped<IMessageOfflineFallbackNotifier, NoopMessageOfflineFallbackNotifier>();
         services.AddScoped<INoticeRepository, NoticeRepository>();
         services.AddScoped<IMeetingRepository, MeetingRepository>();
         services.AddScoped<IMeetingInvitationService, NoopMeetingInvitationService>();

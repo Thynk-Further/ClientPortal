@@ -27,7 +27,9 @@ public static class CommunicationEndpoints
         messagesGroup.MapGet("/threads", GetThreadsAsync).WithName("MessagesGetThreads");
         messagesGroup.MapPost("/threads", CreateThreadAsync).WithName("MessagesCreateThread");
         messagesGroup.MapGet("/threads/{id:guid}/messages", GetThreadMessagesAsync).WithName("MessagesGetThreadMessages");
+        messagesGroup.MapPost("/threads/{id:guid}/attachments/upload-url", GetMessageAttachmentUploadUrlAsync).WithName("MessagesGetAttachmentUploadUrl");
         messagesGroup.MapPost("/threads/{id:guid}/messages", SendMessageAsync).WithName("MessagesSendMessage");
+        messagesGroup.MapDelete("/threads/{id:guid}/messages/{messageId:guid}", DeleteMessageAsync).WithName("MessagesDeleteMessage");
         messagesGroup.MapPut("/threads/{id:guid}/read", MarkThreadReadAsync).WithName("MessagesMarkThreadRead");
 
         RouteGroupBuilder noticesGroup = endpoints.MapGroup("/api/v1/notices")
@@ -109,6 +111,7 @@ public static class CommunicationEndpoints
         ClaimsPrincipal principal,
         int page,
         int pageSize,
+        bool includeSoftDeleted,
         ISender sender,
         CancellationToken cancellationToken)
     {
@@ -119,7 +122,12 @@ public static class CommunicationEndpoints
         }
 
         Result<PagedResult<MessageHistoryItemDto>> result = await sender.Send(
-            new GetThreadMessagesQuery(id, userIdResult.Value, page <= 0 ? 1 : page, pageSize <= 0 ? 50 : pageSize),
+            new GetThreadMessagesQuery(
+                id,
+                userIdResult.Value,
+                page <= 0 ? 1 : page,
+                pageSize <= 0 ? 50 : pageSize,
+                includeSoftDeleted),
             cancellationToken);
 
         return ToResponse(result);
@@ -144,13 +152,43 @@ public static class CommunicationEndpoints
                 userIdResult.Value,
                 request.SenderRole,
                 request.ClientMessageId,
-                request.Content),
+                request.Content,
+                request.ReplyToMessageId,
+                request.EmojiReaction,
+                request.Attachment),
             cancellationToken);
 
         if (result.IsSuccess && result.Value != Guid.Empty)
         {
             return Results.Created($"/api/v1/messages/threads/{id}/messages/{result.Value}", ApiResponse<Guid>.Ok(result.Value));
         }
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetMessageAttachmentUploadUrlAsync(
+        Guid id,
+        ClaimsPrincipal principal,
+        MessageAttachmentUploadUrlRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> userIdResult = ResolveUserId(principal);
+        if (userIdResult.IsFailed)
+        {
+            return Failure(userIdResult.Errors);
+        }
+
+        Result<MessageAttachmentUploadUrlResultDto> result = await sender.Send(
+            new GetMessageAttachmentUploadUrlCommand(
+                id,
+                userIdResult.Value,
+                new MessageAttachmentMetadataDto(
+                    request.FileName,
+                    request.ContentType,
+                    request.SizeBytes,
+                    request.Url)),
+            cancellationToken);
 
         return ToResponse(result);
     }
@@ -168,6 +206,32 @@ public static class CommunicationEndpoints
         }
 
         Result<int> result = await sender.Send(new MarkThreadReadCommand(id, userIdResult.Value), cancellationToken);
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> DeleteMessageAsync(
+        Guid id,
+        Guid messageId,
+        ClaimsPrincipal principal,
+        DeleteMessageRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> userIdResult = ResolveUserId(principal);
+        if (userIdResult.IsFailed)
+        {
+            return Failure(userIdResult.Errors);
+        }
+
+        Result result = await sender.Send(
+            new DeleteMessageCommand(
+                id,
+                messageId,
+                userIdResult.Value,
+                request.Reason,
+                request.IsModerationAction),
+            cancellationToken);
+
         return ToResponse(result);
     }
 
@@ -359,7 +423,20 @@ public sealed record CreateThreadRequest(
 public sealed record SendMessageRequest(
     string SenderRole,
     string ClientMessageId,
-    string Content);
+    string Content,
+    Guid? ReplyToMessageId,
+    string? EmojiReaction,
+    MessageAttachmentMetadataDto? Attachment);
+
+public sealed record MessageAttachmentUploadUrlRequest(
+    string FileName,
+    string ContentType,
+    long SizeBytes,
+    string Url);
+
+public sealed record DeleteMessageRequest(
+    string Reason,
+    bool IsModerationAction = false);
 
 public sealed record PublishNoticeRequest(
     string Title,

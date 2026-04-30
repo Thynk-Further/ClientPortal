@@ -153,6 +153,7 @@ builder.Services.AddScoped<IRefreshTokenCookieStore, HttpContextRefreshTokenCook
 builder.Services.AddScoped<ICurrentTenant, HttpCurrentTenant>();
 builder.Services.AddScoped<IRealtimeMessagingService, SignalRRealtimeMessagingService>();
 builder.Services.AddSingleton<IConnectionPresenceTracker, ConnectionPresenceTracker>();
+builder.Services.AddSingleton<IUserPresenceService, ConnectionPresenceService>();
 builder.Services.AddSingleton<IHubFilter, MessagesHubGuardFilter>();
 builder.Services.AddScoped<ITenantDomainLookup, NullTenantDomainLookup>();
 builder.Services.AddScoped<ITenantResolver, SubdomainTenantResolver>();

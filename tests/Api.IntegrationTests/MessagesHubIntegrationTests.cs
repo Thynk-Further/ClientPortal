@@ -53,6 +53,12 @@ public sealed class MessagesHubIntegrationTests
             senderId,
             "Owner",
             "Hello from realtime",
+            null,
+            null,
+            null,
+            null,
+            false,
+            null,
             1,
             MessageStatus.Sent,
             DateTime.UtcNow);
