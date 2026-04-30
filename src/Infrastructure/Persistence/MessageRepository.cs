@@ -15,6 +15,12 @@ public sealed class MessageRepository : IMessageRepository
         _tenantDbContext = tenantDbContext;
     }
 
+    public Task<Message?> FindByIdAsync(Guid messageId, CancellationToken cancellationToken = default)
+    {
+        return _tenantDbContext.Set<Message>()
+            .SingleOrDefaultAsync(message => message.Id == messageId, cancellationToken);
+    }
+
     public Task<Message?> FindByClientMessageIdAsync(
         Guid threadId,
         string clientMessageId,
@@ -50,6 +56,19 @@ public sealed class MessageRepository : IMessageRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Message>> GetUndeliveredMessagesForRecipientAsync(
+        Guid threadId,
+        Guid recipientId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _tenantDbContext.Set<Message>()
+            .Where(message =>
+                message.ThreadId == threadId
+                && message.SenderId != recipientId
+                && message.Status == MessageStatus.Sent)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<PagedResult<MessageHistoryItemDto>> GetPagedByThreadAsync(
         Guid threadId,
         int page,
@@ -82,6 +101,18 @@ public sealed class MessageRepository : IMessageRepository
             .ToListAsync(cancellationToken);
 
         return new PagedResult<MessageHistoryItemDto>(items, totalCount, page, pageSize);
+    }
+
+    public async Task<IReadOnlyList<Message>> GetByThreadAfterSequenceAsync(
+        Guid threadId,
+        long afterSequenceNumber,
+        CancellationToken cancellationToken = default)
+    {
+        return await _tenantDbContext.Set<Message>()
+            .AsNoTracking()
+            .Where(message => message.ThreadId == threadId && message.SequenceNumber > afterSequenceNumber)
+            .OrderBy(message => message.SequenceNumber)
+            .ToListAsync(cancellationToken);
     }
 
     public void Add(Message message)

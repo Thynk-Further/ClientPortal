@@ -1,6 +1,7 @@
 using Application;
 using Application.Abstractions;
 using Application.Auth.Abstractions;
+using Application.Messaging.Abstractions;
 using Api.Auth;
 using Api.Clients;
 using Api.Communication;
@@ -19,6 +20,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -137,6 +139,7 @@ builder.Services.AddCors(options =>
 });
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddSignalR();
 builder.Services.Configure<RefreshTokenCookieOptions>(options =>
 {
     IConfigurationSection section = builder.Configuration.GetSection(RefreshTokenCookieOptions.SectionName);
@@ -148,6 +151,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRefreshTokenCookieStore, HttpContextRefreshTokenCookieStore>();
 builder.Services.AddScoped<ICurrentTenant, HttpCurrentTenant>();
+builder.Services.AddScoped<IRealtimeMessagingService, SignalRRealtimeMessagingService>();
+builder.Services.AddSingleton<IConnectionPresenceTracker, ConnectionPresenceTracker>();
+builder.Services.AddSingleton<IHubFilter, MessagesHubGuardFilter>();
 builder.Services.AddScoped<ITenantDomainLookup, NullTenantDomainLookup>();
 builder.Services.AddScoped<ITenantResolver, SubdomainTenantResolver>();
 builder.Services.AddScoped<ITenantResolver, CustomDomainTenantResolver>();
@@ -230,6 +236,9 @@ app.MapDocumentsEndpoints();
 app.MapInvoicesEndpoints();
 app.MapPaymentsWebhookEndpoints();
 app.MapCommunicationEndpoints();
+app.MapHub<MessagesHub>("/hubs/messages")
+    .RequireTenant()
+    .RequireAuthorization();
 
 var summaries = new[]
 {

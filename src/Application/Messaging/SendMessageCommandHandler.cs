@@ -17,6 +17,11 @@ public sealed class SendMessageCommandHandler : IRequestHandler<SendMessageComma
         "Messages.SenderNotParticipant",
         "Sender is not a participant in this thread.",
         ErrorType.Forbidden);
+    
+    private static readonly Error IdempotencyPayloadMismatchError = new(
+        "Messages.IdempotencyPayloadMismatch",
+        "ClientMessageId already exists with different message payload.",
+        ErrorType.Conflict);
 
     private readonly IMessageThreadRepository _messageThreadRepository;
     private readonly IMessageRepository _messageRepository;
@@ -51,6 +56,13 @@ public sealed class SendMessageCommandHandler : IRequestHandler<SendMessageComma
             cancellationToken);
         if (existingMessage is not null)
         {
+            if (existingMessage.SenderId != request.SenderId
+                || !string.Equals(existingMessage.Content, request.Content.Trim(), StringComparison.Ordinal)
+                || !string.Equals(existingMessage.SenderRole, request.SenderRole.Trim(), StringComparison.Ordinal))
+            {
+                return Result<Guid>.Failure(IdempotencyPayloadMismatchError);
+            }
+
             return Result<Guid>.Success(existingMessage.Id);
         }
 

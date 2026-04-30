@@ -7,16 +7,16 @@ using Shared;
 
 namespace Application.Messaging;
 
-public sealed class MarkThreadReadCommandHandler : IRequestHandler<MarkThreadReadCommand, Result<int>>
+public sealed class MarkThreadDeliveredCommandHandler : IRequestHandler<MarkThreadDeliveredCommand, Result<int>>
 {
     private static readonly Error ThreadNotFoundError = new(
         "Messages.ThreadNotFound",
         "Message thread was not found.",
         ErrorType.NotFound);
 
-    private static readonly Error ReaderNotParticipantError = new(
-        "Messages.ReaderNotParticipant",
-        "Reader is not a participant in this thread.",
+    private static readonly Error RecipientNotParticipantError = new(
+        "Messages.RecipientNotParticipant",
+        "Recipient is not a participant in this thread.",
         ErrorType.Forbidden);
 
     private readonly IMessageThreadRepository _messageThreadRepository;
@@ -24,7 +24,7 @@ public sealed class MarkThreadReadCommandHandler : IRequestHandler<MarkThreadRea
     private readonly IRealtimeMessagingService _realtimeMessagingService;
     private readonly IUnitOfWork _unitOfWork;
 
-    public MarkThreadReadCommandHandler(
+    public MarkThreadDeliveredCommandHandler(
         IMessageThreadRepository messageThreadRepository,
         IMessageRepository messageRepository,
         IRealtimeMessagingService realtimeMessagingService,
@@ -36,7 +36,7 @@ public sealed class MarkThreadReadCommandHandler : IRequestHandler<MarkThreadRea
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result<int>> Handle(MarkThreadReadCommand request, CancellationToken cancellationToken)
+    public async Task<Result<int>> Handle(MarkThreadDeliveredCommand request, CancellationToken cancellationToken)
     {
         MessageThread? thread = await _messageThreadRepository.FindByIdAsync(request.ThreadId, cancellationToken);
         if (thread is null)
@@ -44,34 +44,34 @@ public sealed class MarkThreadReadCommandHandler : IRequestHandler<MarkThreadRea
             return Result<int>.Failure(ThreadNotFoundError);
         }
 
-        if (!thread.Participants.Contains(request.ReaderId))
+        if (!thread.Participants.Contains(request.RecipientId))
         {
-            return Result<int>.Failure(ReaderNotParticipantError);
+            return Result<int>.Failure(RecipientNotParticipantError);
         }
 
-        IReadOnlyList<Message> unreadMessages = await _messageRepository.GetUnreadMessagesForReaderAsync(
+        IReadOnlyList<Message> undeliveredMessages = await _messageRepository.GetUndeliveredMessagesForRecipientAsync(
             request.ThreadId,
-            request.ReaderId,
+            request.RecipientId,
             cancellationToken);
 
-        DateTime readAt = DateTime.UtcNow;
-        foreach (Message message in unreadMessages)
+        DateTime deliveredAt = DateTime.UtcNow;
+        foreach (Message message in undeliveredMessages)
         {
-            message.MarkRead(readAt);
+            message.MarkDelivered(deliveredAt);
         }
 
-        if (unreadMessages.Count > 0)
+        if (undeliveredMessages.Count > 0)
         {
             await _unitOfWork.SaveChangesAsync(cancellationToken);
-            await _realtimeMessagingService.BroadcastReadReceiptAsync(
-                new RealtimeReadReceiptPayload(
+            await _realtimeMessagingService.BroadcastDeliveryReceiptAsync(
+                new RealtimeDeliveryReceiptPayload(
                     request.ThreadId,
-                    request.ReaderId,
-                    unreadMessages.Count,
-                    readAt),
+                    request.RecipientId,
+                    undeliveredMessages.Count,
+                    deliveredAt),
                 cancellationToken);
         }
 
-        return Result<int>.Success(unreadMessages.Count);
+        return Result<int>.Success(undeliveredMessages.Count);
     }
 }
