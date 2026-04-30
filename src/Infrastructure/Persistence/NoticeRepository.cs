@@ -15,6 +15,12 @@ public sealed class NoticeRepository : INoticeRepository
         _tenantDbContext = tenantDbContext;
     }
 
+    public Task<Notice?> FindByIdAsync(Guid noticeId, CancellationToken cancellationToken = default)
+    {
+        return _tenantDbContext.Set<Notice>()
+            .SingleOrDefaultAsync(notice => notice.Id == noticeId, cancellationToken);
+    }
+
     public async Task<PagedResult<NoticeListItemDto>> GetPagedAsync(
         int page,
         int pageSize,
@@ -58,5 +64,10 @@ public sealed class NoticeRepository : INoticeRepository
     public void Add(Notice notice)
     {
         _tenantDbContext.Set<Notice>().Add(notice);
+    }
+
+    public void Update(Notice notice)
+    {
+        _tenantDbContext.Set<Notice>().Update(notice);
     }
 }

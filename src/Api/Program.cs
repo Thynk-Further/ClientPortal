@@ -3,6 +3,7 @@ using Application.Abstractions;
 using Application.Auth.Abstractions;
 using Api.Auth;
 using Api.Clients;
+using Api.Communication;
 using Api.Contracts;
 using Api.Documents;
 using Api.HealthChecks;
@@ -228,6 +229,7 @@ app.MapProjectsEndpoints();
 app.MapDocumentsEndpoints();
 app.MapInvoicesEndpoints();
 app.MapPaymentsWebhookEndpoints();
+app.MapCommunicationEndpoints();
 
 var summaries = new[]
 {

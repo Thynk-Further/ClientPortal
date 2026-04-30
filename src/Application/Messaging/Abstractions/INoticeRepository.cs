@@ -6,6 +6,8 @@ namespace Application.Messaging.Abstractions;
 
 public interface INoticeRepository
 {
+    Task<Notice?> FindByIdAsync(Guid noticeId, CancellationToken cancellationToken = default);
+
     Task<PagedResult<NoticeListItemDto>> GetPagedAsync(
         int page,
         int pageSize,
@@ -14,4 +16,6 @@ public interface INoticeRepository
         CancellationToken cancellationToken = default);
 
     void Add(Notice notice);
+
+    void Update(Notice notice);
 }
