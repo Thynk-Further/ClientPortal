@@ -85,6 +85,20 @@ public sealed class Quote : AggregateRoot<Guid>
         MarkUpdated();
     }
 
+    public void UpdateQuoteNumber(string quoteNumber)
+    {
+        EnsureEditable();
+        QuoteNumber = NormalizeRequiredText(quoteNumber, nameof(quoteNumber));
+        MarkUpdated();
+    }
+
+    public void UpdateCurrency(string currency)
+    {
+        EnsureEditable();
+        Currency = NormalizeCurrency(currency);
+        MarkUpdated();
+    }
+
     public void SetDueDate(DateOnly dueDate)
     {
         EnsureEditable();

@@ -226,6 +226,7 @@ app.MapAuthEndpoints();
 app.MapClientsEndpoints();
 app.MapProjectsEndpoints();
 app.MapDocumentsEndpoints();
+app.MapInvoicesEndpoints();
 app.MapPaymentsWebhookEndpoints();
 
 var summaries = new[]

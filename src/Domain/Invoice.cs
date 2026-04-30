@@ -160,6 +160,17 @@ public sealed class Invoice : AggregateRoot<Guid>
         MarkUpdated();
     }
 
+    public void Cancel()
+    {
+        if (Status == InvoiceStatus.Paid)
+        {
+            throw new InvalidOperationException("Paid invoices cannot be cancelled.");
+        }
+
+        Status = InvoiceStatus.Cancelled;
+        MarkUpdated();
+    }
+
     public void RecordPayment(decimal amount, DateTime paidAtUtc)
     {
         decimal normalizedAmount = NormalizePaymentAmount(amount);

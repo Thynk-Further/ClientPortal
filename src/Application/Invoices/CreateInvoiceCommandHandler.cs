@@ -53,7 +53,7 @@ public sealed class CreateInvoiceCommandHandler : IRequestHandler<CreateInvoiceC
         return Result<InvoiceDto>.Success(Map(invoice));
     }
 
-    private static InvoiceDto Map(Invoice invoice)
+    internal static InvoiceDto Map(Invoice invoice)
     {
         IReadOnlyCollection<InvoiceLineItemDto> lineItems = invoice.LineItems
             .Select(lineItem => new InvoiceLineItemDto(

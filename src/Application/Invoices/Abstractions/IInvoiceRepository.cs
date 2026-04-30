@@ -35,4 +35,6 @@ public interface IInvoiceRepository
     void Add(Invoice invoice);
 
     void Update(Invoice invoice);
+
+    void Delete(Invoice invoice);
 }
