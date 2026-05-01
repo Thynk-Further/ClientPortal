@@ -5,10 +5,12 @@ using Application.Messaging.Abstractions;
 using Application.Meetings.Abstractions;
 using Application.Auth.Abstractions;
 using Application.Invoices.Abstractions;
+using Application.Notifications.Abstractions;
 using Infrastructure.Auth;
 using Infrastructure.Invoices;
 using Infrastructure.Messaging;
 using Infrastructure.Meetings;
+using Infrastructure.Notifications;
 using Infrastructure.Persistence;
 using Infrastructure.Persistence.Public;
 using Infrastructure.Persistence.Security;
@@ -62,6 +64,8 @@ public static class DependencyInjection
                 ? timeoutSeconds
                 : options.RequestTimeoutSeconds;
         });
+        services.Configure<EmailNotificationOptions>(configuration.GetSection(EmailNotificationOptions.SectionName));
+        services.Configure<TwilioWhatsAppOptions>(configuration.GetSection(TwilioWhatsAppOptions.SectionName));
         services.Configure<MessageAttachmentUploadOptions>(configuration.GetSection(MessageAttachmentUploadOptions.SectionName));
         services.AddDbContext<TenantDbContext>();
         services.AddDbContext<PublicDbContext>();
@@ -72,6 +76,20 @@ public static class DependencyInjection
         services.AddSingleton<IMessageAttachmentUploadUrlService, MessageAttachmentUploadUrlService>();
         services.AddSingleton<IMessageAttachmentMalwareScanService, MessageAttachmentMalwareScanHookService>();
         services.AddScoped<IMessageOfflineFallbackNotifier, NoopMessageOfflineFallbackNotifier>();
+        services.AddScoped<IInAppNotificationRepository, InAppNotificationRepository>();
+        services.AddScoped<INotificationPreferencesRepository, NotificationPreferencesRepository>();
+        services.AddScoped<INotificationService, RoutedNotificationService>();
+        services.AddSingleton<INotificationTemplateEngine, NotificationTemplateEngine>();
+        services.AddScoped<INotificationChannelHandler, EmailNotificationService>();
+        services.AddScoped<INotificationChannelHandler, InAppNotificationService>();
+        services.AddHttpClient<INotificationChannelHandler, WhatsAppNotificationService>((serviceProvider, client) =>
+        {
+            TwilioWhatsAppOptions options = serviceProvider
+                .GetRequiredService<Microsoft.Extensions.Options.IOptions<TwilioWhatsAppOptions>>()
+                .Value;
+            client.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
         services.AddScoped<INoticeRepository, NoticeRepository>();
         services.AddScoped<IMeetingRepository, MeetingRepository>();
         services.AddScoped<IMeetingInvitationService, NoopMeetingInvitationService>();

@@ -10,6 +10,7 @@ using Api.Documents;
 using Api.HealthChecks;
 using Api.Invoices;
 using Api.Middleware;
+using Api.Notifications;
 using Api.Projects;
 using Api.Tenancy;
 using Infrastructure;
@@ -237,6 +238,7 @@ app.MapDocumentsEndpoints();
 app.MapInvoicesEndpoints();
 app.MapPaymentsWebhookEndpoints();
 app.MapCommunicationEndpoints();
+app.MapNotificationsEndpoints();
 app.MapHub<MessagesHub>("/hubs/messages")
     .RequireTenant()
     .RequireAuthorization();

@@ -1,4 +1,5 @@
 using Application.Abstractions;
+using Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Configuration;
@@ -47,7 +48,17 @@ public sealed class TenantDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema(GetTenantSchema());
+        ConfigureNotificationPreferences(modelBuilder);
         ApplySnakeCaseConventions(modelBuilder);
+    }
+
+    private static void ConfigureNotificationPreferences(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserNotificationPreferences>(entity =>
+        {
+            entity.HasKey(preferences => preferences.Id);
+            entity.HasIndex(preferences => preferences.UserId).IsUnique();
+        });
     }
 
     private string GetTenantSchema()
