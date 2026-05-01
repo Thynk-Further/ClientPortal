@@ -4,8 +4,8 @@ export const DOCUMENTS_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('../feature-shell/feature-shell.component').then(
-        (m) => m.FeatureShellComponent,
+      import('./documents-library.component').then(
+        (m) => m.DocumentsLibraryComponent,
       ),
     data: {
       title: 'Documents',

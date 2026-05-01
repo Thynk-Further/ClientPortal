@@ -54,6 +54,12 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'reports',
+    canActivate: [authGuard, tenantGuard],
+    loadChildren: () =>
+      import('./features/reports/reports.routes').then((m) => m.REPORTS_ROUTES),
+  },
+  {
     path: 'settings',
     canActivate: [authGuard, tenantGuard, roleGuard],
     data: { roles: ['Owner', 'Admin'] },

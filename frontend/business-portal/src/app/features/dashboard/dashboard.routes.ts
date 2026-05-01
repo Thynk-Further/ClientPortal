@@ -4,8 +4,8 @@ export const DASHBOARD_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('../feature-shell/feature-shell.component').then(
-        (m) => m.FeatureShellComponent,
+      import('./business-dashboard.component').then(
+        (m) => m.BusinessDashboardComponent,
       ),
     data: {
       title: 'Business Dashboard',

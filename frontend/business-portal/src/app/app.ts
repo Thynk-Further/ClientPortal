@@ -1,30 +1,14 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { ButtonComponent } from '@/components/ui/button.component';
-import { CardComponent } from '@/components/ui/card.component';
 import { ToastHostComponent } from './core/notifications/toast-host.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ButtonComponent, CardComponent, ToastHostComponent],
+  imports: [RouterOutlet, ToastHostComponent],
   template: `
-    <main class="min-h-screen p-6 bg-muted/30">
-      <ui-card
-        class="max-w-xl mx-auto"
-        title="Business Portal"
-        description="Angular app configured with shadcn/ui (Angular port)."
-        content="Baseline components are now ready for feature implementation."
-      >
-        <div class="px-6 pb-6">
-          <ui-button label="Open Dashboard" />
-        </div>
-      </ui-card>
-      <router-outlet />
-    </main>
+    <router-outlet />
     <app-toast-host />
   `,
   styleUrl: './app.scss',
 })
-export class App {
-  protected readonly title = signal('business-portal');
-}
+export class App {}

@@ -4,8 +4,8 @@ export const SETTINGS_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('../feature-shell/feature-shell.component').then(
-        (m) => m.FeatureShellComponent,
+      import('./business-settings.component').then(
+        (m) => m.BusinessSettingsComponent,
       ),
     data: {
       title: 'Settings',
