@@ -102,7 +102,6 @@ public static class AuthEndpoints
         Result<RegisterBusinessResultDto> result = await sender.Send(
             new RegisterBusinessCommand(
                 request.CompanyName,
-                request.TenantSlug,
                 request.CompanyDomain,
                 request.OwnerFullName,
                 request.OwnerEmail,
@@ -226,7 +225,6 @@ public sealed record LoginRequest(string Email, string Password);
 
 public sealed record RegisterBusinessRequest(
     string CompanyName,
-    string TenantSlug,
     string CompanyDomain,
     string OwnerFullName,
     string OwnerEmail,

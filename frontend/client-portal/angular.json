@@ -64,7 +64,12 @@
               "buildTarget": "client-portal:build:production"
             },
             "development": {
-              "buildTarget": "client-portal:build:development"
+              "buildTarget": "client-portal:build:development",
+              "proxyConfig": "proxy.conf.docker.json"
+            },
+            "development-host": {
+              "buildTarget": "client-portal:build:development",
+              "proxyConfig": "proxy.conf.host.json"
             }
           },
           "defaultConfiguration": "development"

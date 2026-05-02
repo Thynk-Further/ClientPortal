@@ -8,14 +8,14 @@ namespace Application.Auth;
 
 public sealed class RegisterBusinessCommandHandler : IRequestHandler<RegisterBusinessCommand, Result<RegisterBusinessResultDto>>
 {
-    private static readonly Error TenantSlugTakenError = new(
-        "Auth.TenantSlugTaken",
-        "Tenant slug is already in use.",
-        ErrorType.Conflict);
-
     private static readonly Error TenantDomainTakenError = new(
         "Auth.TenantDomainTaken",
         "Tenant domain is already in use.",
+        ErrorType.Conflict);
+
+    private static readonly Error TenantSlugAllocationFailedError = new(
+        "Auth.TenantSlugAllocationFailed",
+        "Could not allocate a unique tenant slug. Try a slightly different company name.",
         ErrorType.Conflict);
 
     private readonly IBusinessRegistrationService _businessRegistrationService;
@@ -33,20 +33,24 @@ public sealed class RegisterBusinessCommandHandler : IRequestHandler<RegisterBus
         RegisterBusinessCommand request,
         CancellationToken cancellationToken)
     {
-        if (await _businessRegistrationService.IsTenantSlugTakenAsync(request.TenantSlug, cancellationToken))
-        {
-            return Result<RegisterBusinessResultDto>.Failure(TenantSlugTakenError);
-        }
-
         if (await _businessRegistrationService.IsTenantDomainTakenAsync(request.CompanyDomain, cancellationToken))
         {
             return Result<RegisterBusinessResultDto>.Failure(TenantDomainTakenError);
         }
 
+        string? resolvedSlug = await ResolveUniqueTenantSlugAsync(
+            TenantSlugGenerator.FromCompanyName(request.CompanyName),
+            cancellationToken);
+
+        if (resolvedSlug is null)
+        {
+            return Result<RegisterBusinessResultDto>.Failure(TenantSlugAllocationFailedError);
+        }
+
         Guid tenantId = Guid.CreateVersion7();
         Tenant tenant = Tenant.Create(
             id: tenantId,
-            slug: request.TenantSlug,
+            slug: resolvedSlug,
             name: request.CompanyName,
             domain: request.CompanyDomain,
             plan: request.Plan,
@@ -70,5 +74,28 @@ public sealed class RegisterBusinessCommandHandler : IRequestHandler<RegisterBus
             TenantSlug: tenant.Slug);
 
         return Result<RegisterBusinessResultDto>.Success(result);
+    }
+
+    private async Task<string?> ResolveUniqueTenantSlugAsync(
+        string baseSlug,
+        CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 500;
+        string candidate = baseSlug;
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            if (attempt > 0)
+            {
+                candidate = TenantSlugGenerator.WithNumericSuffix(baseSlug, attempt + 1);
+            }
+
+            if (!await _businessRegistrationService.IsTenantSlugTakenAsync(candidate, cancellationToken))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 }

@@ -11,6 +11,15 @@ export const AUTH_ROUTES: Routes = [
     },
   },
   {
+    path: 'register',
+    loadComponent: () =>
+      import('./register-screen.component').then((m) => m.RegisterScreenComponent),
+    data: {
+      title: 'Register business',
+      description: 'Create a tenant and owner account for the business portal.',
+    },
+  },
+  {
     path: 'forgot-password',
     loadComponent: () =>
       import('../feature-shell/feature-shell.component').then(

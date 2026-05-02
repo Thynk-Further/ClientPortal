@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
@@ -71,6 +77,15 @@ import { AuthStore } from '@/app/core/stores/auth.store';
               }
             </div>
 
+            @if (registrationNotice()) {
+              <p
+                class="rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground"
+                role="status"
+              >
+                {{ registrationNotice() }}
+              </p>
+            }
+
             <div class="flex items-center justify-between gap-3">
               <label class="inline-flex items-center gap-2 text-sm text-muted-foreground">
                 <input
@@ -88,6 +103,16 @@ import { AuthStore } from '@/app/core/stores/auth.store';
                 Forgot password?
               </a>
             </div>
+
+            <p class="text-center text-sm text-muted-foreground">
+              New business?
+              <a
+                routerLink="/auth/register"
+                class="text-primary underline-offset-4 hover:underline"
+              >
+                Create an account
+              </a>
+            </p>
 
             @if (authError() !== null) {
               <p class="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -139,7 +164,21 @@ export class LoginScreenComponent {
       (this.form.controls.password.dirty || this.form.controls.password.touched),
   );
 
+  readonly registrationNotice = signal<string | null>(null);
+
   constructor() {
+    const tenant =
+      this.route.snapshot.queryParamMap.get('tenant')?.trim() ?? '';
+    if (this.route.snapshot.queryParamMap.get('registered') === '1') {
+      const slugHint =
+        tenant !== ''
+          ? ` Your tenant slug is "${tenant}". Sign in with your owner email and password.`
+          : '';
+      this.registrationNotice.set(
+        `Registration complete.${slugHint} Sign in below.`,
+      );
+    }
+
     this.authStore.hydrateSession();
     if (this.authStore.isAuthenticated()) {
       void this.router.navigate(['/dashboard']);

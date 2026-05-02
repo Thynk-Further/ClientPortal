@@ -21,7 +21,13 @@ export const globalHttpErrorInterceptor: HttpInterceptorFn = (
           status: error.status,
           error,
         });
-        toastNotificationService.show(message, 'error');
+        const suppressToast =
+          request.method === 'POST' &&
+          request.url.includes('/api/v1/auth/register');
+
+        if (!suppressToast) {
+          toastNotificationService.show(message, 'error');
+        }
       }
 
       return throwError(() => error);

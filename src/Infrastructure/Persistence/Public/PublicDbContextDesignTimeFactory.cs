@@ -6,7 +6,7 @@ public sealed class PublicDbContextDesignTimeFactory : IDesignTimeDbContextFacto
 {
     public PublicDbContext CreateDbContext(string[] args)
     {
-        const string fallbackConnectionString = "Host=localhost;Port=5432;Database=clientportal;Username=postgres;Password=postgres";
+        const string fallbackConnectionString = "Host=localhost;Port=5433;Database=clientportal;Username=postgres;Password=postgres";
         return new PublicDbContext(fallbackConnectionString);
     }
 }

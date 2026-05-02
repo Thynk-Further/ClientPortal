@@ -1,3 +1,4 @@
+using Application.Abstractions;
 using Application.Auth.Dtos;
 using Domain;
 using MediatR;
@@ -7,9 +8,9 @@ namespace Application.Auth;
 
 public sealed record RegisterBusinessCommand(
     string CompanyName,
-    string TenantSlug,
     string CompanyDomain,
     string OwnerFullName,
     string OwnerEmail,
     string OwnerPassword,
-    Plan Plan = Plan.Starter) : IRequest<Result<RegisterBusinessResultDto>>;
+    Plan Plan = Plan.Starter)
+    : IRequest<Result<RegisterBusinessResultDto>>, ITenantOptionalRequest;

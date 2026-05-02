@@ -9,6 +9,7 @@ services:
              dotnet run --no-launch-profile --urls http://0.0.0.0:5000"
     volumes:
       - ./:/src
+      - ${USERPROFILE}/.nuget/packages:/root/.nuget/packages
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${USERPROFILE}/.aspnet/https:/https:ro
     environment:

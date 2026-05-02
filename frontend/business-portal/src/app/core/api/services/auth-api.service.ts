@@ -20,12 +20,34 @@ export interface RefreshRequest {
   refreshToken: string;
 }
 
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  tenantName?: string;
+/** Matches API `RegisterBusinessRequest` (JSON camelCase). */
+export interface RegisterBusinessRequest {
+  companyName: string;
+  companyDomain: string;
+  ownerFullName: string;
+  ownerEmail: string;
+  ownerPassword: string;
+}
+
+/** API `RegisterBusinessResultDto` (JSON camelCase). */
+export interface RegisterBusinessResult {
+  tenantId: string;
+  ownerUserId: string;
+  tenantSlug: string;
+}
+
+export interface ApiErrorDto {
+  code: string;
+  message: string;
+  type?: string | null;
+}
+
+/** API `ApiResponse<T>` envelope. */
+export interface ApiEnvelope<T> {
+  success: boolean;
+  data: T | null;
+  errors: ApiErrorDto[];
+  meta: Record<string, unknown>;
 }
 
 export interface ForgotPasswordRequest {
@@ -71,11 +93,13 @@ export class AuthApiService {
     );
   }
 
-  register(request: RegisterRequest): Observable<ApiOperationResult> {
-    return this.apiClient.post<ApiOperationResult, RegisterRequest>(
-      `${this.basePath}/register`,
-      request,
-    );
+  register(
+    request: RegisterBusinessRequest,
+  ): Observable<ApiEnvelope<RegisterBusinessResult>> {
+    return this.apiClient.post<
+      ApiEnvelope<RegisterBusinessResult>,
+      RegisterBusinessRequest
+    >(`${this.basePath}/register`, request);
   }
 
   forgotPassword(request: ForgotPasswordRequest): Observable<ApiOperationResult> {

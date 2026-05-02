@@ -10,11 +10,6 @@ public sealed class RegisterBusinessCommandValidator : AbstractValidator<Registe
             .NotEmpty()
             .MaximumLength(256);
 
-        RuleFor(command => command.TenantSlug)
-            .NotEmpty()
-            .MaximumLength(128)
-            .Matches("^[a-z0-9-]+$");
-
         RuleFor(command => command.CompanyDomain)
             .NotEmpty()
             .MaximumLength(256);

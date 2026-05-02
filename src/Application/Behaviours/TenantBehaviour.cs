@@ -25,7 +25,7 @@ public sealed class TenantBehaviour<TRequest, TResponse> : IPipelineBehavior<TRe
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        if (_currentTenant.IsResolved)
+        if (request is ITenantOptionalRequest || _currentTenant.IsResolved)
         {
             return await next();
         }

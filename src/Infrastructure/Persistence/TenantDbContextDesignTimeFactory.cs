@@ -8,7 +8,7 @@ public sealed class TenantDbContextDesignTimeFactory : IDesignTimeDbContextFacto
 {
     public TenantDbContext CreateDbContext(string[] args)
     {
-        const string fallbackConnectionString = "Host=localhost;Port=5432;Database=clientportal;Username=postgres;Password=postgres";
+        const string fallbackConnectionString = "Host=localhost;Port=5433;Database=clientportal;Username=postgres;Password=postgres";
         ICurrentTenant currentTenant = new DesignTimeCurrentTenant();
         return new TenantDbContext(fallbackConnectionString, currentTenant);
     }
