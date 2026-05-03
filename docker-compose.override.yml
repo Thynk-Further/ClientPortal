@@ -26,6 +26,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ASPNETCORE_URLS: ${ASPNETCORE_URLS}
+      # Build from POSTGRES_* so a host-level ConnectionStrings__Postgres env var cannot override .env (Compose: shell wins over .env).
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__Redis: "redis:6379"
+      Serilog__WriteTo__1__Args__serverUrl: "http://seq:5341"
       Jwt__Issuer: ${Jwt__Issuer:-client-portal}
       Jwt__Audience: ${Jwt__Audience:-client-portal-api}
       Jwt__PrivateKeyPem: ${Jwt__PrivateKeyPem}

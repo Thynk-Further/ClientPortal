@@ -31,6 +31,7 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
@@ -231,13 +232,19 @@ var app = builder.Build();
 using (IServiceScope scope = app.Services.CreateScope())
 {
     IDbInitializer dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+    ILoggerFactory loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    Microsoft.Extensions.Logging.ILogger dbInitLogger =
+        loggerFactory.CreateLogger("DatabaseInitialization");
     try
     {
         await dbInitializer.InitializeAsync();
     }
-    catch (Exception) when (app.Environment.IsDevelopment())
+    catch (Exception ex) when (app.Environment.IsDevelopment())
     {
-        // Allow local API startup without a fully configured database so OpenAPI/Scalar remains accessible.
+        dbInitLogger.LogError(
+            ex,
+            "Database initialization failed. The API will start (e.g. for OpenAPI) but requests that need the database " +
+            "or applied migrations will fail until the connection is valid and pending EF migrations are applied.");
     }
 }
 
