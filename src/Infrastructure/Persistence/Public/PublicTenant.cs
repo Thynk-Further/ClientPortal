@@ -17,4 +17,9 @@ public sealed class PublicTenant
     public bool IsActive { get; set; } = true;
 
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// HMAC-SHA256-based hash (64 hex chars) of the tenant API key; never store plaintext.
+    /// </summary>
+    public string? TenantKeyHash { get; set; }
 }

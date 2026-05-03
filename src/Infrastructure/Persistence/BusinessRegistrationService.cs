@@ -2,9 +2,11 @@ using Application.Abstractions;
 using Application.Auth.Abstractions;
 using Domain;
 using Infrastructure.Persistence.Public;
+using Infrastructure.Tenancy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -20,17 +22,26 @@ public sealed class BusinessRegistrationService : IBusinessRegistrationService
 
     private readonly PublicDbContext _publicDbContext;
     private readonly ITenantProvisioner _tenantProvisioner;
+    private readonly ITenantKeyGenerator _tenantKeyGenerator;
+    private readonly ITenantKeyHasher _tenantKeyHasher;
+    private readonly TenantKeyOptions _tenantKeyOptions;
     private readonly string _postgresConnectionString;
     private readonly ILogger<BusinessRegistrationService> _logger;
 
     public BusinessRegistrationService(
         PublicDbContext publicDbContext,
         ITenantProvisioner tenantProvisioner,
+        ITenantKeyGenerator tenantKeyGenerator,
+        ITenantKeyHasher tenantKeyHasher,
+        IOptions<TenantKeyOptions> tenantKeyOptions,
         IConfiguration configuration,
         ILogger<BusinessRegistrationService> logger)
     {
         _publicDbContext = publicDbContext;
         _tenantProvisioner = tenantProvisioner;
+        _tenantKeyGenerator = tenantKeyGenerator;
+        _tenantKeyHasher = tenantKeyHasher;
+        _tenantKeyOptions = tenantKeyOptions.Value;
         _logger = logger;
         _postgresConnectionString = configuration.GetConnectionString("Postgres")
             ?? throw new InvalidOperationException("ConnectionStrings:Postgres must be configured.");
@@ -53,13 +64,14 @@ public sealed class BusinessRegistrationService : IBusinessRegistrationService
         return _publicDbContext.Tenants.AnyAsync(tenant => tenant.Domain == normalized, cancellationToken);
     }
 
-    public async Task RegisterAsync(Tenant tenant, User ownerUser, CancellationToken cancellationToken = default)
+    public async Task<string?> RegisterAsync(Tenant tenant, User ownerUser, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(tenant);
         ArgumentNullException.ThrowIfNull(ownerUser);
 
         string settingsJson = JsonSerializer.Serialize(tenant.Settings, TenantSettingsJsonOptions);
 
+        string? plaintextTenantKey = null;
         PublicTenant row = new()
         {
             Id = tenant.Id,
@@ -71,6 +83,12 @@ public sealed class BusinessRegistrationService : IBusinessRegistrationService
             IsActive = tenant.IsActive,
             CreatedAt = DateTime.UtcNow,
         };
+
+        if (!string.IsNullOrWhiteSpace(_tenantKeyOptions.Pepper))
+        {
+            plaintextTenantKey = _tenantKeyGenerator.GenerateUrlSafeKey();
+            row.TenantKeyHash = _tenantKeyHasher.ComputeHash(plaintextTenantKey);
+        }
 
         bool publicTenantCommitted = false;
         try
@@ -101,6 +119,8 @@ public sealed class BusinessRegistrationService : IBusinessRegistrationService
 
             throw;
         }
+
+        return plaintextTenantKey;
     }
 
     private async Task TryRevertRegistrationArtifactsAsync(

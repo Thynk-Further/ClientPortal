@@ -52,3 +52,7 @@ Thumbs.db
 
 .tmp-build/
 .env
+
+# App settings: machine-specific and environment files (keep appsettings.json in repo)
+**/appsettings.json
+**/appsettings.*.json"

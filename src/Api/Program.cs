@@ -191,6 +191,7 @@ builder.Services.AddSingleton<IHubFilter, MessagesHubGuardFilter>();
 builder.Services.AddScoped<ITenantDomainLookup, NullTenantDomainLookup>();
 builder.Services.AddScoped<ITenantResolver, SubdomainTenantResolver>();
 builder.Services.AddScoped<ITenantResolver, CustomDomainTenantResolver>();
+builder.Services.AddScoped<ITenantResolver, TenantKeyTenantResolver>();
 builder.Services.AddScoped<TenantMiddleware>();
 builder.Services.AddSingleton<IAuthorizationHandler, TenantAccessAuthorizationHandler>();
 
