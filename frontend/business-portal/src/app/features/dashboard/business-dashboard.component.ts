@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   PLATFORM_ID,
   computed,
   inject,
@@ -8,6 +9,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
+import { ClientStore } from '@/app/core/stores/client.store';
 import { ClientInviteOnboardingComponent } from '../clients/client-invite-onboarding.component';
 import { ClientsListComponent } from '../clients/clients-list.component';
 
@@ -97,7 +99,7 @@ interface RecentActivityItem {
           </div>
 
           <nav class="space-y-5" aria-label="Sidebar">
-            @for (section of sidebarSections; track section.id) {
+            @for (section of sidebarSections(); track section.id) {
               <div class="space-y-1.5">
                 @if (!sidebarCollapsed()) {
                   <button
@@ -371,9 +373,10 @@ interface RecentActivityItem {
     </div>
   `,
 })
-export class BusinessDashboardComponent {
+export class BusinessDashboardComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly route = inject(ActivatedRoute);
+  private readonly clientStore = inject(ClientStore);
   private readonly storageKey = 'business-portal-theme';
   protected readonly activeView = signal<'dashboard' | 'client-invite-onboard' | 'client-list'>('dashboard');
   protected readonly sidebarCollapsed = signal(false);
@@ -405,7 +408,11 @@ export class BusinessDashboardComponent {
     this.initializeTheme();
   }
 
-  protected readonly sidebarSections: ReadonlyArray<SidebarSection> = [
+  ngOnInit(): void {
+    void this.refreshClientCount();
+  }
+
+  private readonly sidebarSectionDefinitions: ReadonlyArray<SidebarSection> = [
     {
       id: 'overview',
       label: 'Overview',
@@ -435,7 +442,6 @@ export class BusinessDashboardComponent {
         {
           id: 'client-list',
           label: 'Client List',
-          badgeCount: 48,
           iconPath: 'M17 21v-2a4 4 0 0 0-3-3.87M9 21v-2a4 4 0 0 0-4-4H3m16-4a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM9 11A4 4 0 1 0 9 3a4 4 0 0 0 0 8Z',
         },
         {
@@ -603,6 +609,23 @@ export class BusinessDashboardComponent {
     },
   ];
 
+  protected readonly sidebarSections = computed<ReadonlyArray<SidebarSection>>(() => {
+    const clientCount = this.clientStore.totalCount();
+
+    return this.sidebarSectionDefinitions.map((section) => {
+      if (section.id !== 'clients') {
+        return section;
+      }
+
+      return {
+        ...section,
+        items: section.items.map((item) =>
+          item.id === 'client-list' ? { ...item, badgeCount: clientCount } : item,
+        ),
+      };
+    });
+  });
+
   protected readonly stats: ReadonlyArray<DashboardStat> = [
     {
       label: 'Total Revenue',
@@ -733,6 +756,14 @@ export class BusinessDashboardComponent {
 
     event.preventDefault();
     this.activeView.set(itemId);
+
+    if (itemId === 'client-list' || itemId === 'client-invite-onboard') {
+      void this.refreshClientCount();
+    }
+  }
+
+  private async refreshClientCount(): Promise<void> {
+    await this.clientStore.loadClients({ page: 1, pageSize: 1 });
   }
 
   protected isItemActive(itemId: string): boolean {

@@ -84,9 +84,10 @@ public static class DependencyInjection
         services.AddDbContext<PublicDbContext>();
         services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
         services.AddScoped<IClientRepository, ClientRepository>();
+        services.AddScoped<IClientUserAccountRepository, ClientUserAccountRepository>();
         services.AddSingleton<IClientInvitationTokenService, ClientInvitationTokenService>();
-        services.AddSingleton<IClientInvitationTokenStore, InMemoryClientInvitationTokenStore>();
-        services.AddSingleton<IClientInvitationLinkFactory, ClientInvitationLinkFactory>();
+        services.AddScoped<IClientInvitationTokenStore, NpgsqlClientInvitationTokenStore>();
+        services.AddScoped<IClientInvitationLinkFactory, ClientInvitationLinkFactory>();
         services.AddScoped<IQuoteRepository, QuoteRepository>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IContractRepository, ContractRepository>();

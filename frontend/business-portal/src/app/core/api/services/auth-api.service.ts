@@ -54,6 +54,7 @@ export interface ResetPasswordRequest {
 export interface AcceptInvitationRequest {
   token: string;
   password: string;
+  tenantSlug: string;
 }
 
 @Injectable({ providedIn: 'root' })

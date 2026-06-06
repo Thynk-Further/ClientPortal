@@ -75,6 +75,27 @@ public sealed class InMemoryClientInvitationTokenStore : IClientInvitationTokenS
         return Task.CompletedTask;
     }
 
+    public Task InvalidateActiveForUserAsync(
+        Guid clientId,
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        DateTime nowUtc = DateTime.UtcNow;
+        foreach (KeyValuePair<string, TokenEntry> pair in _entries)
+        {
+            TokenEntry entry = pair.Value;
+            if (entry.ClientId == clientId
+                && entry.UserId == userId
+                && !entry.UsedAtUtc.HasValue
+                && entry.ExpiresAtUtc > nowUtc)
+            {
+                _entries[pair.Key] = entry with { UsedAtUtc = nowUtc };
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
     private sealed record TokenEntry(
         Guid ClientId,
         Guid UserId,

@@ -26,12 +26,13 @@ public sealed class ClientInvitedEventHandler : INotificationHandler<ClientInvit
     {
         string inviteLink = _clientInvitationLinkFactory.CreateAcceptInvitationLink(notification.InviteToken);
 
-        string subject = "You are invited to ClientPortal";
+        string subject = "You are invited to your client portal";
         string body =
             $"Hello {notification.ContactName},\n\n" +
-            "You have been invited to join your client portal workspace.\n" +
-            $"Use this secure magic link to complete your account setup:\n{inviteLink}\n\n" +
-            "If you did not expect this invitation, you can safely ignore this email.";
+            "You have been invited to collaborate with a business on ClientPortal.\n" +
+            "Use this secure link to set your password and activate your account:\n" +
+            $"{inviteLink}\n\n" +
+            "This link expires in 7 days. If you did not expect this invitation, you can safely ignore this email.";
 
         try
         {

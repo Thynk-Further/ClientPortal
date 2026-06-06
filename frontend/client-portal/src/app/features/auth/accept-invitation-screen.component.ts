@@ -3,8 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
-import { AuthApiService } from '@/app/core/api/services/auth-api.service';
-import { ToastNotificationService } from '@/app/core/notifications/toast-notification.service';
+import { AuthApiService } from '@/app/core/api/auth-api.service';
 import { ButtonComponent } from '@/components/ui/button.component';
 import {
   CardComponent,
@@ -36,7 +35,7 @@ import { InputComponent } from '@/components/ui/input.component';
         <ui-card-header>
           <ui-card-title class="text-xl">Accept invitation</ui-card-title>
           <ui-card-description>
-            Set your account password to activate your client portal access.
+            Set your password to activate your client portal account.
           </ui-card-description>
         </ui-card-header>
 
@@ -91,10 +90,7 @@ import { InputComponent } from '@/components/ui/input.component';
           </form>
 
           <p class="mt-4 text-center text-sm text-muted-foreground">
-            Already activated?
-            <a routerLink="/auth" class="text-primary underline-offset-4 hover:underline">
-              Sign in
-            </a>
+            After activation, sign in with your email and new password.
           </p>
         </ui-card-content>
       </ui-card>
@@ -106,7 +102,6 @@ export class AcceptInvitationScreenComponent {
   private readonly authApiService = inject(AuthApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly toast = inject(ToastNotificationService);
 
   private readonly token = this.route.snapshot.queryParamMap.get('token')?.trim() ?? '';
   private readonly tenantSlug = this.route.snapshot.queryParamMap.get('tenant')?.trim() ?? '';
@@ -146,8 +141,9 @@ export class AcceptInvitationScreenComponent {
           tenantSlug: this.tenantSlug,
         }),
       );
-      this.toast.success('Invitation accepted. You can now sign in.');
-      await this.router.navigate(['/auth']);
+      await this.router.navigate(['/auth'], {
+        queryParams: { activated: '1', email: this.route.snapshot.queryParamMap.get('email') ?? undefined },
+      });
     } catch (error) {
       this.errorMessage.set(readErrorMessage(error));
     } finally {

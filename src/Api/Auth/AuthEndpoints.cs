@@ -3,6 +3,8 @@ using Application.Auth;
 using Application.Auth.Dtos;
 using Application.Clients;
 using Api.Contracts;
+using Api.Tenancy;
+using Domain;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -140,9 +142,26 @@ public static class AuthEndpoints
 
     private static async Task<IResult> AcceptInvitationAsync(
         AcceptInvitationRequest request,
+        HttpContext httpContext,
         ISender sender,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.TenantSlug))
+        {
+            return Failure(
+            [
+                new Error(
+                    "Clients.MissingTenantSlug",
+                    "Tenant slug is required to accept an invitation.",
+                    ErrorType.Validation)
+            ]);
+        }
+
+        string tenantSlug = request.TenantSlug.Trim();
+        httpContext.Items[TenantHttpContextKeys.TenantId] = tenantSlug;
+        httpContext.Items[TenantHttpContextKeys.TenantSlug] = tenantSlug;
+        httpContext.Items[TenantHttpContextKeys.TenantSettings] = TenantSettings.Default();
+
         Result result = await sender.Send(
             new AcceptInvitationCommand(request.Token, request.Password),
             cancellationToken);
@@ -234,7 +253,7 @@ public sealed record ForgotPasswordRequest(string Email);
 
 public sealed record ResetPasswordRequest(string Token, string NewPassword);
 
-public sealed record AcceptInvitationRequest(string Token, string Password);
+public sealed record AcceptInvitationRequest(string Token, string Password, string TenantSlug);
 
 public static class RateLimitPolicies
 {

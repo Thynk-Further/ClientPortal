@@ -40,6 +40,9 @@ public static class ClientsEndpoints
         group.MapPost("/{id:guid}/deactivate", DeactivateClientAsync)
             .WithName("ClientsDeactivate");
 
+        group.MapPost("/{id:guid}/resend-invite", ResendClientInvitationAsync)
+            .WithName("ClientsResendInvite");
+
         RouteGroupBuilder portalGroup = endpoints.MapGroup("/api/v1/client-portal")
             .WithTags("Client Portal")
             .RequireTenant()
@@ -129,6 +132,15 @@ public static class ClientsEndpoints
         CancellationToken cancellationToken)
     {
         Result result = await sender.Send(new DeactivateClientCommand(id), cancellationToken);
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> ResendClientInvitationAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result result = await sender.Send(new ResendClientInvitationCommand(id), cancellationToken);
         return ToResponse(result);
     }
 

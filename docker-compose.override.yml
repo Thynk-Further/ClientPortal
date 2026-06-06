@@ -38,6 +38,15 @@ services:
       Tenancy__TenantKey__Enabled: "true"
       Tenancy__TenantKey__HeaderName: ${TENANCY_TENANT_KEY_HEADER_NAME:-X-Tenant-Key}
       Tenancy__TenantKey__Pepper: ${TENANCY_TENANT_KEY_PEPPER:-development-only-set-user-secrets-for-production}
+      ClientInvitations__AcceptInvitationBaseUrl: ${CLIENT_INVITATIONS_ACCEPT_URL:-http://localhost:4201/auth/accept-invitation}
+      Notifications__Email__Enabled: ${EMAIL_ENABLED:-false}
+      Notifications__Email__SmtpHost: ${SMTP_HOST:-}
+      Notifications__Email__SmtpPort: ${SMTP_PORT:-587}
+      Notifications__Email__UseSsl: ${SMTP_USE_SSL:-false}
+      Notifications__Email__Username: ${SMTP_USER:-}
+      Notifications__Email__Password: ${SMTP_PASSWORD:-}
+      Notifications__Email__FromAddress: ${EMAIL_FROM:-}
+      Notifications__Email__FromName: ${EMAIL_FROM_NAME:-ClientPortal}
 
   client-app:
     build: !reset

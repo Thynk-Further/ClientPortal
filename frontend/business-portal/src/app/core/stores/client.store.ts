@@ -82,6 +82,21 @@ export const ClientStore = signalStore(
         patchState(store, { isLoading: false });
       }
     },
+
+    async resendClientInvitation(clientId: string): Promise<boolean> {
+      patchState(store, { isLoading: true, error: null });
+      try {
+        const result = await firstValueFrom(
+          clientApiService.resendClientInvitation(clientId),
+        );
+        return result.success;
+      } catch (error) {
+        patchState(store, { error: readErrorMessage(error) });
+        return false;
+      } finally {
+        patchState(store, { isLoading: false });
+      }
+    },
   })),
 );
 

@@ -111,6 +111,15 @@ export class ClientApiService {
       .pipe(map((response) => this.toOperationResult(response)));
   }
 
+  resendClientInvitation(clientId: string): Observable<ApiOperationResult> {
+    return this.apiClient
+      .post<ApiEnvelope<object | null>, Record<string, never>>(
+        `${this.basePath}/${clientId}/resend-invite`,
+        {},
+      )
+      .pipe(map((response) => this.toOperationResult(response)));
+  }
+
   getOnboardingStatus(): Observable<OnboardingStatus> {
     return this.apiClient
       .get<ApiEnvelope<OnboardingStatus>>(`${this.clientPortalPath}/onboarding-status`)
