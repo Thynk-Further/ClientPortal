@@ -23,7 +23,8 @@ export const globalHttpErrorInterceptor: HttpInterceptorFn = (
         });
         const suppressToast =
           request.method === 'POST' &&
-          request.url.includes('/api/v1/auth/register');
+          (request.url.includes('/api/v1/auth/register') ||
+            request.url.includes('/api/v1/auth/logout'));
 
         if (!suppressToast) {
           toastNotificationService.show(message, 'error');

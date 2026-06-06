@@ -10,6 +10,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { ClientStore } from '@/app/core/stores/client.store';
+import { UserAccountMenuComponent } from '@/app/core/layout/user-account-menu.component';
 import { ClientInviteOnboardingComponent } from '../clients/client-invite-onboarding.component';
 import { ClientsListComponent } from '../clients/clients-list.component';
 
@@ -59,12 +60,12 @@ interface RecentActivityItem {
   selector: 'app-business-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClientInviteOnboardingComponent, ClientsListComponent],
+  imports: [ClientInviteOnboardingComponent, ClientsListComponent, UserAccountMenuComponent],
   template: `
     <div class="min-h-screen bg-muted/30 text-foreground">
       <div class="flex min-h-screen">
         <aside
-          class="border-r border-sidebar-border bg-sidebar px-3 py-4 transition-all duration-300"
+          class="flex min-h-screen flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 transition-all duration-300"
           [class.w-64]="!sidebarCollapsed()"
           [class.w-20]="sidebarCollapsed()"
         >
@@ -98,7 +99,7 @@ interface RecentActivityItem {
             </button>
           </div>
 
-          <nav class="space-y-5" aria-label="Sidebar">
+          <nav class="flex-1 space-y-5" aria-label="Sidebar">
             @for (section of sidebarSections(); track section.id) {
               <div class="space-y-1.5">
                 @if (!sidebarCollapsed()) {
@@ -165,6 +166,14 @@ interface RecentActivityItem {
               </div>
             }
           </nav>
+
+          <div class="mt-4 border-t border-sidebar-border pt-4">
+            @if (sidebarCollapsed()) {
+              <app-user-account-menu />
+            } @else {
+              <app-user-account-menu layout="sidebar" />
+            }
+          </div>
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col">
@@ -218,13 +227,7 @@ interface RecentActivityItem {
                 <span class="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500"></span>
               </button>
 
-              <button
-                type="button"
-                class="grid h-9 w-9 place-content-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
-                aria-label="User menu"
-              >
-                AS
-              </button>
+              <app-user-account-menu />
             </div>
           </header>
 
