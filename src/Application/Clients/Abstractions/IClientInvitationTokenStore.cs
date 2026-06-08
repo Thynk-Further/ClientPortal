@@ -19,4 +19,9 @@ public interface IClientInvitationTokenStore
         string tokenHash,
         DateTime usedAtUtc,
         CancellationToken cancellationToken = default);
+
+    Task InvalidateActiveForUserAsync(
+        Guid clientId,
+        Guid userId,
+        CancellationToken cancellationToken = default);
 }

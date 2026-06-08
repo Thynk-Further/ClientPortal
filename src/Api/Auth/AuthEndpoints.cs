@@ -1,8 +1,11 @@
 using System.Net;
 using Application.Auth;
+using Application.Auth.Abstractions;
 using Application.Auth.Dtos;
 using Application.Clients;
 using Api.Contracts;
+using Api.Tenancy;
+using Domain;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -61,12 +64,14 @@ public static class AuthEndpoints
     }
 
     private static async Task<IResult> RefreshAsync(
+        RefreshRequest? request,
         HttpContext httpContext,
         IOptions<RefreshTokenCookieOptions> cookieOptions,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        if (!TryReadRefreshToken(httpContext, cookieOptions.Value.Name, out string refreshToken))
+        string? refreshToken = ResolveRefreshToken(httpContext, cookieOptions.Value.Name, request?.RefreshToken);
+        if (string.IsNullOrWhiteSpace(refreshToken))
         {
             return MissingRefreshToken();
         }
@@ -80,18 +85,28 @@ public static class AuthEndpoints
     }
 
     private static async Task<IResult> LogoutAsync(
+        LogoutRequest? request,
         HttpContext httpContext,
         IOptions<RefreshTokenCookieOptions> cookieOptions,
+        IRefreshTokenCookieStore refreshTokenCookieStore,
         ISender sender,
         CancellationToken cancellationToken)
     {
-        if (!TryReadRefreshToken(httpContext, cookieOptions.Value.Name, out string refreshToken))
+        string? refreshToken = ResolveRefreshToken(httpContext, cookieOptions.Value.Name, request?.RefreshToken);
+        if (!string.IsNullOrWhiteSpace(refreshToken))
         {
-            return MissingRefreshToken();
+            Result result = await sender.Send(new LogoutCommand(refreshToken), cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return ToResponse(result);
+            }
+        }
+        else
+        {
+            await refreshTokenCookieStore.ClearAsync(cancellationToken);
         }
 
-        Result result = await sender.Send(new LogoutCommand(refreshToken), cancellationToken);
-        return ToResponse(result);
+        return Results.Ok(ApiResponse<object?>.Ok(null));
     }
 
     private static async Task<IResult> RegisterAsync(
@@ -140,9 +155,26 @@ public static class AuthEndpoints
 
     private static async Task<IResult> AcceptInvitationAsync(
         AcceptInvitationRequest request,
+        HttpContext httpContext,
         ISender sender,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.TenantSlug))
+        {
+            return Failure(
+            [
+                new Error(
+                    "Clients.MissingTenantSlug",
+                    "Tenant slug is required to accept an invitation.",
+                    ErrorType.Validation)
+            ]);
+        }
+
+        string tenantSlug = request.TenantSlug.Trim();
+        httpContext.Items[TenantHttpContextKeys.TenantId] = tenantSlug;
+        httpContext.Items[TenantHttpContextKeys.TenantSlug] = tenantSlug;
+        httpContext.Items[TenantHttpContextKeys.TenantSettings] = TenantSettings.Default();
+
         Result result = await sender.Send(
             new AcceptInvitationCommand(request.Token, request.Password),
             cancellationToken);
@@ -197,6 +229,19 @@ public static class AuthEndpoints
         return Results.Json(ApiResponse<object?>.Fail(apiErrors), statusCode: statusCode);
     }
 
+    private static string? ResolveRefreshToken(
+        HttpContext httpContext,
+        string cookieName,
+        string? bodyRefreshToken)
+    {
+        if (TryReadRefreshToken(httpContext, cookieName, out string cookieRefreshToken))
+        {
+            return cookieRefreshToken;
+        }
+
+        return string.IsNullOrWhiteSpace(bodyRefreshToken) ? null : bodyRefreshToken.Trim();
+    }
+
     private static bool TryReadRefreshToken(HttpContext httpContext, string cookieName, out string refreshToken)
     {
         refreshToken = string.Empty;
@@ -234,7 +279,11 @@ public sealed record ForgotPasswordRequest(string Email);
 
 public sealed record ResetPasswordRequest(string Token, string NewPassword);
 
-public sealed record AcceptInvitationRequest(string Token, string Password);
+public sealed record AcceptInvitationRequest(string Token, string Password, string TenantSlug);
+
+public sealed record RefreshRequest(string? RefreshToken);
+
+public sealed record LogoutRequest(string? RefreshToken);
 
 public static class RateLimitPolicies
 {

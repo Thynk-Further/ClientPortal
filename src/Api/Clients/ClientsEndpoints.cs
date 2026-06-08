@@ -28,6 +28,12 @@ public static class ClientsEndpoints
         group.MapGet("/", GetClientsAsync)
             .WithName("ClientsGet");
 
+        group.MapGet("/workspace", GetClientWorkspaceLandingAsync)
+            .WithName("ClientsWorkspaceLanding");
+
+        group.MapGet("/{id:guid}/workspace", GetClientWorkspaceAsync)
+            .WithName("ClientsWorkspaceById");
+
         group.MapGet("/{id:guid}", GetClientByIdAsync)
             .WithName("ClientsGetById");
 
@@ -39,6 +45,9 @@ public static class ClientsEndpoints
 
         group.MapPost("/{id:guid}/deactivate", DeactivateClientAsync)
             .WithName("ClientsDeactivate");
+
+        group.MapPost("/{id:guid}/resend-invite", ResendClientInvitationAsync)
+            .WithName("ClientsResendInvite");
 
         RouteGroupBuilder portalGroup = endpoints.MapGroup("/api/v1/client-portal")
             .WithTags("Client Portal")
@@ -55,17 +64,40 @@ public static class ClientsEndpoints
     }
 
     private static async Task<IResult> GetClientsAsync(
-        int page,
-        int pageSize,
-        string? search,
-        ClientStatus? status,
         ISender sender,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int page = 1,
+        int pageSize = 20,
+        string? search = null,
+        ClientStatus? status = null)
     {
         int normalizedPage = page <= 0 ? 1 : page;
         int normalizedPageSize = pageSize <= 0 ? 20 : pageSize;
         Result<PagedResult<ClientListItemDto>> result = await sender.Send(
             new GetClientsQuery(normalizedPage, normalizedPageSize, search, status),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientWorkspaceLandingAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientWorkspaceLandingDto> result = await sender.Send(
+            new GetClientWorkspaceLandingQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientWorkspaceAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientWorkspaceDto> result = await sender.Send(
+            new GetClientWorkspaceQuery(id),
             cancellationToken);
 
         return ToResponse(result);
@@ -129,6 +161,15 @@ public static class ClientsEndpoints
         CancellationToken cancellationToken)
     {
         Result result = await sender.Send(new DeactivateClientCommand(id), cancellationToken);
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> ResendClientInvitationAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result result = await sender.Send(new ResendClientInvitationCommand(id), cancellationToken);
         return ToResponse(result);
     }
 

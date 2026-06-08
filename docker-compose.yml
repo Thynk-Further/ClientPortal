@@ -72,6 +72,21 @@ services:
       ConnectionStrings__Postgres: ${ConnectionStrings__Postgres}
       ConnectionStrings__Redis: ${ConnectionStrings__Redis}
       Serilog__WriteTo__1__Args__serverUrl: ${Serilog__WriteTo__1__Args__serverUrl}
+      Jwt__PrivateKeyPem: ${Jwt__PrivateKeyPem}
+      Jwt__PublicKeyPem: ${Jwt__PublicKeyPem}
+      # Pre-deploy / non-production hosts: set TENANCY_TENANT_KEY_ENABLED=true and TENANCY_TENANT_KEY_PEPPER to match registration-time pepper (register response stores hashed key).
+      Tenancy__TenantKey__Enabled: ${TENANCY_TENANT_KEY_ENABLED:-false}
+      Tenancy__TenantKey__HeaderName: ${TENANCY_TENANT_KEY_HEADER_NAME:-X-Tenant-Key}
+      Tenancy__TenantKey__Pepper: ${TENANCY_TENANT_KEY_PEPPER:-}
+      ClientInvitations__AcceptInvitationBaseUrl: ${CLIENT_INVITATIONS_ACCEPT_URL:-http://localhost:4201/auth/accept-invitation}
+      Notifications__Email__Enabled: ${EMAIL_ENABLED:-false}
+      Notifications__Email__SmtpHost: ${SMTP_HOST:-}
+      Notifications__Email__SmtpPort: ${SMTP_PORT:-587}
+      Notifications__Email__UseSsl: ${SMTP_USE_SSL:-false}
+      Notifications__Email__Username: ${SMTP_USER:-}
+      Notifications__Email__Password: ${SMTP_PASSWORD:-}
+      Notifications__Email__FromAddress: ${EMAIL_FROM:-}
+      Notifications__Email__FromName: ${EMAIL_FROM_NAME:-ClientPortal}
     ports:
       - "${API_PORT}:5000"
     networks:

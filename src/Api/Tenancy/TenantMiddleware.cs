@@ -55,7 +55,7 @@ public sealed class TenantMiddleware : IMiddleware
             [
                 new ApiError(
                     Code: "Tenant.Unresolved",
-                    Message: "Tenant could not be resolved from request host.",
+                    Message: "Tenant could not be resolved for this request (host, domain, API key, or tenant header).",
                     Type: "validation")
             ]));
     }

@@ -26,6 +26,10 @@ export interface RefreshRequest {
   refreshToken: string;
 }
 
+export interface LogoutRequest {
+  refreshToken?: string | null;
+}
+
 /** Matches API `RegisterBusinessRequest` (JSON camelCase). */
 export interface RegisterBusinessRequest {
   companyName: string;
@@ -54,6 +58,7 @@ export interface ResetPasswordRequest {
 export interface AcceptInvitationRequest {
   token: string;
   password: string;
+  tenantSlug: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -85,15 +90,15 @@ export class AuthApiService {
   }
 
   logout(refreshToken?: string): Observable<ApiOperationResult> {
-    const requestBody =
+    const normalizedRefreshToken =
       typeof refreshToken === 'string' && refreshToken.trim() !== ''
-        ? ({ refreshToken } satisfies RefreshRequest)
-        : undefined;
+        ? refreshToken.trim()
+        : null;
 
     return this.apiClient
-      .post<ApiEnvelope<object | null>, RefreshRequest | undefined>(
+      .post<ApiEnvelope<object | null>, LogoutRequest>(
         `${this.basePath}/logout`,
-        requestBody,
+        { refreshToken: normalizedRefreshToken },
         undefined,
         { withCredentials: true },
       )

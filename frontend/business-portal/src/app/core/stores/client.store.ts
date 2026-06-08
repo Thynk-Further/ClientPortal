@@ -7,13 +7,18 @@ import {
   ClientDetail,
   ClientListQuery,
   ClientSummary,
+  ClientWorkspace,
+  ClientWorkspaceLanding,
   InviteClientRequest,
   UpdateClientRequest,
 } from '../api/services/client-api.service';
+import { readHttpErrorMessage } from '../api/api-envelope.util';
 
 interface ClientState {
   clients: ClientSummary[];
   selectedClient: ClientDetail | null;
+  workspaceLanding: ClientWorkspaceLanding | null;
+  clientWorkspace: ClientWorkspace | null;
   totalCount: number;
   isLoading: boolean;
   error: string | null;
@@ -22,6 +27,8 @@ interface ClientState {
 const initialState: ClientState = {
   clients: [],
   selectedClient: null,
+  workspaceLanding: null,
+  clientWorkspace: null,
   totalCount: 0,
   isLoading: false,
   error: null,
@@ -82,13 +89,53 @@ export const ClientStore = signalStore(
         patchState(store, { isLoading: false });
       }
     },
+
+    async resendClientInvitation(clientId: string): Promise<boolean> {
+      patchState(store, { isLoading: true, error: null });
+      try {
+        const result = await firstValueFrom(
+          clientApiService.resendClientInvitation(clientId),
+        );
+        return result.success;
+      } catch (error) {
+        patchState(store, { error: readErrorMessage(error) });
+        return false;
+      } finally {
+        patchState(store, { isLoading: false });
+      }
+    },
+
+    async loadWorkspaceLanding(): Promise<void> {
+      patchState(store, { isLoading: true, error: null });
+      try {
+        const landing = await firstValueFrom(clientApiService.getWorkspaceLanding());
+        patchState(store, { workspaceLanding: landing });
+      } catch (error) {
+        patchState(store, { error: readErrorMessage(error) });
+      } finally {
+        patchState(store, { isLoading: false });
+      }
+    },
+
+    async loadClientWorkspace(clientId: string): Promise<void> {
+      if (clientId.trim() === '') {
+        patchState(store, { clientWorkspace: null });
+        return;
+      }
+
+      patchState(store, { isLoading: true, error: null });
+      try {
+        const workspace = await firstValueFrom(clientApiService.getClientWorkspace(clientId));
+        patchState(store, { clientWorkspace: workspace });
+      } catch (error) {
+        patchState(store, { clientWorkspace: null, error: readErrorMessage(error) });
+      } finally {
+        patchState(store, { isLoading: false });
+      }
+    },
   })),
 );
 
 function readErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim() !== '') {
-    return error.message;
-  }
-
-  return 'Client operation failed.';
+  return readHttpErrorMessage(error, 'Client operation failed.');
 }

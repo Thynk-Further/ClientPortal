@@ -2,6 +2,7 @@ using Application.Abstractions;
 using Domain;
 using Infrastructure.Persistence.Security;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -37,11 +38,37 @@ public sealed class TenantProvisioner : ITenantProvisioner
         ICurrentTenant currentTenant = new ProvisioningCurrentTenant(normalizedSlug);
         await using TenantDbContext tenantDbContext = new(_postgresConnectionString, currentTenant);
 
+        IEnumerable<string> pending = tenantDbContext.Database.GetPendingMigrations();
+        string[] pendingArray = pending as string[] ?? pending.ToArray();
+        if (pendingArray.Length > 0)
+        {
+            _logger.LogInformation(
+                "Applying {PendingCount} pending tenant schema migration(s) for {SchemaName}: {Migrations}.",
+                pendingArray.Length,
+                schemaName,
+                string.Join(", ", pendingArray));
+        }
+        else
+        {
+            _logger.LogDebug("Tenant schema {SchemaName} has no pending migrations (already at latest).", schemaName);
+        }
+
         await tenantDbContext.Database.MigrateAsync(cancellationToken);
+
+        IEnumerable<string> stillPending = tenantDbContext.Database.GetPendingMigrations();
+        if (stillPending.Any())
+        {
+            throw new InvalidOperationException(
+                $"Tenant schema migrations did not complete for '{schemaName}'. Still pending: {string.Join(", ", stillPending)}.");
+        }
+
         await _tenantRlsPolicyManager.ApplyPoliciesAsync(tenantDbContext, cancellationToken);
         await SeedDefaultsAsync(tenantDbContext, cancellationToken);
 
-        _logger.LogInformation("Provisioned tenant schema {SchemaName} for slug {TenantSlug}.", schemaName, normalizedSlug);
+        _logger.LogInformation(
+            "Provisioned tenant schema {SchemaName} for slug {TenantSlug} (all TenantDbContext migrations applied).",
+            schemaName,
+            normalizedSlug);
     }
 
     public async Task DropTenantSchemaAsync(string slug, CancellationToken cancellationToken = default)

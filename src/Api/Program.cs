@@ -31,6 +31,8 @@ using Microsoft.AspNetCore.OpenApi;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Scalar.AspNetCore;
@@ -74,6 +76,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         string publicKeyPem = jwtSection["PublicKeyPem"] ?? string.Empty;
 
         RsaSecurityKey publicKey = JwtRsaKeyFactory.CreatePublicKey(publicKeyPem);
+        // Preserve JWT claim names (tenantSlug, role, …) so policies match TokenValidationParameters.RoleClaimType.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
@@ -87,7 +91,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             NameClaimType = "userId",
             RoleClaimType = "role"
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                HttpRequest request = context.Request;
+                if (request.Query.TryGetValue("access_token", out StringValues token))
+                {
+                    string? accessToken = token.FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(accessToken) &&
+                        request.Path.StartsWithSegments("/hubs"))
+                    {
+                        context.Token = accessToken;
+                    }
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, DocsAnonymousAuthorizationMiddlewareResultHandler>();
+
 builder.Services.AddAuthorization(options =>
 {
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
@@ -189,8 +213,11 @@ builder.Services.AddSingleton<IConnectionPresenceTracker, ConnectionPresenceTrac
 builder.Services.AddSingleton<IUserPresenceService, ConnectionPresenceService>();
 builder.Services.AddSingleton<IHubFilter, MessagesHubGuardFilter>();
 builder.Services.AddScoped<ITenantDomainLookup, NullTenantDomainLookup>();
+builder.Services.AddScoped<ITenantResolver, JwtClaimsTenantResolver>();
 builder.Services.AddScoped<ITenantResolver, SubdomainTenantResolver>();
 builder.Services.AddScoped<ITenantResolver, CustomDomainTenantResolver>();
+builder.Services.AddScoped<ITenantResolver, TenantKeyTenantResolver>();
+builder.Services.AddScoped<ITenantResolver, PublicIdHeaderTenantResolver>();
 builder.Services.AddScoped<TenantMiddleware>();
 builder.Services.AddSingleton<IAuthorizationHandler, TenantAccessAuthorizationHandler>();
 
@@ -228,30 +255,23 @@ var app = builder.Build();
 using (IServiceScope scope = app.Services.CreateScope())
 {
     IDbInitializer dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+    ILoggerFactory loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+    Microsoft.Extensions.Logging.ILogger dbInitLogger =
+        loggerFactory.CreateLogger("DatabaseInitialization");
     try
     {
         await dbInitializer.InitializeAsync();
     }
-    catch (Exception) when (app.Environment.IsDevelopment())
+    catch (Exception ex) when (app.Environment.IsDevelopment())
     {
-        // Allow local API startup without a fully configured database so OpenAPI/Scalar remains accessible.
+        dbInitLogger.LogError(
+            ex,
+            "Database initialization failed. The API will start (e.g. for OpenAPI) but requests that need the database " +
+            "or applied migrations will fail until the connection is valid and pending EF migrations are applied.");
     }
 }
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi("/openapi/{documentName}.json")
-        .AllowAnonymous();
-    app.MapScalarApiReference("/scalar/v1", options =>
-        {
-            options.Title = "ClientPortal API";
-            options.OpenApiRoutePattern = "/openapi/{documentName}.json";
-            options.DefaultHttpClient = new(ScalarTarget.CSharp, ScalarClient.HttpClient);
-        })
-        .AllowAnonymous();
-}
-
 app.UseExceptionHandler();
 app.UseSerilogRequestLogging(options =>
 {
@@ -273,10 +293,11 @@ app.UseSerilogRequestLogging(options =>
 });
 app.UseHttpsRedirection();
 app.UseCors(CorsPolicyNames.Default);
+app.UseAuthentication();
 app.UseMiddleware<TenantMiddleware>();
 app.UseRateLimiter();
-app.UseAuthentication();
 app.UseAuthorization();
+
 app.UseHangfireDashboard(
     "/hangfire",
     new DashboardOptions
@@ -285,6 +306,20 @@ app.UseHangfireDashboard(
     });
 app.MapHealthChecks("/health", new HealthCheckOptions())
     .AllowAnonymous();
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi("/openapi/{documentName}.json")
+        .AllowAnonymous();
+    app.MapScalarApiReference("/scalar/v1", options =>
+        {
+            options.Title = "ClientPortal API";
+            options.OpenApiRoutePattern = "/openapi/{documentName}.json";
+            options.DefaultHttpClient = new(ScalarTarget.CSharp, ScalarClient.HttpClient);
+        })
+        .AllowAnonymous();
+}
+
 app.MapAuthEndpoints();
 app.MapClientsEndpoints();
 app.MapProjectsEndpoints();

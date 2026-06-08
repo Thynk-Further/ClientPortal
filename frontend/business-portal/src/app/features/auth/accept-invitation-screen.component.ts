@@ -42,9 +42,13 @@ import { InputComponent } from '@/components/ui/input.component';
 
         <ui-card-content>
           <form [formGroup]="form" class="space-y-4" (ngSubmit)="submit()">
-            @if (tokenMissing()) {
+            @if (tokenMissing() || tenantMissing()) {
               <p class="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                Invitation token is missing from this link.
+                @if (tokenMissing()) {
+                  Invitation token is missing from this link.
+                } @else {
+                  Tenant information is missing from this link. Please use the link from your invitation email.
+                }
               </p>
             }
 
@@ -81,7 +85,7 @@ import { InputComponent } from '@/components/ui/input.component';
             <ui-button
               class="w-full"
               type="submit"
-              [disabled]="isSubmitting() || tokenMissing()"
+              [disabled]="isSubmitting() || tokenMissing() || tenantMissing()"
               [label]="isSubmitting() ? 'Activating account...' : 'Activate account'"
             />
           </form>
@@ -105,6 +109,7 @@ export class AcceptInvitationScreenComponent {
   private readonly toast = inject(ToastNotificationService);
 
   private readonly token = this.route.snapshot.queryParamMap.get('token')?.trim() ?? '';
+  private readonly tenantSlug = this.route.snapshot.queryParamMap.get('tenant')?.trim() ?? '';
 
   protected readonly form = this.formBuilder.nonNullable.group({
     password: ['', [Validators.required, Validators.minLength(8)]],
@@ -114,13 +119,14 @@ export class AcceptInvitationScreenComponent {
   protected readonly isSubmitting = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly tokenMissing = computed(() => this.token === '');
+  protected readonly tenantMissing = computed(() => this.tenantSlug === '');
   protected readonly passwordMismatch = computed(() => {
     const { password, confirmPassword } = this.form.getRawValue();
     return confirmPassword !== '' && password !== confirmPassword;
   });
 
   async submit(): Promise<void> {
-    if (this.tokenMissing()) {
+    if (this.tokenMissing() || this.tenantMissing()) {
       return;
     }
 
@@ -137,6 +143,7 @@ export class AcceptInvitationScreenComponent {
         this.authApiService.acceptInvitation({
           token: this.token,
           password: this.form.controls.password.value,
+          tenantSlug: this.tenantSlug,
         }),
       );
       this.toast.success('Invitation accepted. You can now sign in.');

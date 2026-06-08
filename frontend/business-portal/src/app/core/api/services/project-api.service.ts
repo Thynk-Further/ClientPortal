@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
+import { unwrapApiEnvelopeData } from '../api-envelope.util';
 import { ApiClientService } from '../api-client.service';
-import { ApiOperationResult, PagedResult } from '../models';
+import { ApiEnvelope, ApiOperationResult, PagedResult } from '../models';
 
 export interface ProjectSummary {
   id: string;
@@ -22,7 +23,7 @@ export interface ProjectListQuery {
   search?: string;
   status?: string;
   clientId?: string;
-  pageNumber?: number;
+  page?: number;
   pageSize?: number;
 }
 
@@ -48,7 +49,9 @@ export class ProjectApiService {
   constructor(private readonly apiClient: ApiClientService) {}
 
   getProjects(query?: ProjectListQuery): Observable<PagedResult<ProjectSummary>> {
-    return this.apiClient.get<PagedResult<ProjectSummary>>(`${this.basePath}/`, query);
+    return this.apiClient
+      .get<ApiEnvelope<PagedResult<ProjectSummary>>>(`${this.basePath}/`, query)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
   getProjectById(projectId: string): Observable<ProjectDetail> {

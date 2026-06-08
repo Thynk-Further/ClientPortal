@@ -50,8 +50,10 @@ public sealed class PublicDbContext : DbContext
             entity.Property(x => x.Domain).HasMaxLength(256).IsRequired();
             entity.Property(x => x.Plan).HasMaxLength(64).IsRequired();
             entity.Property(x => x.SettingsJson).HasColumnType("jsonb").IsRequired();
+            entity.Property(x => x.TenantKeyHash).HasMaxLength(64);
             entity.HasIndex(x => x.Slug).IsUnique();
             entity.HasIndex(x => x.Domain).IsUnique();
+            entity.HasIndex(x => x.TenantKeyHash).IsUnique();
         });
 
         modelBuilder.Entity<PublicPlan>(entity =>

@@ -145,7 +145,7 @@ export class InvoiceListComponent {
   });
 
   constructor() {
-    void this.invoiceStore.loadInvoices({ pageNumber: 1, pageSize: 20 });
+    void this.invoiceStore.loadInvoices({ page: 1, pageSize: 20 });
   }
 
   private formatAmount(row: InvoiceRow): string {

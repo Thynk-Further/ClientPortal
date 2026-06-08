@@ -6,19 +6,47 @@ services:
     working_dir: /src/src/Api
     command: >
       sh -c "dotnet restore Api.csproj &&
-             dotnet run --no-launch-profile --urls http://0.0.0.0:5000"
+             dotnet watch run --no-launch-profile --urls http://0.0.0.0:5000"
     volumes:
       - ./:/src
+      # Hide Win-mounted bin/obj so Linux MSBuild can write outputs (fixes Access denied / 502 → Scalar).
+      - /src/src/Api/bin
+      - /src/src/Api/obj
+      - /src/src/Application/bin
+      - /src/src/Application/obj
+      - /src/src/Domain/bin
+      - /src/src/Domain/obj
+      - /src/src/Infrastructure/bin
+      - /src/src/Infrastructure/obj
+      - /src/src/Shared/bin
+      - /src/src/Shared/obj
       - ${USERPROFILE}/.nuget/packages:/root/.nuget/packages
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
       - ${USERPROFILE}/.aspnet/https:/https:ro
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       ASPNETCORE_URLS: ${ASPNETCORE_URLS}
+      # Build from POSTGRES_* so a host-level ConnectionStrings__Postgres env var cannot override .env (Compose: shell wins over .env).
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}"
+      ConnectionStrings__Redis: "redis:6379"
+      Serilog__WriteTo__1__Args__serverUrl: "http://seq:5341"
       Jwt__Issuer: ${Jwt__Issuer:-client-portal}
       Jwt__Audience: ${Jwt__Audience:-client-portal-api}
       Jwt__PrivateKeyPem: ${Jwt__PrivateKeyPem}
       Jwt__PublicKeyPem: ${Jwt__PublicKeyPem}
+      # Local/docker without tenant subdomain: must match appsettings.Development.json pepper used when registering tenants (override env wins).
+      Tenancy__TenantKey__Enabled: "true"
+      Tenancy__TenantKey__HeaderName: ${TENANCY_TENANT_KEY_HEADER_NAME:-X-Tenant-Key}
+      Tenancy__TenantKey__Pepper: ${TENANCY_TENANT_KEY_PEPPER:-development-only-set-user-secrets-for-production}
+      ClientInvitations__AcceptInvitationBaseUrl: ${CLIENT_INVITATIONS_ACCEPT_URL:-http://localhost:4201/auth/accept-invitation}
+      Notifications__Email__Enabled: ${EMAIL_ENABLED:-false}
+      Notifications__Email__SmtpHost: ${SMTP_HOST:-}
+      Notifications__Email__SmtpPort: ${SMTP_PORT:-587}
+      Notifications__Email__UseSsl: ${SMTP_USE_SSL:-false}
+      Notifications__Email__Username: ${SMTP_USER:-}
+      Notifications__Email__Password: ${SMTP_PASSWORD:-}
+      Notifications__Email__FromAddress: ${EMAIL_FROM:-}
+      Notifications__Email__FromName: ${EMAIL_FROM_NAME:-ClientPortal}
 
   client-app:
     build: !reset

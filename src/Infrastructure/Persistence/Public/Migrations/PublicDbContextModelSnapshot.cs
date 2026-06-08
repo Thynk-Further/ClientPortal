@@ -122,12 +122,19 @@ namespace Infrastructure.Persistence.Public.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<string>("TenantKeyHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Domain")
                         .IsUnique();
 
                     b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.HasIndex("TenantKeyHash")
                         .IsUnique();
 
                     b.ToTable("tenants", "public");

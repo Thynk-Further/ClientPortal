@@ -66,12 +66,13 @@ public sealed class RegisterBusinessCommandHandler : IRequestHandler<RegisterBus
             role: Role.Owner,
             isActive: true);
 
-        await _businessRegistrationService.RegisterAsync(tenant, ownerUser, cancellationToken);
+        string? tenantKey = await _businessRegistrationService.RegisterAsync(tenant, ownerUser, cancellationToken);
 
         RegisterBusinessResultDto result = new(
             TenantId: tenant.Id,
             OwnerUserId: ownerUser.Id,
-            TenantSlug: tenant.Slug);
+            TenantSlug: tenant.Slug,
+            TenantKey: tenantKey);
 
         return Result<RegisterBusinessResultDto>.Success(result);
     }

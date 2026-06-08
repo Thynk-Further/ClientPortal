@@ -1,5 +1,4 @@
 using Application.Abstractions;
-using Infrastructure.Persistence.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Configuration;
@@ -52,8 +51,8 @@ public sealed class TenantDbContext : DbContext
         // design-time schema (e.g. tenant_design_time) while runtime uses tenant_{slug}, which
         // triggers PendingModelChangesWarning on MigrateAsync. PostgreSQL resolves unqualified
         // identifiers via connection SearchPath (set per tenant in OnConfiguring).
-        modelBuilder.ApplyConfiguration(new UserConfiguration());
-        modelBuilder.ApplyConfiguration(new UserNotificationPreferencesConfiguration());
+        // All tenant tables: add IEntityTypeConfiguration<T> under Persistence/Configurations, then add an EF migration.
+        modelBuilder.ApplyTenantEntityConfigurations();
         ApplySnakeCaseConventions(modelBuilder);
     }
 
@@ -87,6 +86,11 @@ public sealed class TenantDbContext : DbContext
 
             foreach (IMutableProperty property in entity.GetProperties())
             {
+                if (property.Name.StartsWith("_", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
                 property.SetColumnName(ToSnakeCase(property.Name));
             }
 

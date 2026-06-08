@@ -4,8 +4,8 @@ namespace Domain;
 
 public sealed class OnboardingChecklist : AggregateRoot<Guid>
 {
-    private readonly List<string> _configuredStepKeys = [];
-    private readonly List<string> _completedStepKeys = [];
+    private List<string> _configuredStepKeys = [];
+    private List<string> _completedStepKeys = [];
 
     public Guid ClientId { get; private set; }
 

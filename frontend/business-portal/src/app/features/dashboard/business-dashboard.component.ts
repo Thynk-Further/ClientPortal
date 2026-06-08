@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   PLATFORM_ID,
   computed,
   inject,
@@ -8,7 +9,10 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
+import { ClientStore } from '@/app/core/stores/client.store';
+import { UserAccountMenuComponent } from '@/app/core/layout/user-account-menu.component';
 import { ClientInviteOnboardingComponent } from '../clients/client-invite-onboarding.component';
+import { ClientWorkspaceComponent } from '../clients/client-workspace.component';
 import { ClientsListComponent } from '../clients/clients-list.component';
 
 interface DashboardStat {
@@ -57,12 +61,12 @@ interface RecentActivityItem {
   selector: 'app-business-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClientInviteOnboardingComponent, ClientsListComponent],
+  imports: [ClientInviteOnboardingComponent, ClientsListComponent, ClientWorkspaceComponent, UserAccountMenuComponent],
   template: `
     <div class="min-h-screen bg-muted/30 text-foreground">
       <div class="flex min-h-screen">
         <aside
-          class="border-r border-sidebar-border bg-sidebar px-3 py-4 transition-all duration-300"
+          class="flex min-h-screen flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 transition-all duration-300"
           [class.w-64]="!sidebarCollapsed()"
           [class.w-20]="sidebarCollapsed()"
         >
@@ -96,8 +100,8 @@ interface RecentActivityItem {
             </button>
           </div>
 
-          <nav class="space-y-5" aria-label="Sidebar">
-            @for (section of sidebarSections; track section.id) {
+          <nav class="flex-1 space-y-5" aria-label="Sidebar">
+            @for (section of sidebarSections(); track section.id) {
               <div class="space-y-1.5">
                 @if (!sidebarCollapsed()) {
                   <button
@@ -163,6 +167,14 @@ interface RecentActivityItem {
               </div>
             }
           </nav>
+
+          <div class="mt-4 border-t border-sidebar-border pt-4">
+            @if (sidebarCollapsed()) {
+              <app-user-account-menu />
+            } @else {
+              <app-user-account-menu layout="sidebar" />
+            }
+          </div>
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col">
@@ -216,13 +228,7 @@ interface RecentActivityItem {
                 <span class="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500"></span>
               </button>
 
-              <button
-                type="button"
-                class="grid h-9 w-9 place-content-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
-                aria-label="User menu"
-              >
-                AS
-              </button>
+              <app-user-account-menu />
             </div>
           </header>
 
@@ -230,6 +236,8 @@ interface RecentActivityItem {
             <app-client-invite-onboarding />
           } @else if (activeView() === 'client-list') {
             <app-clients-list />
+          } @else if (activeView() === 'client-workspace') {
+            <app-client-workspace />
           } @else {
             <main class="space-y-6 p-4 sm:p-6">
               <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Summary metrics">
@@ -371,11 +379,14 @@ interface RecentActivityItem {
     </div>
   `,
 })
-export class BusinessDashboardComponent {
+export class BusinessDashboardComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly route = inject(ActivatedRoute);
+  private readonly clientStore = inject(ClientStore);
   private readonly storageKey = 'business-portal-theme';
-  protected readonly activeView = signal<'dashboard' | 'client-invite-onboard' | 'client-list'>('dashboard');
+  protected readonly activeView = signal<
+    'dashboard' | 'client-invite-onboard' | 'client-list' | 'client-workspace'
+  >('dashboard');
   protected readonly sidebarCollapsed = signal(false);
   protected readonly expandedSidebarSections = signal<ReadonlySet<string>>(
     new Set([
@@ -397,6 +408,7 @@ export class BusinessDashboardComponent {
       | 'dashboard'
       | 'client-invite-onboard'
       | 'client-list'
+      | 'client-workspace'
       | undefined;
     if (initialView !== undefined) {
       this.activeView.set(initialView);
@@ -405,7 +417,11 @@ export class BusinessDashboardComponent {
     this.initializeTheme();
   }
 
-  protected readonly sidebarSections: ReadonlyArray<SidebarSection> = [
+  ngOnInit(): void {
+    void this.refreshClientCount();
+  }
+
+  private readonly sidebarSectionDefinitions: ReadonlyArray<SidebarSection> = [
     {
       id: 'overview',
       label: 'Overview',
@@ -435,7 +451,6 @@ export class BusinessDashboardComponent {
         {
           id: 'client-list',
           label: 'Client List',
-          badgeCount: 48,
           iconPath: 'M17 21v-2a4 4 0 0 0-3-3.87M9 21v-2a4 4 0 0 0-4-4H3m16-4a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM9 11A4 4 0 1 0 9 3a4 4 0 0 0 0 8Z',
         },
         {
@@ -603,6 +618,23 @@ export class BusinessDashboardComponent {
     },
   ];
 
+  protected readonly sidebarSections = computed<ReadonlyArray<SidebarSection>>(() => {
+    const clientCount = this.clientStore.totalCount();
+
+    return this.sidebarSectionDefinitions.map((section) => {
+      if (section.id !== 'clients') {
+        return section;
+      }
+
+      return {
+        ...section,
+        items: section.items.map((item) =>
+          item.id === 'client-list' ? { ...item, badgeCount: clientCount } : item,
+        ),
+      };
+    });
+  });
+
   protected readonly stats: ReadonlyArray<DashboardStat> = [
     {
       label: 'Total Revenue',
@@ -727,12 +759,25 @@ export class BusinessDashboardComponent {
   }
 
   protected onSidebarItemClick(event: Event, itemId: string): void {
-    if (itemId !== 'dashboard' && itemId !== 'client-invite-onboard' && itemId !== 'client-list') {
+    if (
+      itemId !== 'dashboard'
+      && itemId !== 'client-invite-onboard'
+      && itemId !== 'client-list'
+      && itemId !== 'client-workspace'
+    ) {
       return;
     }
 
     event.preventDefault();
-    this.activeView.set(itemId);
+    this.activeView.set(itemId as 'dashboard' | 'client-invite-onboard' | 'client-list' | 'client-workspace');
+
+    if (itemId === 'client-list' || itemId === 'client-invite-onboard' || itemId === 'client-workspace') {
+      void this.refreshClientCount();
+    }
+  }
+
+  private async refreshClientCount(): Promise<void> {
+    await this.clientStore.loadClients({ page: 1, pageSize: 1 });
   }
 
   protected isItemActive(itemId: string): boolean {

@@ -52,3 +52,8 @@ Thumbs.db
 
 .tmp-build/
 .env
+.docker/jwt-temp/
+
+# App settings: not committed (use local files, user secrets, or examples in docs)
+**/appsettings.json
+**/appsettings.*.json

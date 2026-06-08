@@ -89,7 +89,7 @@ public sealed class NpgsqlWeeklyDigestReader : IWeeklyDigestReader
     {
         string sql = $"""
             select email
-            from {schema}.user
+            from {schema}.portal_users
             where role = 1
               and is_active = true;
             """;

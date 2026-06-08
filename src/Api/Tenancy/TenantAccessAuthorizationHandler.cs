@@ -1,32 +1,41 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 
 namespace Api.Tenancy;
 
 public sealed class TenantAccessAuthorizationHandler : AuthorizationHandler<TenantAccessRequirement>
 {
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public TenantAccessAuthorizationHandler(IHttpContextAccessor httpContextAccessor)
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
+
     protected override Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         TenantAccessRequirement requirement)
     {
-        string? userTenantId = context.User.FindFirst("tenantId")?.Value;
-        if (string.IsNullOrWhiteSpace(userTenantId))
+        string? userTenantSlug = context.User.FindFirst("tenantSlug")?.Value;
+        if (string.IsNullOrWhiteSpace(userTenantSlug))
         {
             return Task.CompletedTask;
         }
 
-        if (context.Resource is not HttpContext httpContext)
+        HttpContext? httpContext = context.Resource as HttpContext ?? _httpContextAccessor.HttpContext;
+        if (httpContext is null)
         {
             return Task.CompletedTask;
         }
 
-        object? resourceTenant = httpContext.Items[TenantHttpContextKeys.TenantId];
-        string? resourceTenantId = resourceTenant as string;
-        if (string.IsNullOrWhiteSpace(resourceTenantId))
+        object? resourceTenantSlug = httpContext.Items[TenantHttpContextKeys.TenantSlug];
+        string? resolvedSlug = resourceTenantSlug as string;
+        if (string.IsNullOrWhiteSpace(resolvedSlug))
         {
             return Task.CompletedTask;
         }
 
-        if (string.Equals(userTenantId, resourceTenantId, StringComparison.Ordinal))
+        if (string.Equals(userTenantSlug, resolvedSlug, StringComparison.Ordinal))
         {
             context.Succeed(requirement);
         }

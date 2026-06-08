@@ -44,6 +44,32 @@ public sealed class TenantProvisionerIntegrationTests
             Assert.True(await SchemaExistsAsync(connection, schemaName));
             Assert.True(await TableExistsAsync(connection, schemaName, "__EFMigrationsHistory"));
 
+            string[] expectedTenantTables =
+            [
+                "portal_users",
+                "user_notification_preferences",
+                "clients",
+                "projects",
+                "invoices",
+                "line_item",
+                "contracts",
+                "meetings",
+                "quotes",
+                "quote_line_items",
+                "message_threads",
+                "messages",
+                "notices",
+                "in_app_notifications",
+                "onboarding_checklists",
+            ];
+
+            foreach (string table in expectedTenantTables)
+            {
+                Assert.True(
+                    await TableExistsAsync(connection, schemaName, table),
+                    $"Expected tenant table '{table}' to exist in schema '{schemaName}'.");
+            }
+
             await using NpgsqlCommand createProbe = new(
                 $"""
                  CREATE TABLE IF NOT EXISTS "{schemaName}"."integration_probe"

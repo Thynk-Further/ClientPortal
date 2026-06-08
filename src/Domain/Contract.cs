@@ -4,7 +4,7 @@ namespace Domain;
 
 public sealed class Contract : AggregateRoot<Guid>
 {
-    private readonly List<string> _parties = [];
+    private List<string> _parties = [];
 
     public Guid ClientId { get; private set; }
 

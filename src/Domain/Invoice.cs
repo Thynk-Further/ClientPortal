@@ -5,7 +5,7 @@ namespace Domain;
 
 public sealed class Invoice : AggregateRoot<Guid>
 {
-    private readonly List<LineItem> _lineItems = [];
+    private List<LineItem> _lineItems = [];
 
     public Guid ClientId { get; private set; }
 
@@ -331,7 +331,18 @@ public sealed class Invoice : AggregateRoot<Guid>
 
 public sealed record LineItem
 {
+    /// <summary>Parameterless constructor for EF Core owned entity materialization.</summary>
+    private LineItem()
+    {
+        Description = string.Empty;
+        Quantity = 1m;
+        UnitPrice = 0m;
+        TaxRate = 0m;
+        Amount = 0m;
+    }
+
     public LineItem(string description, decimal quantity, decimal unitPrice, decimal taxRate)
+        : this()
     {
         Description = Guard.NotEmpty(description, nameof(description)).Trim();
         Quantity = NormalizeQuantity(quantity);
@@ -340,15 +351,15 @@ public sealed record LineItem
         Amount = decimal.Round(Quantity * UnitPrice, 2, MidpointRounding.ToEven);
     }
 
-    public string Description { get; }
+    public string Description { get; init; } = string.Empty;
 
-    public decimal Quantity { get; }
+    public decimal Quantity { get; init; }
 
-    public decimal UnitPrice { get; }
+    public decimal UnitPrice { get; init; }
 
-    public decimal TaxRate { get; }
+    public decimal TaxRate { get; init; }
 
-    public decimal Amount { get; }
+    public decimal Amount { get; init; }
 
     private static decimal NormalizeQuantity(decimal quantity)
     {

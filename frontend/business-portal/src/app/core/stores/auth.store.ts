@@ -3,6 +3,7 @@ import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthContextService } from '../auth/auth-context.service';
+import { UserSessionService } from '../auth/user-session.service';
 import {
   AuthApiService,
   LoginRequest,
@@ -39,9 +40,11 @@ export const AuthStore = signalStore(
       authContext = inject(AuthContextService),
       tokenStorage = inject(TokenStorageService),
       tenantContext = inject(TenantContextService),
+      userSession = inject(UserSessionService),
     ) => {
       const applyTokens = (response: LoginResponse): void => {
         tokenStorage.setAccessToken(response.accessToken);
+        userSession.setUser(response.user);
         const refreshToken = (response as { refreshToken?: unknown }).refreshToken;
         if (typeof refreshToken === 'string' && refreshToken.trim() !== '') {
           tokenStorage.setRefreshToken(refreshToken);
@@ -62,6 +65,7 @@ export const AuthStore = signalStore(
       const clearSession = (): void => {
         tokenStorage.clear();
         tenantContext.clearTenantId();
+        userSession.clear();
 
         patchState(store, {
           isAuthenticated: false,
@@ -127,6 +131,8 @@ export const AuthStore = signalStore(
         patchState(store, { isLoading: true, error: null });
         try {
           await firstValueFrom(authApiService.logout(refreshToken ?? undefined));
+        } catch {
+          // Local session is cleared regardless; server revoke is best-effort.
         } finally {
           clearSession();
           patchState(store, { isLoading: false });

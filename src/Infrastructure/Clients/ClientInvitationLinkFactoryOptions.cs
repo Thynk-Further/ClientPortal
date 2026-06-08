@@ -4,5 +4,5 @@ public sealed class ClientInvitationLinkFactoryOptions
 {
     public const string SectionName = "ClientInvitations";
 
-    public string AcceptInvitationBaseUrl { get; set; } = "https://app.clientportal.local/accept-invitation";
+    public string AcceptInvitationBaseUrl { get; set; } = "http://localhost:4201/auth/accept-invitation";
 }

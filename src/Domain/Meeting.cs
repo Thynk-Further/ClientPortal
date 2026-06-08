@@ -4,7 +4,7 @@ namespace Domain;
 
 public sealed class Meeting : AggregateRoot<Guid>
 {
-    private readonly List<Guid> _attendees = [];
+    private List<Guid> _attendees = [];
 
     public Guid ClientId { get; private set; }
 

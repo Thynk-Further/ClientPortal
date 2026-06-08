@@ -5,7 +5,7 @@ namespace Domain;
 
 public sealed class Quote : AggregateRoot<Guid>
 {
-    private readonly List<LineItem> _lineItems = [];
+    private List<LineItem> _lineItems = [];
 
     public Guid ClientId { get; private set; }
 

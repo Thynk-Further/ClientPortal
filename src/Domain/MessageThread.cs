@@ -4,7 +4,7 @@ namespace Domain;
 
 public sealed class MessageThread : AggregateRoot<Guid>
 {
-    private readonly List<Guid> _participants = [];
+    private List<Guid> _participants = [];
 
     public Guid ClientId { get; private set; }
 

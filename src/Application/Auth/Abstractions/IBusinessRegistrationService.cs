@@ -8,5 +8,6 @@ public interface IBusinessRegistrationService
 
     Task<bool> IsTenantDomainTakenAsync(string domain, CancellationToken cancellationToken = default);
 
-    Task RegisterAsync(Tenant tenant, User ownerUser, CancellationToken cancellationToken = default);
+    /// <returns>Plaintext tenant API key when <c>Tenancy:TenantKey:Pepper</c> is configured; otherwise null.</returns>
+    Task<string?> RegisterAsync(Tenant tenant, User ownerUser, CancellationToken cancellationToken = default);
 }

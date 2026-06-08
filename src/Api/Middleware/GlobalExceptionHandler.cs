@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Middleware;
@@ -68,6 +69,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
     {
         return exception switch
         {
+            BadHttpRequestException => (StatusCodes.Status400BadRequest, "Bad request.", ValidationTypeUri),
             ValidationException => (StatusCodes.Status400BadRequest, "Validation failed.", ValidationTypeUri),
             ArgumentException => (StatusCodes.Status400BadRequest, "Invalid request.", ValidationTypeUri),
             KeyNotFoundException => (StatusCodes.Status404NotFound, "Resource not found.", NotFoundTypeUri),
@@ -82,6 +84,11 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         if (statusCode == StatusCodes.Status500InternalServerError)
         {
             return "An unexpected error occurred while processing the request.";
+        }
+
+        if (exception is BadHttpRequestException badHttpRequestException)
+        {
+            return badHttpRequestException.Message;
         }
 
         return exception.Message;

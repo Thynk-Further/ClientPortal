@@ -9,6 +9,7 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./features/auth/auth.routes').then((m) => m.AUTH_ROUTES),
   },
+  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   {
     path: 'dashboard',
     canActivate: [authGuard, tenantGuard],
@@ -16,6 +17,17 @@ export const routes: Routes = [
       import('./features/dashboard/dashboard.routes').then(
         (m) => m.DASHBOARD_ROUTES,
       ),
+  },
+  {
+    path: 'clients/workspace',
+    canActivate: [authGuard, tenantGuard],
+    loadComponent: () =>
+      import('./features/dashboard/business-dashboard.component').then(
+        (m) => m.BusinessDashboardComponent,
+      ),
+    data: {
+      initialView: 'client-workspace',
+    },
   },
   {
     path: 'clients',
@@ -29,69 +41,65 @@ export const routes: Routes = [
     },
   },
   {
-    path: 'clients/invite-onboarding',
+    path: '',
     canActivate: [authGuard, tenantGuard],
     loadComponent: () =>
-      import('./features/dashboard/business-dashboard.component').then(
-        (m) => m.BusinessDashboardComponent,
+      import('./core/layout/authenticated-toolbar.component').then(
+        (m) => m.AuthenticatedToolbarComponent,
       ),
-    data: {
-      initialView: 'client-invite-onboard',
-    },
+    children: [
+      {
+        path: 'clients/:clientId',
+        loadComponent: () =>
+          import('./features/clients/client-detail.component').then(
+            (m) => m.ClientDetailComponent,
+          ),
+      },
+      {
+        path: 'projects',
+        loadChildren: () =>
+          import('./features/projects/projects.routes').then(
+            (m) => m.PROJECTS_ROUTES,
+          ),
+      },
+      {
+        path: 'finance',
+        loadChildren: () =>
+          import('./features/finance/finance.routes').then(
+            (m) => m.FINANCE_ROUTES,
+          ),
+      },
+      {
+        path: 'documents',
+        loadChildren: () =>
+          import('./features/documents/documents.routes').then(
+            (m) => m.DOCUMENTS_ROUTES,
+          ),
+      },
+      {
+        path: 'communication',
+        loadChildren: () =>
+          import('./features/communication/communication.routes').then(
+            (m) => m.COMMUNICATION_ROUTES,
+          ),
+      },
+      {
+        path: 'reports',
+        loadChildren: () =>
+          import('./features/reports/reports.routes').then(
+            (m) => m.REPORTS_ROUTES,
+          ),
+      },
+      {
+        path: 'settings',
+        canActivate: [roleGuard],
+        data: { roles: ['Owner', 'Admin'] },
+        loadChildren: () =>
+          import('./features/settings/settings.routes').then(
+            (m) => m.SETTINGS_ROUTES,
+          ),
+      },
+    ],
   },
-  {
-    path: 'clients/:clientId',
-    canActivate: [authGuard, tenantGuard],
-    loadComponent: () =>
-      import('./features/clients/client-detail.component').then(
-        (m) => m.ClientDetailComponent,
-      ),
-  },
-  {
-    path: 'projects',
-    canActivate: [authGuard, tenantGuard],
-    loadChildren: () =>
-      import('./features/projects/projects.routes').then(
-        (m) => m.PROJECTS_ROUTES,
-      ),
-  },
-  {
-    path: 'finance',
-    canActivate: [authGuard, tenantGuard],
-    loadChildren: () =>
-      import('./features/finance/finance.routes').then((m) => m.FINANCE_ROUTES),
-  },
-  {
-    path: 'documents',
-    canActivate: [authGuard, tenantGuard],
-    loadChildren: () =>
-      import('./features/documents/documents.routes').then(
-        (m) => m.DOCUMENTS_ROUTES,
-      ),
-  },
-  {
-    path: 'communication',
-    canActivate: [authGuard, tenantGuard],
-    loadChildren: () =>
-      import('./features/communication/communication.routes').then(
-        (m) => m.COMMUNICATION_ROUTES,
-      ),
-  },
-  {
-    path: 'reports',
-    canActivate: [authGuard, tenantGuard],
-    loadChildren: () =>
-      import('./features/reports/reports.routes').then((m) => m.REPORTS_ROUTES),
-  },
-  {
-    path: 'settings',
-    canActivate: [authGuard, tenantGuard, roleGuard],
-    data: { roles: ['Owner', 'Admin'] },
-    loadChildren: () =>
-      import('./features/settings/settings.routes').then(
-        (m) => m.SETTINGS_ROUTES,
-      ),
-  },
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: '**', redirectTo: 'dashboard' },
 ];

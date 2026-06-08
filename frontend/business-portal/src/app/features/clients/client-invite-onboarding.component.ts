@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { ClientApiService, OnboardingStatus } from '@/app/core/api/services/client-api.service';
 import { ToastNotificationService } from '@/app/core/notifications/toast-notification.service';
+import { ClientStore } from '@/app/core/stores/client.store';
 import { ButtonComponent } from '@/components/ui/button.component';
 import { InputComponent } from '@/components/ui/input.component';
 
@@ -138,6 +139,7 @@ import { InputComponent } from '@/components/ui/input.component';
 export class ClientInviteOnboardingComponent {
   private readonly formBuilder = inject(FormBuilder);
   private readonly clientApiService = inject(ClientApiService);
+  private readonly clientStore = inject(ClientStore);
   private readonly toast = inject(ToastNotificationService);
 
   protected readonly inviteForm = this.formBuilder.nonNullable.group({
@@ -183,6 +185,7 @@ export class ClientInviteOnboardingComponent {
         }),
       );
       this.toast.success('Invitation sent successfully.');
+      await this.clientStore.loadClients({ page: 1, pageSize: 1 });
       this.inviteForm.reset({
         companyName: '',
         contactName: '',
