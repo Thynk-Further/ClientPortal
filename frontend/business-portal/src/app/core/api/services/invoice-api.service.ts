@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
+import { unwrapApiEnvelopeData } from '../api-envelope.util';
 import { ApiClientService } from '../api-client.service';
-import { ApiOperationResult, PagedResult } from '../models';
+import { ApiEnvelope, ApiOperationResult, PagedResult } from '../models';
 
 export interface InvoiceSummary {
   id: string;
@@ -23,8 +24,13 @@ export interface InvoiceListQuery {
   status?: string;
   clientId?: string;
   search?: string;
-  pageNumber?: number;
+  page?: number;
   pageSize?: number;
+}
+
+export interface GetInvoicesResult {
+  invoices: PagedResult<InvoiceSummary>;
+  agingSummary?: Record<string, unknown>;
 }
 
 export interface CreateInvoiceRequest {
@@ -53,7 +59,9 @@ export class InvoiceApiService {
   constructor(private readonly apiClient: ApiClientService) {}
 
   getInvoices(query?: InvoiceListQuery): Observable<PagedResult<InvoiceSummary>> {
-    return this.apiClient.get<PagedResult<InvoiceSummary>>(`${this.basePath}/`, query);
+    return this.apiClient
+      .get<ApiEnvelope<GetInvoicesResult>>(`${this.basePath}/`, query)
+      .pipe(map((response) => unwrapApiEnvelopeData(response).invoices));
   }
 
   getInvoiceById(invoiceId: string): Observable<InvoiceDetail> {

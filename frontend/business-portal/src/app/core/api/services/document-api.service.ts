@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
+import { unwrapApiEnvelopeData } from '../api-envelope.util';
 import { ApiClientService } from '../api-client.service';
-import { ApiOperationResult, PagedResult } from '../models';
+import { ApiEnvelope, ApiOperationResult, PagedResult } from '../models';
 
 export interface DocumentSummary {
   id: string;
@@ -17,7 +18,7 @@ export interface DocumentListQuery {
   projectId?: string;
   clientId?: string;
   search?: string;
-  pageNumber?: number;
+  page?: number;
   pageSize?: number;
 }
 
@@ -45,7 +46,9 @@ export class DocumentApiService {
   constructor(private readonly apiClient: ApiClientService) {}
 
   getDocuments(query?: DocumentListQuery): Observable<PagedResult<DocumentSummary>> {
-    return this.apiClient.get<PagedResult<DocumentSummary>>(`${this.basePath}/`, query);
+    return this.apiClient
+      .get<ApiEnvelope<PagedResult<DocumentSummary>>>(`${this.basePath}/`, query)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
   getUploadUrl(request: UploadUrlRequest): Observable<UploadUrlResponse> {

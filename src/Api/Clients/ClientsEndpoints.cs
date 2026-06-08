@@ -28,6 +28,12 @@ public static class ClientsEndpoints
         group.MapGet("/", GetClientsAsync)
             .WithName("ClientsGet");
 
+        group.MapGet("/workspace", GetClientWorkspaceLandingAsync)
+            .WithName("ClientsWorkspaceLanding");
+
+        group.MapGet("/{id:guid}/workspace", GetClientWorkspaceAsync)
+            .WithName("ClientsWorkspaceById");
+
         group.MapGet("/{id:guid}", GetClientByIdAsync)
             .WithName("ClientsGetById");
 
@@ -69,6 +75,29 @@ public static class ClientsEndpoints
         int normalizedPageSize = pageSize <= 0 ? 20 : pageSize;
         Result<PagedResult<ClientListItemDto>> result = await sender.Send(
             new GetClientsQuery(normalizedPage, normalizedPageSize, search, status),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientWorkspaceLandingAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientWorkspaceLandingDto> result = await sender.Send(
+            new GetClientWorkspaceLandingQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientWorkspaceAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientWorkspaceDto> result = await sender.Send(
+            new GetClientWorkspaceQuery(id),
             cancellationToken);
 
         return ToResponse(result);

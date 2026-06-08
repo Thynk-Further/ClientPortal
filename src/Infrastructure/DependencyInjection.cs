@@ -7,6 +7,7 @@ using Application.Messaging.Abstractions;
 using Application.Meetings.Abstractions;
 using Application.Invoices.Abstractions;
 using Application.Notifications.Abstractions;
+using Application.Projects.Abstractions;
 using Infrastructure.Auth;
 using Infrastructure.Clients;
 using Infrastructure.Documents;
@@ -85,6 +86,8 @@ public static class DependencyInjection
         services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
         services.AddScoped<IClientRepository, ClientRepository>();
         services.AddScoped<IClientUserAccountRepository, ClientUserAccountRepository>();
+        services.AddScoped<IClientWorkspaceReader, NpgsqlClientWorkspaceReader>();
+        services.AddScoped<IClientRequestRepository, ClientRequestRepository>();
         services.AddSingleton<IClientInvitationTokenService, ClientInvitationTokenService>();
         services.AddScoped<IClientInvitationTokenStore, NpgsqlClientInvitationTokenStore>();
         services.AddScoped<IClientInvitationLinkFactory, ClientInvitationLinkFactory>();

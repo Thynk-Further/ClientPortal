@@ -62,6 +62,49 @@ export interface OnboardingStatus {
   steps: OnboardingStepStatus[];
 }
 
+export interface ClientWorkspaceMetrics {
+  totalProjects: number;
+  activeProjects: number;
+  overdueInvoices: number;
+  outstandingInvoiceAmount: number;
+  unsignedContracts: number;
+  expiringContracts: number;
+  openRequests: number;
+  messageThreads: number;
+  upcomingMeetings: number;
+}
+
+export interface ClientAttentionItem {
+  code: string;
+  title: string;
+  description: string;
+  severity: 'critical' | 'warning' | 'info' | 'success' | string;
+}
+
+export interface ClientActivityItem {
+  type: string;
+  title: string;
+  description: string;
+  occurredAt: string;
+}
+
+export interface ClientWorkspace {
+  client: ClientDetail & {
+    projectsSummary?: { totalProjects: number; activeProjects: number; completedProjects: number };
+    outstandingInvoices?: { count: number; totalAmount: number };
+  };
+  onboarding: OnboardingStatus | null;
+  metrics: ClientWorkspaceMetrics;
+  attentionItems: ClientAttentionItem[];
+  recentActivity: ClientActivityItem[];
+}
+
+export interface ClientWorkspaceLanding {
+  totalClients: number;
+  recentClients: ClientSummary[];
+  pendingInvites: ClientSummary[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ClientApiService {
   private readonly basePath = '/api/v1/clients';
@@ -78,6 +121,18 @@ export class ClientApiService {
   getClientById(clientId: string): Observable<ClientDetail> {
     return this.apiClient
       .get<ApiEnvelope<ClientDetail>>(`${this.basePath}/${clientId}`)
+      .pipe(map((response) => this.unwrapEnvelopeData(response)));
+  }
+
+  getWorkspaceLanding(): Observable<ClientWorkspaceLanding> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientWorkspaceLanding>>(`${this.basePath}/workspace`)
+      .pipe(map((response) => this.unwrapEnvelopeData(response)));
+  }
+
+  getClientWorkspace(clientId: string): Observable<ClientWorkspace> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientWorkspace>>(`${this.basePath}/${clientId}/workspace`)
       .pipe(map((response) => this.unwrapEnvelopeData(response)));
   }
 

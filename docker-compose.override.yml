@@ -6,7 +6,7 @@ services:
     working_dir: /src/src/Api
     command: >
       sh -c "dotnet restore Api.csproj &&
-             dotnet run --no-launch-profile --urls http://0.0.0.0:5000"
+             dotnet watch run --no-launch-profile --urls http://0.0.0.0:5000"
     volumes:
       - ./:/src
       # Hide Win-mounted bin/obj so Linux MSBuild can write outputs (fixes Access denied / 502 → Scalar).

@@ -12,6 +12,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ClientStore } from '@/app/core/stores/client.store';
 import { UserAccountMenuComponent } from '@/app/core/layout/user-account-menu.component';
 import { ClientInviteOnboardingComponent } from '../clients/client-invite-onboarding.component';
+import { ClientWorkspaceComponent } from '../clients/client-workspace.component';
 import { ClientsListComponent } from '../clients/clients-list.component';
 
 interface DashboardStat {
@@ -60,7 +61,7 @@ interface RecentActivityItem {
   selector: 'app-business-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClientInviteOnboardingComponent, ClientsListComponent, UserAccountMenuComponent],
+  imports: [ClientInviteOnboardingComponent, ClientsListComponent, ClientWorkspaceComponent, UserAccountMenuComponent],
   template: `
     <div class="min-h-screen bg-muted/30 text-foreground">
       <div class="flex min-h-screen">
@@ -235,6 +236,8 @@ interface RecentActivityItem {
             <app-client-invite-onboarding />
           } @else if (activeView() === 'client-list') {
             <app-clients-list />
+          } @else if (activeView() === 'client-workspace') {
+            <app-client-workspace />
           } @else {
             <main class="space-y-6 p-4 sm:p-6">
               <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Summary metrics">
@@ -381,7 +384,9 @@ export class BusinessDashboardComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly clientStore = inject(ClientStore);
   private readonly storageKey = 'business-portal-theme';
-  protected readonly activeView = signal<'dashboard' | 'client-invite-onboard' | 'client-list'>('dashboard');
+  protected readonly activeView = signal<
+    'dashboard' | 'client-invite-onboard' | 'client-list' | 'client-workspace'
+  >('dashboard');
   protected readonly sidebarCollapsed = signal(false);
   protected readonly expandedSidebarSections = signal<ReadonlySet<string>>(
     new Set([
@@ -403,6 +408,7 @@ export class BusinessDashboardComponent implements OnInit {
       | 'dashboard'
       | 'client-invite-onboard'
       | 'client-list'
+      | 'client-workspace'
       | undefined;
     if (initialView !== undefined) {
       this.activeView.set(initialView);
@@ -753,14 +759,19 @@ export class BusinessDashboardComponent implements OnInit {
   }
 
   protected onSidebarItemClick(event: Event, itemId: string): void {
-    if (itemId !== 'dashboard' && itemId !== 'client-invite-onboard' && itemId !== 'client-list') {
+    if (
+      itemId !== 'dashboard'
+      && itemId !== 'client-invite-onboard'
+      && itemId !== 'client-list'
+      && itemId !== 'client-workspace'
+    ) {
       return;
     }
 
     event.preventDefault();
-    this.activeView.set(itemId);
+    this.activeView.set(itemId as 'dashboard' | 'client-invite-onboard' | 'client-list' | 'client-workspace');
 
-    if (itemId === 'client-list' || itemId === 'client-invite-onboard') {
+    if (itemId === 'client-list' || itemId === 'client-invite-onboard' || itemId === 'client-workspace') {
       void this.refreshClientCount();
     }
   }

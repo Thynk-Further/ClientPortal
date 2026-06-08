@@ -19,6 +19,17 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'clients/workspace',
+    canActivate: [authGuard, tenantGuard],
+    loadComponent: () =>
+      import('./features/dashboard/business-dashboard.component').then(
+        (m) => m.BusinessDashboardComponent,
+      ),
+    data: {
+      initialView: 'client-workspace',
+    },
+  },
+  {
     path: 'clients',
     canActivate: [authGuard, tenantGuard],
     loadComponent: () =>
