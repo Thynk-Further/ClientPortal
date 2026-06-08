@@ -18,7 +18,9 @@ import {
 import { DocumentApiService, DocumentSummary } from '@/app/core/api/services/document-api.service';
 import { InvoiceApiService, InvoiceSummary } from '@/app/core/api/services/invoice-api.service';
 import { ProjectApiService, ProjectSummary } from '@/app/core/api/services/project-api.service';
+import { ProjectStore } from '@/app/core/stores/project.store';
 import { ClientStore } from '@/app/core/stores/client.store';
+import { ButtonComponent } from '@/components/ui/button.component';
 import {
   CardComponent,
   CardContentComponent,
@@ -26,6 +28,7 @@ import {
   CardHeaderComponent,
   CardTitleComponent,
 } from '@/components/ui/card.component';
+import { ProjectHealthBadgeComponent } from '../projects/project-health-badge.component';
 
 type ClientDetailTab =
   | 'overview'
@@ -48,11 +51,13 @@ interface TabDefinition {
   imports: [
     DecimalPipe,
     RouterLink,
+    ButtonComponent,
     CardComponent,
     CardHeaderComponent,
     CardTitleComponent,
     CardDescriptionComponent,
     CardContentComponent,
+    ProjectHealthBadgeComponent,
   ],
   template: `
     <main class="min-h-screen bg-muted/30 p-4 sm:p-6">
@@ -151,16 +156,81 @@ interface TabDefinition {
                   </div>
                 }
                 @case ('projects') {
-                  @if (projects().length === 0) {
+                  <div class="mb-4 flex justify-end">
+                    <ui-button
+                      variant="outline"
+                      [label]="showCreateProject() ? 'Cancel' : 'Create project'"
+                      (clicked)="toggleCreateProject()"
+                    />
+                  </div>
+
+                  @if (showCreateProject()) {
+                    <form class="mb-4 grid gap-3 rounded-md border p-4" (submit)="submitCreateProject($event)">
+                      <input
+                        class="rounded-md border px-3 py-2 text-sm"
+                        placeholder="Project name"
+                        [value]="newProjectName()"
+                        (input)="onNewProjectNameInput($event)"
+                      />
+                      <textarea
+                        class="rounded-md border px-3 py-2 text-sm"
+                        placeholder="Description"
+                        rows="3"
+                        [value]="newProjectDescription()"
+                        (input)="onNewProjectDescriptionInput($event)"
+                      ></textarea>
+                      <ui-button type="submit" label="Create project" />
+                    </form>
+                  }
+
+                  @if (ongoingProjects().length === 0 && completedProjects().length === 0) {
                     <p class="text-sm text-muted-foreground">No projects for this client yet.</p>
                   } @else {
-                    <ul class="space-y-2 text-sm">
-                      @for (project of projects(); track project.id) {
-                        <li class="rounded-md border p-3">
-                          {{ project.name }} — {{ formatProjectStatus(project.status) }}
-                        </li>
-                      }
-                    </ul>
+                    @if (ongoingProjects().length > 0) {
+                      <section class="mb-6 space-y-2">
+                        <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Ongoing</h3>
+                        <ul class="space-y-2">
+                          @for (project of ongoingProjects(); track project.id) {
+                            <li class="rounded-md border p-3">
+                              <div class="flex flex-wrap items-center justify-between gap-2">
+                                <a
+                                  class="font-medium hover:underline"
+                                  [routerLink]="['/clients', clientId(), 'projects', project.id]"
+                                >
+                                  {{ project.name }}
+                                </a>
+                                <div class="flex items-center gap-2 text-sm">
+                                  <app-project-health-badge [health]="project.health" />
+                                  <span class="text-muted-foreground">{{ formatProjectStatus(project.status) }}</span>
+                                </div>
+                              </div>
+                              <p class="mt-1 text-xs text-muted-foreground">Ends {{ project.endDate }}</p>
+                            </li>
+                          }
+                        </ul>
+                      </section>
+                    }
+
+                    @if (completedProjects().length > 0) {
+                      <section class="space-y-2">
+                        <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Completed</h3>
+                        <ul class="space-y-2">
+                          @for (project of completedProjects(); track project.id) {
+                            <li class="rounded-md border p-3">
+                              <div class="flex flex-wrap items-center justify-between gap-2">
+                                <a
+                                  class="font-medium hover:underline"
+                                  [routerLink]="['/clients', clientId(), 'projects', project.id]"
+                                >
+                                  {{ project.name }}
+                                </a>
+                                <span class="text-sm text-muted-foreground">{{ formatProjectStatus(project.status) }}</span>
+                              </div>
+                            </li>
+                          }
+                        </ul>
+                      </section>
+                    }
                   }
                 }
                 @case ('invoices') {
@@ -230,6 +300,7 @@ interface TabDefinition {
 export class ClientDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly clientStore = inject(ClientStore);
+  private readonly projectStore = inject(ProjectStore);
   private readonly projectApiService = inject(ProjectApiService);
   private readonly invoiceApiService = inject(InvoiceApiService);
   private readonly documentApiService = inject(DocumentApiService);
@@ -245,6 +316,17 @@ export class ClientDetailComponent implements OnInit {
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly projects = signal<ProjectSummary[]>([]);
+  protected readonly showCreateProject = signal(false);
+  protected readonly newProjectName = signal('');
+  protected readonly newProjectDescription = signal('');
+
+  protected readonly ongoingProjects = computed(() =>
+    this.projects().filter((project) => isOngoingProject(project.status)),
+  );
+
+  protected readonly completedProjects = computed(() =>
+    this.projects().filter((project) => isCompletedProject(project.status)),
+  );
   protected readonly invoices = signal<InvoiceSummary[]>([]);
   protected readonly documents = signal<DocumentSummary[]>([]);
 
@@ -329,11 +411,72 @@ export class ClientDetailComponent implements OnInit {
   }
 
   protected formatProjectStatus(status: ProjectSummary['status']): string {
-    if (typeof status === 'string' && status.trim() !== '') {
-      return status;
+    if (typeof status === 'number') {
+      switch (status) {
+        case 1:
+          return 'Planned';
+        case 2:
+          return 'In Progress';
+        case 3:
+          return 'On Hold';
+        case 4:
+          return 'Completed';
+        case 5:
+          return 'Cancelled';
+        default:
+          return 'Unknown';
+      }
     }
 
-    return String(status);
+    const statusText = String(status);
+    if (statusText.trim() !== '') {
+      return statusText;
+    }
+
+    return 'Unknown';
+  }
+
+  protected toggleCreateProject(): void {
+    this.showCreateProject.update((value) => !value);
+  }
+
+  protected onNewProjectNameInput(event: Event): void {
+    this.newProjectName.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onNewProjectDescriptionInput(event: Event): void {
+    this.newProjectDescription.set((event.target as HTMLTextAreaElement).value);
+  }
+
+  protected async submitCreateProject(event: Event): Promise<void> {
+    event.preventDefault();
+    const clientId = this.clientId().trim();
+    const name = this.newProjectName().trim();
+    const description = this.newProjectDescription().trim();
+    if (clientId === '' || name === '' || description === '') {
+      return;
+    }
+
+    const today = new Date();
+    const end = new Date(today);
+    end.setMonth(end.getMonth() + 3);
+
+    const projectId = await this.projectStore.createProject({
+      clientId,
+      name,
+      description,
+      startDate: today.toISOString().slice(0, 10),
+      endDate: end.toISOString().slice(0, 10),
+      budget: 0,
+      currency: 'ZAR',
+    });
+
+    if (projectId !== null) {
+      this.newProjectName.set('');
+      this.newProjectDescription.set('');
+      this.showCreateProject.set(false);
+      await this.loadProjectsTab();
+    }
   }
 
   protected formatInvoiceStatus(status: InvoiceSummary['status']): string {
@@ -409,10 +552,7 @@ export class ClientDetailComponent implements OnInit {
 
     try {
       if (tab === 'projects') {
-        const result = await firstValueFrom(
-          this.projectApiService.getProjects({ clientId, page: 1, pageSize: 50 }),
-        );
-        this.projects.set(result.items);
+        await this.loadProjectsTab();
       }
 
       if (tab === 'invoices') {
@@ -434,6 +574,37 @@ export class ClientDetailComponent implements OnInit {
       this.isLoading.set(false);
     }
   }
+
+  private async loadProjectsTab(): Promise<void> {
+    const clientId = this.clientId().trim();
+    if (clientId === '') {
+      return;
+    }
+
+    const result = await firstValueFrom(
+      this.projectApiService.getProjects({ clientId, page: 1, pageSize: 50 }),
+    );
+    this.projects.set(result.items);
+  }
+}
+
+function isOngoingProject(status: ProjectSummary['status']): boolean {
+  const normalized = normalizeProjectStatus(status);
+  return normalized === 1 || normalized === 2 || normalized === 3;
+}
+
+function isCompletedProject(status: ProjectSummary['status']): boolean {
+  const normalized = normalizeProjectStatus(status);
+  return normalized === 4 || normalized === 5;
+}
+
+function normalizeProjectStatus(status: ProjectSummary['status']): number {
+  if (typeof status === 'number') {
+    return status;
+  }
+
+  const parsed = Number.parseInt(String(status), 10);
+  return Number.isNaN(parsed) ? 0 : parsed;
 }
 
 function filterActivity(

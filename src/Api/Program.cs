@@ -50,13 +50,24 @@ if (builder.Environment.IsDevelopment())
     });
 }
 
-builder.Host.UseSerilog((context, services, configuration) =>
+builder.Host.UseSerilog((context, _, loggerConfiguration) =>
 {
-    configuration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
+    loggerConfiguration
+        .MinimumLevel.Information()
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+        .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
         .Enrich.FromLogContext()
-        .Enrich.WithProperty("Application", "ClientPortal.Api");
+        .Enrich.WithProperty("Application", "ClientPortal.Api")
+        .WriteTo.Console();
+
+    // Use a dedicated setting — do not bind Serilog:WriteTo:1:Args:serverUrl via env; it creates
+    // a partial WriteTo entry (no Name) and crashes startup when appsettings are absent.
+    string? seqServerUrl = context.Configuration["Seq:ServerUrl"];
+    if (!string.IsNullOrWhiteSpace(seqServerUrl))
+    {
+        loggerConfiguration.WriteTo.Seq(seqServerUrl);
+    }
 });
 
 // Add services to the container.
@@ -208,6 +219,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRefreshTokenCookieStore, HttpContextRefreshTokenCookieStore>();
 builder.Services.AddScoped<ICurrentTenant, HttpCurrentTenant>();
+builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.AddScoped<IRealtimeMessagingService, SignalRRealtimeMessagingService>();
 builder.Services.AddSingleton<IConnectionPresenceTracker, ConnectionPresenceTracker>();
 builder.Services.AddSingleton<IUserPresenceService, ConnectionPresenceService>();

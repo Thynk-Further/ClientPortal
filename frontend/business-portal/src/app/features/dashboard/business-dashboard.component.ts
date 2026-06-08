@@ -8,7 +8,7 @@ import {
   signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ClientStore } from '@/app/core/stores/client.store';
 import { UserAccountMenuComponent } from '@/app/core/layout/user-account-menu.component';
 import { ClientInviteOnboardingComponent } from '../clients/client-invite-onboarding.component';
@@ -382,6 +382,7 @@ interface RecentActivityItem {
 export class BusinessDashboardComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly clientStore = inject(ClientStore);
   private readonly storageKey = 'business-portal-theme';
   protected readonly activeView = signal<
@@ -759,6 +760,18 @@ export class BusinessDashboardComponent implements OnInit {
   }
 
   protected onSidebarItemClick(event: Event, itemId: string): void {
+    if (itemId === 'project-list-detail') {
+      event.preventDefault();
+      void this.router.navigate(['/projects']);
+      return;
+    }
+
+    if (itemId === 'kanban-flow') {
+      event.preventDefault();
+      void this.router.navigate(['/projects/my-tasks']);
+      return;
+    }
+
     if (
       itemId !== 'dashboard'
       && itemId !== 'client-invite-onboard'

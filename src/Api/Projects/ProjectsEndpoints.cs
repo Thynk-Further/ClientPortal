@@ -25,6 +25,9 @@ public static class ProjectsEndpoints
         projectsGroup.MapGet("/", GetProjectsAsync)
             .WithName("ProjectsGet");
 
+        projectsGroup.MapGet("/my-tasks", GetMyTasksAsync)
+            .WithName("ProjectsMyTasksGet");
+
         projectsGroup.MapGet("/{id:guid}", GetProjectByIdAsync)
             .WithName("ProjectsGetById");
 
@@ -49,6 +52,9 @@ public static class ProjectsEndpoints
         projectsGroup.MapPut("/{id:guid}/milestones/{milestoneId:guid}", UpdateMilestoneAsync)
             .WithName("ProjectsMilestonesUpdate");
 
+        projectsGroup.MapPost("/{id:guid}/milestones/{milestoneId:guid}/complete", CompleteMilestoneAsync)
+            .WithName("ProjectsMilestonesComplete");
+
         projectsGroup.MapDelete("/{id:guid}/milestones/{milestoneId:guid}", DeleteMilestoneAsync)
             .WithName("ProjectsMilestonesDelete");
 
@@ -61,8 +67,23 @@ public static class ProjectsEndpoints
         projectsGroup.MapPut("/{id:guid}/tasks/{taskId:guid}", UpdateTaskAsync)
             .WithName("ProjectsTasksUpdate");
 
+        projectsGroup.MapPatch("/{id:guid}/tasks/{taskId:guid}/status", ChangeTaskStatusAsync)
+            .WithName("ProjectsTasksChangeStatus");
+
         projectsGroup.MapDelete("/{id:guid}/tasks/{taskId:guid}", DeleteTaskAsync)
             .WithName("ProjectsTasksDelete");
+
+        projectsGroup.MapGet("/{id:guid}/risks", GetProjectRisksAsync)
+            .WithName("ProjectsRisksGet");
+
+        projectsGroup.MapPost("/{id:guid}/risks", CreateProjectRiskAsync)
+            .WithName("ProjectsRisksCreate");
+
+        projectsGroup.MapPut("/{id:guid}/risks/{riskId:guid}", UpdateProjectRiskAsync)
+            .WithName("ProjectsRisksUpdate");
+
+        projectsGroup.MapDelete("/{id:guid}/risks/{riskId:guid}", DeleteProjectRiskAsync)
+            .WithName("ProjectsRisksDelete");
 
         RouteGroupBuilder clientRequestsGroup = endpoints.MapGroup("/api/v1/client-requests")
             .WithTags("Client Requests")
@@ -86,13 +107,29 @@ public static class ProjectsEndpoints
         int pageSize,
         ProjectStatus? status,
         Guid? clientId,
+        string? search,
         ISender sender,
         CancellationToken cancellationToken)
     {
         int normalizedPage = page <= 0 ? 1 : page;
         int normalizedPageSize = pageSize <= 0 ? 20 : pageSize;
         Result<PagedResult<ProjectListItemDto>> result = await sender.Send(
-            new GetProjectsQuery(normalizedPage, normalizedPageSize, status, clientId),
+            new GetProjectsQuery(normalizedPage, normalizedPageSize, status, clientId, search),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetMyTasksAsync(
+        int page,
+        int pageSize,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        int normalizedPage = page <= 0 ? 1 : page;
+        int normalizedPageSize = pageSize <= 0 ? 50 : pageSize;
+        Result<PagedResult<MyTaskListItemDto>> result = await sender.Send(
+            new GetMyTasksQuery(normalizedPage, normalizedPageSize),
             cancellationToken);
 
         return ToResponse(result);
@@ -171,24 +208,7 @@ public static class ProjectsEndpoints
         ISender sender,
         CancellationToken cancellationToken)
     {
-        Result<ProjectDashboardDto> dashboardResult = await sender.Send(new GetProjectDashboardQuery(id), cancellationToken);
-        if (dashboardResult.IsFailed || dashboardResult.Value is null)
-        {
-            return ToResponse(dashboardResult);
-        }
-
-        ProjectDashboardDto project = dashboardResult.Value;
-        Result result = await sender.Send(
-            new UpdateProjectCommand(
-                id,
-                project.Name,
-                project.Description,
-                project.StartDate,
-                project.EndDate,
-                project.Budget,
-                project.Currency),
-            cancellationToken);
-
+        Result result = await sender.Send(new CancelProjectCommand(id), cancellationToken);
         return ToResponse(result);
     }
 
@@ -246,6 +266,20 @@ public static class ProjectsEndpoints
         return ToResponse(result);
     }
 
+    private static async Task<IResult> CompleteMilestoneAsync(
+        Guid id,
+        Guid milestoneId,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        _ = id;
+        Result<CompleteMilestoneResultDto> result = await sender.Send(
+            new CompleteMilestoneCommand(milestoneId),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
     private static async Task<IResult> DeleteMilestoneAsync(
         Guid id,
         Guid milestoneId,
@@ -253,15 +287,7 @@ public static class ProjectsEndpoints
         CancellationToken cancellationToken)
     {
         _ = id;
-        Result result = await sender.Send(
-            new UpdateMilestoneCommand(
-                milestoneId,
-                "Deleted",
-                DateOnly.FromDateTime(DateTime.UtcNow),
-                MilestoneStatus.Completed,
-                DateTime.UtcNow),
-            cancellationToken);
-
+        Result result = await sender.Send(new DeleteMilestoneCommand(milestoneId), cancellationToken);
         return ToResponse(result);
     }
 
@@ -319,6 +345,18 @@ public static class ProjectsEndpoints
         return ToResponse(result);
     }
 
+    private static async Task<IResult> ChangeTaskStatusAsync(
+        Guid id,
+        Guid taskId,
+        ChangeTaskStatusRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        _ = id;
+        Result result = await sender.Send(new ChangeTaskStatusCommand(taskId, request.Status), cancellationToken);
+        return ToResponse(result);
+    }
+
     private static async Task<IResult> DeleteTaskAsync(
         Guid id,
         Guid taskId,
@@ -326,7 +364,79 @@ public static class ProjectsEndpoints
         CancellationToken cancellationToken)
     {
         _ = id;
-        Result result = await sender.Send(new ChangeTaskStatusCommand(taskId, ProjectTaskStatus.Done), cancellationToken);
+        Result result = await sender.Send(new DeleteTaskCommand(taskId), cancellationToken);
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetProjectRisksAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ProjectDashboardDto> result = await sender.Send(new GetProjectDashboardQuery(id), cancellationToken);
+        if (result.IsSuccess && result.Value is not null)
+        {
+            return Results.Ok(ApiResponse<IReadOnlyCollection<ProjectDashboardRiskDto>>.Ok(result.Value.Risks));
+        }
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> CreateProjectRiskAsync(
+        Guid id,
+        CreateProjectRiskRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> result = await sender.Send(
+            new CreateProjectRiskCommand(
+                id,
+                request.Title,
+                request.Description,
+                request.Severity,
+                request.OwnerId,
+                request.DueDate),
+            cancellationToken);
+
+        if (result.IsSuccess && result.Value != Guid.Empty)
+        {
+            string location = $"/api/v1/projects/{id}/risks/{result.Value}";
+            return Results.Created(location, ApiResponse<Guid>.Ok(result.Value));
+        }
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> UpdateProjectRiskAsync(
+        Guid id,
+        Guid riskId,
+        UpdateProjectRiskRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        _ = id;
+        Result result = await sender.Send(
+            new UpdateProjectRiskCommand(
+                riskId,
+                request.Title,
+                request.Description,
+                request.Severity,
+                request.Status,
+                request.OwnerId,
+                request.DueDate),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> DeleteProjectRiskAsync(
+        Guid id,
+        Guid riskId,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        _ = id;
+        Result result = await sender.Send(new DeleteProjectRiskCommand(riskId), cancellationToken);
         return ToResponse(result);
     }
 
@@ -391,6 +501,11 @@ public static class ProjectsEndpoints
             return Results.Ok(ApiResponse<T>.Ok(result.Value));
         }
 
+        if (result.IsSuccess)
+        {
+            return Results.Ok(ApiResponse<T?>.Ok(default));
+        }
+
         return Failure(result.Errors);
     }
 
@@ -453,6 +568,23 @@ public sealed record UpdateTaskRequest(
     Guid AssigneeId,
     ProjectTaskPriority Priority,
     DateOnly DueDate);
+
+public sealed record ChangeTaskStatusRequest(ProjectTaskStatus Status);
+
+public sealed record CreateProjectRiskRequest(
+    string Title,
+    string Description,
+    ProjectRiskSeverity Severity,
+    Guid OwnerId,
+    DateOnly? DueDate = null);
+
+public sealed record UpdateProjectRiskRequest(
+    string Title,
+    string Description,
+    ProjectRiskSeverity Severity,
+    ProjectRiskStatus Status,
+    Guid OwnerId,
+    DateOnly? DueDate = null);
 
 public sealed record SubmitClientRequestRequest(
     Guid ClientId,

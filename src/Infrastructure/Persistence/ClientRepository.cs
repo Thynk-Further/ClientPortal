@@ -66,7 +66,17 @@ public sealed class ClientRepository : IClientRepository
             return null;
         }
 
-        // Projects and invoices aggregates are not introduced yet; expose safe defaults.
+        // Projects summary from tenant data.
+        List<Project> projects = await _tenantDbContext.Set<Project>()
+            .AsNoTracking()
+            .Where(project => project.ClientId == clientId)
+            .ToListAsync(cancellationToken);
+
+        int activeProjects = projects.Count(project =>
+            project.Status is ProjectStatus.Planned or ProjectStatus.InProgress or ProjectStatus.OnHold);
+        int completedProjects = projects.Count(project =>
+            project.Status is ProjectStatus.Completed or ProjectStatus.Cancelled);
+
         return new ClientDetailDto(
             client.Id,
             client.CompanyName,
@@ -77,7 +87,7 @@ public sealed class ClientRepository : IClientRepository
             client.InvitedAt,
             client.OnboardedAt,
             client.Notes,
-            new ClientProjectsSummaryDto(0, 0, 0),
+            new ClientProjectsSummaryDto(projects.Count, activeProjects, completedProjects),
             new ClientOutstandingInvoicesDto(0, 0m));
     }
 

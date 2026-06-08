@@ -41,18 +41,7 @@ public sealed class UserAuthenticationRepository : IUserAuthenticationRepository
             return user;
         }
 
-        List<string> slugs = await ActiveTenantSlugsAsync(cancellationToken);
-        foreach (string slug in slugs)
-        {
-            User? user = await FindUserByEmailInTenantAsync(slug, emailValue, cancellationToken);
-            if (user is not null)
-            {
-                TenantResolutionContext.SetSlug(slug);
-                return user;
-            }
-        }
-
-        return null;
+        return await FindUserByEmailAcrossTenantsAsync(emailValue, cancellationToken);
     }
 
     public Task<User?> FindByRefreshTokenHashAsync(string refreshTokenHash, CancellationToken cancellationToken = default)
@@ -79,18 +68,7 @@ public sealed class UserAuthenticationRepository : IUserAuthenticationRepository
             return user;
         }
 
-        List<string> slugs = await ActiveTenantSlugsAsync(cancellationToken);
-        foreach (string slug in slugs)
-        {
-            User? user = await FindUserByIdInTenantAsync(slug, userId, cancellationToken);
-            if (user is not null)
-            {
-                TenantResolutionContext.SetSlug(slug);
-                return user;
-            }
-        }
-
-        return null;
+        return await FindUserByIdAcrossTenantsAsync(userId, cancellationToken);
     }
 
     public void Update(User user)
@@ -119,6 +97,74 @@ public sealed class UserAuthenticationRepository : IUserAuthenticationRepository
             .OrderBy(tenant => tenant.Slug)
             .Select(tenant => tenant.Slug)
             .ToListAsync(cancellationToken);
+    }
+
+    private async Task<User?> FindUserByEmailAcrossTenantsAsync(
+        string email,
+        CancellationToken cancellationToken)
+    {
+        List<string> slugs = await ActiveTenantSlugsAsync(cancellationToken);
+        User? inactiveMatch = null;
+        string? inactiveMatchSlug = null;
+
+        foreach (string slug in slugs)
+        {
+            User? user = await FindUserByEmailInTenantAsync(slug, email, cancellationToken);
+            if (user is null)
+            {
+                continue;
+            }
+
+            if (user.IsActive)
+            {
+                TenantResolutionContext.SetSlug(slug);
+                return user;
+            }
+
+            inactiveMatch ??= user;
+            inactiveMatchSlug ??= slug;
+        }
+
+        if (inactiveMatch is not null && inactiveMatchSlug is not null)
+        {
+            TenantResolutionContext.SetSlug(inactiveMatchSlug);
+        }
+
+        return inactiveMatch;
+    }
+
+    private async Task<User?> FindUserByIdAcrossTenantsAsync(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        List<string> slugs = await ActiveTenantSlugsAsync(cancellationToken);
+        User? inactiveMatch = null;
+        string? inactiveMatchSlug = null;
+
+        foreach (string slug in slugs)
+        {
+            User? user = await FindUserByIdInTenantAsync(slug, userId, cancellationToken);
+            if (user is null)
+            {
+                continue;
+            }
+
+            if (user.IsActive)
+            {
+                TenantResolutionContext.SetSlug(slug);
+                return user;
+            }
+
+            inactiveMatch ??= user;
+            inactiveMatchSlug ??= slug;
+        }
+
+        if (inactiveMatch is not null && inactiveMatchSlug is not null)
+        {
+            TenantResolutionContext.SetSlug(inactiveMatchSlug);
+        }
+
+        return inactiveMatch;
     }
 
     private async Task<User?> FindUserByEmailInTenantAsync(

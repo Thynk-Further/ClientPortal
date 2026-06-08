@@ -71,13 +71,14 @@ services:
       ASPNETCORE_URLS: ${ASPNETCORE_URLS}
       ConnectionStrings__Postgres: ${ConnectionStrings__Postgres}
       ConnectionStrings__Redis: ${ConnectionStrings__Redis}
-      Serilog__WriteTo__1__Args__serverUrl: ${Serilog__WriteTo__1__Args__serverUrl}
+      Seq__ServerUrl: ${SEQ_SERVER_URL:-http://seq:5341}
       Jwt__PrivateKeyPem: ${Jwt__PrivateKeyPem}
       Jwt__PublicKeyPem: ${Jwt__PublicKeyPem}
       # Pre-deploy / non-production hosts: set TENANCY_TENANT_KEY_ENABLED=true and TENANCY_TENANT_KEY_PEPPER to match registration-time pepper (register response stores hashed key).
       Tenancy__TenantKey__Enabled: ${TENANCY_TENANT_KEY_ENABLED:-false}
       Tenancy__TenantKey__HeaderName: ${TENANCY_TENANT_KEY_HEADER_NAME:-X-Tenant-Key}
       Tenancy__TenantKey__Pepper: ${TENANCY_TENANT_KEY_PEPPER:-}
+      RefreshToken__Pepper: ${REFRESH_TOKEN_PEPPER:-}
       ClientInvitations__AcceptInvitationBaseUrl: ${CLIENT_INVITATIONS_ACCEPT_URL:-http://localhost:4201/auth/accept-invitation}
       Notifications__Email__Enabled: ${EMAIL_ENABLED:-false}
       Notifications__Email__SmtpHost: ${SMTP_HOST:-}

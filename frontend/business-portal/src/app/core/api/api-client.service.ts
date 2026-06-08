@@ -54,6 +54,18 @@ export class ApiClientService {
     });
   }
 
+  patch<TResponse, TBody = unknown>(
+    url: string,
+    body: TBody,
+    query?: QueryParams,
+    options?: RequestOptions,
+  ): Observable<TResponse> {
+    return this.httpClient.patch<TResponse>(url, body, {
+      params: this.toHttpParams(query),
+      withCredentials: options?.withCredentials,
+    });
+  }
+
   delete<TResponse>(
     url: string,
     query?: QueryParams,

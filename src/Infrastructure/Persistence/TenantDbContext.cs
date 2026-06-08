@@ -39,7 +39,7 @@ public sealed class TenantDbContext : DbContext
 
         NpgsqlConnectionStringBuilder connectionStringBuilder = new(_postgresConnectionString)
         {
-            SearchPath = schema
+            SearchPath = $"{schema},public"
         };
 
         optionsBuilder.UseNpgsql(connectionStringBuilder.ConnectionString);

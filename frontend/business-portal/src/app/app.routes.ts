@@ -50,10 +50,22 @@ export const routes: Routes = [
     children: [
       {
         path: 'clients/:clientId',
-        loadComponent: () =>
-          import('./features/clients/client-detail.component').then(
-            (m) => m.ClientDetailComponent,
-          ),
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/clients/client-detail.component').then(
+                (m) => m.ClientDetailComponent,
+              ),
+          },
+          {
+            path: 'projects/:projectId',
+            loadComponent: () =>
+              import('./features/projects/project-detail.component').then(
+                (m) => m.ProjectDetailComponent,
+              ),
+          },
+        ],
       },
       {
         path: 'projects',
