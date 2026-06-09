@@ -163,14 +163,14 @@ export const ProjectStore = signalStore(
       }
     },
 
-    async createTask(projectId: string, request: CreateTaskRequest): Promise<boolean> {
+    async createTask(projectId: string, request: CreateTaskRequest): Promise<string | null> {
       try {
-        await firstValueFrom(projectApiService.createTask(projectId, request));
+        const taskId = await firstValueFrom(projectApiService.createTask(projectId, request));
         await this.loadProjectDashboard(projectId);
-        return true;
+        return taskId;
       } catch (error) {
         patchState(store, { error: readHttpErrorMessage(error, 'Unable to create task.') });
-        return false;
+        return null;
       }
     },
 

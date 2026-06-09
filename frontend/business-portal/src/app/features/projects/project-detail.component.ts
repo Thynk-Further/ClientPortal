@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/card.component';
 import { StatCardComponent } from '@/components/ui/stat-card.component';
 import { StatusBadgeComponent } from '@/components/ui/status-badge.component';
+import { CreateTaskDialogComponent } from './create-task-dialog.component';
 import { ProjectHealthBadgeComponent } from './project-health-badge.component';
 
 type ProjectTab = 'overview' | 'milestones' | 'tasks' | 'risks' | 'requests' | 'activity';
@@ -56,6 +57,7 @@ interface KanbanColumn {
     CardContentComponent,
     StatCardComponent,
     StatusBadgeComponent,
+    CreateTaskDialogComponent,
     ProjectHealthBadgeComponent,
   ],
   template: `
@@ -216,9 +218,9 @@ interface KanbanColumn {
                     </div>
                     <ui-button
                       variant="outline"
-                      [label]="showCreateTaskForm() ? 'Cancel' : 'Add task'"
+                      label="Add task"
                       [disabled]="project.milestones.length === 0"
-                      (clicked)="toggleCreateTaskForm(project)"
+                      (clicked)="openCreateTaskDialog(project)"
                     />
                   </div>
                 </ui-card-header>
@@ -229,68 +231,35 @@ interface KanbanColumn {
                     </p>
                   }
 
-                  @if (showCreateTaskForm()) {
-                    <form class="grid gap-3 rounded-md border p-3 md:grid-cols-2" (submit)="submitCreateTask($event)">
-                      <input
-                        class="rounded-md border px-3 py-2 text-sm md:col-span-2"
-                        placeholder="Task title"
-                        required
-                        [value]="newTaskTitle()"
-                        (input)="onNewTaskTitleInput($event)"
-                      />
-                      <select
-                        class="rounded-md border px-3 py-2 text-sm"
-                        required
-                        [value]="newTaskMilestoneId()"
-                        (change)="onNewTaskMilestoneChange($event)"
-                      >
-                        @for (milestone of project.milestones; track milestone.id) {
-                          <option [value]="milestone.id">{{ milestone.name }}</option>
-                        }
-                      </select>
-                      <select
-                        class="rounded-md border px-3 py-2 text-sm"
-                        [value]="newTaskPriority()"
-                        (change)="onNewTaskPriorityChange($event)"
-                      >
-                        <option [value]="1">Low priority</option>
-                        <option [value]="2">Medium priority</option>
-                        <option [value]="3">High priority</option>
-                        <option [value]="4">Critical priority</option>
-                      </select>
-                      <input
-                        type="date"
-                        class="rounded-md border px-3 py-2 text-sm"
-                        required
-                        [value]="newTaskDueDate()"
-                        (input)="onNewTaskDueDateInput($event)"
-                      />
-                      <p class="text-xs text-muted-foreground md:col-span-2">
-                        Assigned to {{ currentAssigneeLabel() }}
-                      </p>
-                      <div class="md:col-span-2">
-                        <ui-button type="submit" label="Save task" />
-                      </div>
-                    </form>
-                  }
+                  <app-create-task-dialog
+                    [open]="createTaskDialogOpen()"
+                    [projectId]="projectId()"
+                    [milestones]="project.milestones"
+                    [defaultDueDate]="project.endDate"
+                    [assigneeName]="currentAssigneeLabel()"
+                    (openChange)="onCreateTaskDialogOpenChange($event)"
+                    (created)="onTaskCreated()"
+                  />
 
                   <div class="grid grid-cols-1 gap-4 xl:grid-cols-4">
                     @for (column of kanbanColumns; track column.status) {
                       <section
-                        class="rounded-xl border bg-background p-3"
+                        class="rounded-xl border border-border/70 bg-muted/20 p-3 dark:bg-muted/10"
                         (dragover)="onColumnDragOver($event)"
                         (drop)="onColumnDrop($event, column.status)"
                       >
-                        <div class="mb-3 flex items-center justify-between">
-                          <h2 class="text-sm font-semibold">{{ column.title }}</h2>
-                          <span class="rounded-full bg-muted px-2 py-0.5 text-xs">
+                        <div class="mb-3 flex items-center justify-between gap-2 px-0.5">
+                          <h2 class="text-sm font-semibold text-foreground">{{ column.title }}</h2>
+                          <span
+                            class="grid h-6 min-w-6 place-content-center rounded-full bg-background px-1.5 text-xs font-medium text-muted-foreground shadow-sm"
+                          >
                             {{ tasksForColumn(column.status).length }}
                           </span>
                         </div>
-                        <ul class="min-h-24 space-y-2">
+                        <ul class="min-h-28 space-y-3">
                           @for (task of tasksForColumn(column.status); track task.id) {
                             <li
-                              class="rounded-lg border bg-card p-3 text-sm shadow-sm"
+                              class="group relative rounded-xl border border-border/70 bg-card p-3.5 text-sm shadow-sm transition-shadow hover:shadow-md dark:border-white/10"
                               draggable="true"
                               (dragstart)="onTaskDragStart($event, task.id)"
                               (dragend)="onTaskDragEnd()"
@@ -299,13 +268,13 @@ interface KanbanColumn {
                               @if (editingTaskId() === task.id) {
                                 <form class="space-y-2" (submit)="saveTaskEdit($event, task)">
                                   <input
-                                    class="w-full rounded-md border px-2 py-1.5 text-sm"
+                                    class="w-full rounded-lg border border-border/80 bg-background px-2.5 py-1.5 text-sm outline-none focus-visible:border-neutral-400"
                                     required
                                     [value]="editTaskTitle()"
                                     (input)="onEditTaskTitleInput($event)"
                                   />
                                   <select
-                                    class="w-full rounded-md border px-2 py-1.5 text-sm"
+                                    class="w-full rounded-lg border border-border/80 bg-background px-2.5 py-1.5 text-sm outline-none focus-visible:border-neutral-400"
                                     [value]="editTaskPriority()"
                                     (change)="onEditTaskPriorityChange($event)"
                                   >
@@ -316,7 +285,7 @@ interface KanbanColumn {
                                   </select>
                                   <input
                                     type="date"
-                                    class="w-full rounded-md border px-2 py-1.5 text-sm"
+                                    class="w-full rounded-lg border border-border/80 bg-background px-2.5 py-1.5 text-sm outline-none focus-visible:border-neutral-400"
                                     required
                                     [value]="editTaskDueDate()"
                                     (input)="onEditTaskDueDateInput($event)"
@@ -327,25 +296,87 @@ interface KanbanColumn {
                                   </div>
                                 </form>
                               } @else {
-                                <p class="font-medium">{{ task.title }}</p>
-                                <p class="mt-1 text-xs text-muted-foreground">
-                                  {{ milestoneName(project, task.milestoneId) }} · Due {{ task.dueDate }}
+                                <div
+                                  class="pointer-events-none absolute top-2.5 right-2.5 text-muted-foreground/70 opacity-0 transition-opacity group-hover:opacity-100"
+                                  aria-hidden="true"
+                                >
+                                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="8" cy="7" r="1.25" />
+                                    <circle cx="8" cy="12" r="1.25" />
+                                    <circle cx="8" cy="17" r="1.25" />
+                                    <circle cx="14" cy="7" r="1.25" />
+                                    <circle cx="14" cy="12" r="1.25" />
+                                    <circle cx="14" cy="17" r="1.25" />
+                                  </svg>
+                                </div>
+
+                                <span
+                                  class="inline-flex max-w-full truncate rounded-md px-2 py-0.5 text-[11px] font-medium"
+                                  [class]="milestoneTagClass(task.milestoneId)"
+                                >
+                                  {{ milestoneName(project, task.milestoneId) }}
+                                </span>
+
+                                <p class="mt-2.5 pr-6 font-semibold leading-snug text-foreground">
+                                  {{ task.title }}
                                 </p>
-                                <p class="mt-1 text-xs text-muted-foreground">
-                                  {{ formatPriority(task.priority) }} · {{ assigneeLabel(task.assigneeId) }}
-                                </p>
-                                <div class="mt-3 flex flex-wrap items-center gap-2">
-                                  <select
-                                    class="rounded-md border px-2 py-1 text-xs"
-                                    [value]="task.status"
-                                    (change)="onTaskStatusChange(task, $event)"
-                                  >
-                                    @for (columnOption of kanbanColumns; track columnOption.status) {
-                                      <option [value]="columnOption.status">{{ columnOption.title }}</option>
-                                    }
-                                  </select>
-                                  <ui-button variant="outline" label="Edit" (clicked)="startTaskEdit(task)" />
-                                  <ui-button variant="outline" label="Delete" (clicked)="deleteTask(task.id)" />
+
+                                <div class="mt-4 flex items-end justify-between gap-2">
+                                  <div class="flex min-w-0 flex-wrap items-center gap-2">
+                                    <span [class]="priorityBadgeClass(task.priority)">
+                                      {{ formatPriority(task.priority) }}
+                                    </span>
+                                    <span class="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                      <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                        <path
+                                          stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          stroke-width="1.75"
+                                          d="M8 2v4m8-4v4M3 10h18M5 5h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"
+                                        />
+                                      </svg>
+                                      {{ formatShortDueDate(task.dueDate) }}
+                                    </span>
+                                  </div>
+
+                                  <div class="relative z-10 flex shrink-0 items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      class="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100"
+                                      aria-label="Edit task"
+                                      (click)="startTaskEdit(task)"
+                                    >
+                                      <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                        <path
+                                          stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          stroke-width="1.75"
+                                          d="m16.5 3.5 4 4L8 20H4v-4L16.5 3.5Z"
+                                        />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      class="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                                      aria-label="Delete task"
+                                      (click)="deleteTask(task.id)"
+                                    >
+                                      <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                        <path
+                                          stroke-linecap="round"
+                                          stroke-linejoin="round"
+                                          stroke-width="1.75"
+                                          d="M3 6h18M8 6V4h8v2m-1 0v14H9V6"
+                                        />
+                                      </svg>
+                                    </button>
+                                    <span
+                                      class="grid h-7 w-7 place-content-center rounded-full bg-muted text-[10px] font-semibold uppercase text-muted-foreground"
+                                      [attr.title]="assigneeLabel(task.assigneeId)"
+                                    >
+                                      {{ assigneeInitials(task.assigneeId) }}
+                                    </span>
+                                  </div>
                                 </div>
                               }
                             </li>
@@ -471,11 +502,7 @@ export class ProjectDetailComponent implements OnInit {
   protected readonly editMilestoneName = signal('');
   protected readonly editMilestoneDueDate = signal('');
 
-  protected readonly showCreateTaskForm = signal(false);
-  protected readonly newTaskTitle = signal('');
-  protected readonly newTaskMilestoneId = signal('');
-  protected readonly newTaskPriority = signal<ProjectTaskPriority>(2);
-  protected readonly newTaskDueDate = signal('');
+  protected readonly createTaskDialogOpen = signal(false);
   protected readonly editingTaskId = signal<string | null>(null);
   protected readonly editTaskTitle = signal('');
   protected readonly editTaskPriority = signal<ProjectTaskPriority>(2);
@@ -603,10 +630,37 @@ export class ProjectDetailComponent implements OnInit {
   protected assigneeLabel(assigneeId: string): string {
     const currentUserId = this.userSession.getUser()?.id;
     if (currentUserId !== undefined && currentUserId === assigneeId) {
-      return 'Assigned to you';
+      return this.userSession.getUser()?.fullName?.trim() || 'You';
     }
 
     return 'Assigned';
+  }
+
+  protected assigneeInitials(assigneeId: string): string {
+    return initialsFromName(this.assigneeLabel(assigneeId));
+  }
+
+  protected milestoneTagClass(milestoneId: string): string {
+    return milestoneTagClassForId(milestoneId);
+  }
+
+  protected priorityBadgeClass(priority: ProjectTaskPriority): string {
+    const base = 'inline-flex rounded-md px-2 py-0.5 text-[11px] font-semibold';
+    switch (priority) {
+      case 4:
+      case 3:
+        return `${base} bg-red-500 text-white`;
+      case 2:
+        return `${base} bg-orange-400 text-white`;
+      case 1:
+        return `${base} bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300`;
+      default:
+        return `${base} bg-neutral-100 text-neutral-600`;
+    }
+  }
+
+  protected formatShortDueDate(value: string): string {
+    return formatShortDueDate(value);
   }
 
   protected toggleCreateMilestoneForm(): void {
@@ -688,55 +742,16 @@ export class ProjectDetailComponent implements OnInit {
     await this.projectStore.deleteMilestone(this.projectId(), milestoneId);
   }
 
-  protected toggleCreateTaskForm(project: { milestones: ProjectDashboardMilestone[]; endDate: string }): void {
-    const next = !this.showCreateTaskForm();
-    this.showCreateTaskForm.set(next);
-    if (next) {
-      this.newTaskTitle.set('');
-      this.newTaskMilestoneId.set(project.milestones[0]?.id ?? '');
-      this.newTaskPriority.set(2);
-      this.newTaskDueDate.set(project.endDate);
-    }
+  protected openCreateTaskDialog(_project: { milestones: ProjectDashboardMilestone[] }): void {
+    this.createTaskDialogOpen.set(true);
   }
 
-  protected onNewTaskTitleInput(event: Event): void {
-    this.newTaskTitle.set((event.target as HTMLInputElement).value);
+  protected onCreateTaskDialogOpenChange(open: boolean): void {
+    this.createTaskDialogOpen.set(open);
   }
 
-  protected onNewTaskMilestoneChange(event: Event): void {
-    this.newTaskMilestoneId.set((event.target as HTMLSelectElement).value);
-  }
-
-  protected onNewTaskPriorityChange(event: Event): void {
-    this.newTaskPriority.set(Number((event.target as HTMLSelectElement).value) as ProjectTaskPriority);
-  }
-
-  protected onNewTaskDueDateInput(event: Event): void {
-    this.newTaskDueDate.set((event.target as HTMLInputElement).value);
-  }
-
-  protected async submitCreateTask(event: Event): Promise<void> {
-    event.preventDefault();
-    const assigneeId = this.userSession.getUser()?.id;
-    const title = this.newTaskTitle().trim();
-    const milestoneId = this.newTaskMilestoneId().trim();
-    const dueDate = this.newTaskDueDate().trim();
-    if (assigneeId === undefined || title === '' || milestoneId === '' || dueDate === '') {
-      return;
-    }
-
-    const saved = await this.projectStore.createTask(this.projectId(), {
-      milestoneId,
-      title,
-      assigneeId,
-      priority: this.newTaskPriority(),
-      dueDate,
-    });
-
-    if (saved) {
-      this.showCreateTaskForm.set(false);
-      this.newTaskTitle.set('');
-    }
+  protected onTaskCreated(): void {
+    this.createTaskDialogOpen.set(false);
   }
 
   protected startTaskEdit(task: ProjectDashboardTask): void {
@@ -1109,6 +1124,48 @@ function projectDaysRemaining(endDate: string): number {
   endDay.setHours(0, 0, 0, 0);
 
   return Math.round((endDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+const MILESTONE_TAG_CLASSES = [
+  'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+  'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
+  'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
+  'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400',
+] as const;
+
+function milestoneTagClassForId(milestoneId: string): string {
+  let hash = 0;
+  for (let index = 0; index < milestoneId.length; index += 1) {
+    hash = (hash + milestoneId.charCodeAt(index)) % MILESTONE_TAG_CLASSES.length;
+  }
+
+  return MILESTONE_TAG_CLASSES[hash] ?? MILESTONE_TAG_CLASSES[0];
+}
+
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter((part) => part !== '');
+  if (parts.length === 0) {
+    return '?';
+  }
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase();
+}
+
+function formatShortDueDate(value: string): string {
+  const parsed = parseDateOnly(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return '—';
+  }
+
+  return parsed.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 function decorativeSparkline(seed: number): ReadonlyArray<number> {
