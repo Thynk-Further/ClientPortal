@@ -17,15 +17,8 @@ import {
 } from '@/app/core/api/services/client-api.service';
 import { DocumentApiService, DocumentSummary } from '@/app/core/api/services/document-api.service';
 import { InvoiceApiService, InvoiceSummary } from '@/app/core/api/services/invoice-api.service';
-import {
-  CreateProjectMilestoneRequest,
-  ProjectApiService,
-  ProjectSummary,
-} from '@/app/core/api/services/project-api.service';
 import { BusinessPortalBreadcrumbService } from '@/app/core/layout/business-portal-breadcrumb.service';
-import { ProjectStore } from '@/app/core/stores/project.store';
 import { ClientStore } from '@/app/core/stores/client.store';
-import { ButtonComponent } from '@/components/ui/button.component';
 import {
   CardComponent,
   CardContentComponent,
@@ -33,7 +26,8 @@ import {
   CardHeaderComponent,
   CardTitleComponent,
 } from '@/components/ui/card.component';
-import { ProjectHealthBadgeComponent } from '../projects/project-health-badge.component';
+import { StatCardComponent } from '@/components/ui/stat-card.component';
+import { ClientProjectsTabComponent } from './client-projects-tab.component';
 
 type ClientDetailTab =
   | 'overview'
@@ -56,13 +50,13 @@ interface TabDefinition {
   imports: [
     DecimalPipe,
     RouterLink,
-    ButtonComponent,
     CardComponent,
     CardHeaderComponent,
     CardTitleComponent,
     CardDescriptionComponent,
     CardContentComponent,
-    ProjectHealthBadgeComponent,
+    StatCardComponent,
+    ClientProjectsTabComponent,
   ],
   template: `
     <main class="min-h-screen bg-muted/30 p-4 sm:p-6">
@@ -127,201 +121,44 @@ interface TabDefinition {
               @switch (activeTab()) {
                 @case ('overview') {
                   <div class="space-y-4">
-                    <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
-                      <article class="rounded-lg border p-3">
-                        <p class="text-xs text-muted-foreground">Account status</p>
-                        <p class="text-lg font-semibold">{{ formatStatus(workspace()!.client.status) }}</p>
-                      </article>
-                      <article class="rounded-lg border p-3">
-                        <p class="text-xs text-muted-foreground">Active projects</p>
-                        <p class="text-lg font-semibold">{{ workspace()!.metrics.activeProjects }}</p>
-                      </article>
-                      <article class="rounded-lg border p-3">
-                        <p class="text-xs text-muted-foreground">Overdue invoices</p>
-                        <p class="text-lg font-semibold">{{ workspace()!.metrics.overdueInvoices }}</p>
-                      </article>
-                      <article class="rounded-lg border p-3">
-                        <p class="text-xs text-muted-foreground">Outstanding balance</p>
-                        <p class="text-lg font-semibold">
-                          {{ workspace()!.metrics.outstandingInvoiceAmount | number: '1.2-2' }}
-                        </p>
-                      </article>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                      @for (stat of overviewStatCards(); track stat.label) {
+                        <ui-stat-card
+                          [label]="stat.label"
+                          [value]="stat.value"
+                          [iconPath]="stat.iconPath"
+                          [accentColor]="stat.accentColor"
+                          [accentBg]="stat.accentBg"
+                          [sparkline]="stat.sparkline"
+                          [trendValue]="stat.trendValue"
+                          [trendLabel]="stat.trendLabel"
+                          [trendDirection]="stat.trendDirection"
+                          [footnote]="stat.footnote"
+                        />
+                      }
                     </div>
 
                     @if (workspace()!.attentionItems.length > 0) {
                       <ul class="space-y-2">
                         @for (item of workspace()!.attentionItems; track item.code) {
-                          <li class="rounded-md border p-3 text-sm">
-                            <p class="font-medium">{{ item.title }}</p>
-                            <p class="text-muted-foreground">{{ item.description }}</p>
+                          <li class="rounded-xl border border-border/70 bg-card p-4 text-sm shadow-sm dark:border-white/10">
+                            <p class="font-medium text-foreground">{{ item.title }}</p>
+                            <p class="mt-1 text-muted-foreground">{{ item.description }}</p>
                           </li>
                         }
                       </ul>
+                    } @else {
+                      <article class="rounded-xl border border-border/70 bg-muted/30 p-4 shadow-sm dark:border-white/10 dark:bg-muted/20">
+                        <p class="font-medium text-foreground">All clear</p>
+                        <p class="mt-1 text-sm text-muted-foreground">
+                          No urgent follow-ups for this client right now.
+                        </p>
+                      </article>
                     }
                   </div>
                 }
                 @case ('projects') {
-                  <div class="mb-4 flex justify-end">
-                    <ui-button
-                      variant="outline"
-                      [label]="showCreateProject() ? 'Cancel' : 'Create project'"
-                      (clicked)="toggleCreateProject()"
-                    />
-                  </div>
-
-                  @if (showCreateProject()) {
-                    <form class="mb-4 grid gap-3 rounded-md border p-4" (submit)="submitCreateProject($event)">
-                      <input
-                        class="rounded-md border px-3 py-2 text-sm"
-                        placeholder="Project name"
-                        required
-                        [value]="newProjectName()"
-                        (input)="onNewProjectNameInput($event)"
-                      />
-                      <textarea
-                        class="rounded-md border px-3 py-2 text-sm"
-                        placeholder="Description"
-                        rows="3"
-                        required
-                        [value]="newProjectDescription()"
-                        (input)="onNewProjectDescriptionInput($event)"
-                      ></textarea>
-                      <div class="grid gap-3 sm:grid-cols-2">
-                        <label class="space-y-1 text-sm">
-                          <span class="font-medium">Start date</span>
-                          <input
-                            type="date"
-                            class="w-full rounded-md border px-3 py-2"
-                            required
-                            [value]="newProjectStartDate()"
-                            (input)="onNewProjectStartDateInput($event)"
-                          />
-                        </label>
-                        <label class="space-y-1 text-sm">
-                          <span class="font-medium">End date</span>
-                          <input
-                            type="date"
-                            class="w-full rounded-md border px-3 py-2"
-                            required
-                            [value]="newProjectEndDate()"
-                            (input)="onNewProjectEndDateInput($event)"
-                          />
-                        </label>
-                      </div>
-                      <div class="grid gap-3 sm:grid-cols-2">
-                        <label class="space-y-1 text-sm">
-                          <span class="font-medium">Budget</span>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            class="w-full rounded-md border px-3 py-2"
-                            [value]="newProjectBudget()"
-                            (input)="onNewProjectBudgetInput($event)"
-                          />
-                        </label>
-                        <label class="space-y-1 text-sm">
-                          <span class="font-medium">Currency</span>
-                          <input
-                            class="w-full rounded-md border px-3 py-2"
-                            maxlength="3"
-                            [value]="newProjectCurrency()"
-                            (input)="onNewProjectCurrencyInput($event)"
-                          />
-                        </label>
-                      </div>
-                      <div class="space-y-2 rounded-md border bg-muted/20 p-3">
-                        <div class="flex items-center justify-between gap-2">
-                          <p class="text-sm font-medium">Initial milestones (optional)</p>
-                          <ui-button
-                            type="button"
-                            variant="outline"
-                            label="Add milestone"
-                            (clicked)="addScaffoldMilestone()"
-                          />
-                        </div>
-                        @if (scaffoldMilestones().length === 0) {
-                          <p class="text-xs text-muted-foreground">
-                            Add delivery phases to scaffold the project timeline.
-                          </p>
-                        } @else {
-                          @for (milestone of scaffoldMilestones(); track $index) {
-                            <div class="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-                              <input
-                                class="rounded-md border px-3 py-2 text-sm"
-                                placeholder="Milestone name"
-                                [value]="milestone.name"
-                                (input)="onScaffoldMilestoneNameInput($index, $event)"
-                              />
-                              <input
-                                type="date"
-                                class="rounded-md border px-3 py-2 text-sm"
-                                [value]="milestone.dueDate"
-                                (input)="onScaffoldMilestoneDueDateInput($index, $event)"
-                              />
-                              <ui-button
-                                type="button"
-                                variant="outline"
-                                label="Remove"
-                                (clicked)="removeScaffoldMilestone($index)"
-                              />
-                            </div>
-                          }
-                        }
-                      </div>
-                      <ui-button type="submit" label="Create project" />
-                    </form>
-                  }
-
-                  @if (ongoingProjects().length === 0 && completedProjects().length === 0) {
-                    <p class="text-sm text-muted-foreground">No projects for this client yet.</p>
-                  } @else {
-                    @if (ongoingProjects().length > 0) {
-                      <section class="mb-6 space-y-2">
-                        <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Ongoing</h3>
-                        <ul class="space-y-2">
-                          @for (project of ongoingProjects(); track project.id) {
-                            <li class="rounded-md border p-3">
-                              <div class="flex flex-wrap items-center justify-between gap-2">
-                                <a
-                                  class="font-medium hover:underline"
-                                  [routerLink]="['/clients', clientId(), 'projects', project.id]"
-                                >
-                                  {{ project.name }}
-                                </a>
-                                <div class="flex items-center gap-2 text-sm">
-                                  <app-project-health-badge [health]="project.health" />
-                                  <span class="text-muted-foreground">{{ formatProjectStatus(project.status) }}</span>
-                                </div>
-                              </div>
-                              <p class="mt-1 text-xs text-muted-foreground">Ends {{ project.endDate }}</p>
-                            </li>
-                          }
-                        </ul>
-                      </section>
-                    }
-
-                    @if (completedProjects().length > 0) {
-                      <section class="space-y-2">
-                        <h3 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Completed</h3>
-                        <ul class="space-y-2">
-                          @for (project of completedProjects(); track project.id) {
-                            <li class="rounded-md border p-3">
-                              <div class="flex flex-wrap items-center justify-between gap-2">
-                                <a
-                                  class="font-medium hover:underline"
-                                  [routerLink]="['/clients', clientId(), 'projects', project.id]"
-                                >
-                                  {{ project.name }}
-                                </a>
-                                <span class="text-sm text-muted-foreground">{{ formatProjectStatus(project.status) }}</span>
-                              </div>
-                            </li>
-                          }
-                        </ul>
-                      </section>
-                    }
-                  }
+                  <app-client-projects-tab [clientId]="clientId()" />
                 }
                 @case ('invoices') {
                   @if (invoices().length === 0) {
@@ -391,8 +228,6 @@ export class ClientDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly clientStore = inject(ClientStore);
   private readonly breadcrumbService = inject(BusinessPortalBreadcrumbService);
-  private readonly projectStore = inject(ProjectStore);
-  private readonly projectApiService = inject(ProjectApiService);
   private readonly invoiceApiService = inject(InvoiceApiService);
   private readonly documentApiService = inject(DocumentApiService);
 
@@ -406,23 +241,6 @@ export class ClientDetailComponent implements OnInit {
   );
   protected readonly isLoading = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly projects = signal<ProjectSummary[]>([]);
-  protected readonly showCreateProject = signal(false);
-  protected readonly newProjectName = signal('');
-  protected readonly newProjectDescription = signal('');
-  protected readonly newProjectStartDate = signal(this.formatDateInputValue(new Date()));
-  protected readonly newProjectEndDate = signal(this.formatDateInputValue(this.defaultProjectEndDate()));
-  protected readonly newProjectBudget = signal('0');
-  protected readonly newProjectCurrency = signal('ZAR');
-  protected readonly scaffoldMilestones = signal<CreateProjectMilestoneRequest[]>([]);
-
-  protected readonly ongoingProjects = computed(() =>
-    this.projects().filter((project) => isOngoingProject(project.status)),
-  );
-
-  protected readonly completedProjects = computed(() =>
-    this.projects().filter((project) => isCompletedProject(project.status)),
-  );
   protected readonly invoices = signal<InvoiceSummary[]>([]);
   protected readonly documents = signal<DocumentSummary[]>([]);
 
@@ -472,6 +290,18 @@ export class ClientDetailComponent implements OnInit {
     () => this.tabs.find((tab) => tab.key === this.activeTab()) ?? this.tabs[0],
   );
 
+  protected readonly overviewStatCards = computed(() => {
+    const workspace = this.workspace();
+    if (workspace === null) {
+      return [];
+    }
+
+    return buildOverviewStatCards(
+      workspace,
+      (status) => this.formatStatus(status),
+    );
+  });
+
   protected readonly activeTabClasses =
     'bg-primary text-primary-foreground border border-primary';
   protected readonly inactiveTabClasses =
@@ -504,160 +334,6 @@ export class ClientDetailComponent implements OnInit {
       default:
         return 'Unknown';
     }
-  }
-
-  protected formatProjectStatus(status: ProjectSummary['status']): string {
-    if (typeof status === 'number') {
-      switch (status) {
-        case 1:
-          return 'Planned';
-        case 2:
-          return 'In Progress';
-        case 3:
-          return 'On Hold';
-        case 4:
-          return 'Completed';
-        case 5:
-          return 'Cancelled';
-        default:
-          return 'Unknown';
-      }
-    }
-
-    const statusText = String(status);
-    if (statusText.trim() !== '') {
-      return statusText;
-    }
-
-    return 'Unknown';
-  }
-
-  protected toggleCreateProject(): void {
-    const next = !this.showCreateProject();
-    this.showCreateProject.set(next);
-    if (next) {
-      this.resetCreateProjectForm();
-    }
-  }
-
-  protected onNewProjectNameInput(event: Event): void {
-    this.newProjectName.set((event.target as HTMLInputElement).value);
-  }
-
-  protected onNewProjectDescriptionInput(event: Event): void {
-    this.newProjectDescription.set((event.target as HTMLTextAreaElement).value);
-  }
-
-  protected onNewProjectStartDateInput(event: Event): void {
-    this.newProjectStartDate.set((event.target as HTMLInputElement).value);
-  }
-
-  protected onNewProjectEndDateInput(event: Event): void {
-    this.newProjectEndDate.set((event.target as HTMLInputElement).value);
-  }
-
-  protected onNewProjectBudgetInput(event: Event): void {
-    this.newProjectBudget.set((event.target as HTMLInputElement).value);
-  }
-
-  protected onNewProjectCurrencyInput(event: Event): void {
-    this.newProjectCurrency.set((event.target as HTMLInputElement).value.toUpperCase());
-  }
-
-  protected addScaffoldMilestone(): void {
-    const endDate = this.newProjectEndDate();
-    this.scaffoldMilestones.update((current) => [
-      ...current,
-      { name: '', dueDate: endDate },
-    ]);
-  }
-
-  protected removeScaffoldMilestone(index: number): void {
-    this.scaffoldMilestones.update((current) => current.filter((_, itemIndex) => itemIndex !== index));
-  }
-
-  protected onScaffoldMilestoneNameInput(index: number, event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.scaffoldMilestones.update((current) =>
-      current.map((milestone, itemIndex) =>
-        itemIndex === index ? { ...milestone, name: value } : milestone,
-      ),
-    );
-  }
-
-  protected onScaffoldMilestoneDueDateInput(index: number, event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.scaffoldMilestones.update((current) =>
-      current.map((milestone, itemIndex) =>
-        itemIndex === index ? { ...milestone, dueDate: value } : milestone,
-      ),
-    );
-  }
-
-  protected async submitCreateProject(event: Event): Promise<void> {
-    event.preventDefault();
-    const clientId = this.clientId().trim();
-    const name = this.newProjectName().trim();
-    const description = this.newProjectDescription().trim();
-    const startDate = this.newProjectStartDate().trim();
-    const endDate = this.newProjectEndDate().trim();
-    const budget = Number.parseFloat(this.newProjectBudget());
-    const currency = this.newProjectCurrency().trim().toUpperCase();
-    if (
-      clientId === ''
-      || name === ''
-      || description === ''
-      || startDate === ''
-      || endDate === ''
-      || currency === ''
-      || Number.isNaN(budget)
-    ) {
-      return;
-    }
-
-    const milestones = this.scaffoldMilestones()
-      .map((milestone) => ({
-        name: milestone.name.trim(),
-        dueDate: milestone.dueDate,
-      }))
-      .filter((milestone) => milestone.name !== '' && milestone.dueDate !== '');
-
-    const projectId = await this.projectStore.createProject({
-      clientId,
-      name,
-      description,
-      startDate,
-      endDate,
-      budget,
-      currency,
-      milestones: milestones.length > 0 ? milestones : undefined,
-    });
-
-    if (projectId !== null) {
-      this.resetCreateProjectForm();
-      this.showCreateProject.set(false);
-      await this.loadProjectsTab();
-    }
-  }
-
-  private resetCreateProjectForm(): void {
-    this.newProjectName.set('');
-    this.newProjectDescription.set('');
-    this.newProjectStartDate.set(this.formatDateInputValue(new Date()));
-    this.newProjectEndDate.set(this.formatDateInputValue(this.defaultProjectEndDate()));
-    this.newProjectBudget.set('0');
-    this.newProjectCurrency.set('ZAR');
-    this.scaffoldMilestones.set([]);
-  }
-
-  private defaultProjectEndDate(): Date {
-    const end = new Date();
-    end.setMonth(end.getMonth() + 3);
-    return end;
-  }
-
-  private formatDateInputValue(date: Date): string {
-    return date.toISOString().slice(0, 10);
   }
 
   protected formatInvoiceStatus(status: InvoiceSummary['status']): string {
@@ -728,7 +404,13 @@ export class ClientDetailComponent implements OnInit {
 
   private async loadTabData(tab: ClientDetailTab): Promise<void> {
     const clientId = this.clientId().trim();
-    if (clientId === '' || tab === 'overview' || tab === 'messages' || tab === 'requests') {
+    if (
+      clientId === ''
+      || tab === 'overview'
+      || tab === 'projects'
+      || tab === 'messages'
+      || tab === 'requests'
+    ) {
       return;
     }
 
@@ -736,10 +418,6 @@ export class ClientDetailComponent implements OnInit {
     this.errorMessage.set(null);
 
     try {
-      if (tab === 'projects') {
-        await this.loadProjectsTab();
-      }
-
       if (tab === 'invoices') {
         const result = await firstValueFrom(
           this.invoiceApiService.getInvoices({ clientId, page: 1, pageSize: 50 }),
@@ -760,36 +438,6 @@ export class ClientDetailComponent implements OnInit {
     }
   }
 
-  private async loadProjectsTab(): Promise<void> {
-    const clientId = this.clientId().trim();
-    if (clientId === '') {
-      return;
-    }
-
-    const result = await firstValueFrom(
-      this.projectApiService.getProjects({ clientId, page: 1, pageSize: 50 }),
-    );
-    this.projects.set(result.items);
-  }
-}
-
-function isOngoingProject(status: ProjectSummary['status']): boolean {
-  const normalized = normalizeProjectStatus(status);
-  return normalized === 1 || normalized === 2 || normalized === 3;
-}
-
-function isCompletedProject(status: ProjectSummary['status']): boolean {
-  const normalized = normalizeProjectStatus(status);
-  return normalized === 4 || normalized === 5;
-}
-
-function normalizeProjectStatus(status: ProjectSummary['status']): number {
-  if (typeof status === 'number') {
-    return status;
-  }
-
-  const parsed = Number.parseInt(String(status), 10);
-  return Number.isNaN(parsed) ? 0 : parsed;
 }
 
 function filterActivity(
@@ -817,4 +465,157 @@ function normalizeStatus(status: ClientWorkspace['client']['status']): number {
 
   const parsed = Number.parseInt(String(status), 10);
   return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+interface OverviewStatCard {
+  readonly label: string;
+  readonly value: string;
+  readonly iconPath: string;
+  readonly accentColor: string;
+  readonly accentBg: string;
+  readonly sparkline: ReadonlyArray<number>;
+  readonly trendValue: string;
+  readonly trendLabel: string;
+  readonly trendDirection: 'up' | 'down' | 'neutral';
+  readonly footnote: string;
+}
+
+function buildOverviewStatCards(
+  workspace: ClientWorkspace,
+  formatStatus: (status: ClientWorkspace['client']['status']) => string,
+): ReadonlyArray<OverviewStatCard> {
+  const statusCode = normalizeStatus(workspace.client.status);
+  const { metrics } = workspace;
+  const accountStatusLabel = formatStatus(workspace.client.status);
+  const outstandingBalance = metrics.outstandingInvoiceAmount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  const accountTrend = accountStatusTrend(statusCode);
+  const overdueTrend = metrics.overdueInvoices > 0
+    ? {
+        trendValue: String(metrics.overdueInvoices),
+        trendLabel: ' need follow-up',
+        trendDirection: 'down' as const,
+        footnote: '',
+      }
+    : {
+        trendValue: '0',
+        trendLabel: ' all current',
+        trendDirection: 'up' as const,
+        footnote: '',
+      };
+
+  return [
+    {
+      label: 'Account status',
+      value: accountStatusLabel,
+      iconPath: 'M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+      accentColor: '#3b82f6',
+      accentBg: '#dbeafe',
+      sparkline: decorativeSparkline(statusCode + 11),
+      trendValue: accountTrend.trendValue,
+      trendLabel: accountTrend.trendLabel,
+      trendDirection: accountTrend.trendDirection,
+      footnote: accountTrend.footnote,
+    },
+    {
+      label: 'Active projects',
+      value: String(metrics.activeProjects),
+      iconPath: 'M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z',
+      accentColor: '#14b8a6',
+      accentBg: '#ccfbf1',
+      sparkline: decorativeSparkline(metrics.activeProjects + 23),
+      trendValue: '',
+      trendLabel: '',
+      trendDirection: 'neutral',
+      footnote: `${metrics.activeProjects} of ${metrics.totalProjects} total projects`,
+    },
+    {
+      label: 'Overdue invoices',
+      value: String(metrics.overdueInvoices),
+      iconPath: 'M12 8v5l3 3M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z',
+      accentColor: '#f97316',
+      accentBg: '#ffedd5',
+      sparkline: decorativeSparkline(metrics.overdueInvoices + 37),
+      trendValue: overdueTrend.trendValue,
+      trendLabel: overdueTrend.trendLabel,
+      trendDirection: overdueTrend.trendDirection,
+      footnote: overdueTrend.footnote,
+    },
+    {
+      label: 'Outstanding balance',
+      value: outstandingBalance,
+      iconPath: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7',
+      accentColor: '#a855f7',
+      accentBg: '#f3e8ff',
+      sparkline: decorativeSparkline(Math.round(metrics.outstandingInvoiceAmount) + 51),
+      trendValue: '',
+      trendLabel: '',
+      trendDirection: 'neutral',
+      footnote:
+        metrics.outstandingInvoiceAmount > 0
+          ? 'Unpaid invoice total'
+          : 'No outstanding balance',
+    },
+  ];
+}
+
+function accountStatusTrend(statusCode: number): {
+  readonly trendValue: string;
+  readonly trendLabel: string;
+  readonly trendDirection: 'up' | 'down' | 'neutral';
+  readonly footnote: string;
+} {
+  switch (statusCode) {
+    case 2:
+      return {
+        trendValue: '',
+        trendLabel: '',
+        trendDirection: 'up',
+        footnote: 'Healthy client account',
+      };
+    case 1:
+      return {
+        trendValue: '',
+        trendLabel: '',
+        trendDirection: 'neutral',
+        footnote: 'Invitation pending acceptance',
+      };
+    case 3:
+      return {
+        trendValue: '',
+        trendLabel: '',
+        trendDirection: 'neutral',
+        footnote: 'Account is currently inactive',
+      };
+    case 4:
+      return {
+        trendValue: '',
+        trendLabel: '',
+        trendDirection: 'down',
+        footnote: 'Account access is suspended',
+      };
+    default:
+      return {
+        trendValue: '',
+        trendLabel: '',
+        trendDirection: 'neutral',
+        footnote: '',
+      };
+  }
+}
+
+function decorativeSparkline(seed: number): ReadonlyArray<number> {
+  const values: number[] = [];
+  let current = 10 + (seed % 8);
+
+  for (let index = 0; index < 12; index += 1) {
+    const delta = ((seed * (index + 3)) % 5) - 2;
+    current = Math.max(6, Math.min(34, current + delta));
+    values.push(current);
+  }
+
+  return values;
 }
