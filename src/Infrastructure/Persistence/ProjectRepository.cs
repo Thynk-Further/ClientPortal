@@ -135,6 +135,129 @@ public sealed class ProjectRepository : IProjectRepository
             RecentActivity: recentActivity);
     }
 
+    public async Task<ProjectAnalyticsDto> GetAnalyticsAsync(CancellationToken cancellationToken = default)
+    {
+        DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        List<Project> projects = await _tenantDbContext.Set<Project>()
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        List<Milestone> milestones = await _tenantDbContext.Set<Milestone>()
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        List<ProjectTask> tasks = await _tenantDbContext.Set<ProjectTask>()
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        List<ProjectRisk> risks = await _tenantDbContext.Set<ProjectRisk>()
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+        Dictionary<Guid, List<Milestone>> milestonesByProject = milestones
+            .GroupBy(milestone => milestone.ProjectId)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        Dictionary<Guid, List<ProjectTask>> tasksByProject = tasks
+            .GroupBy(task => task.ProjectId)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        Dictionary<Guid, List<ProjectRisk>> risksByProject = risks
+            .GroupBy(risk => risk.ProjectId)
+            .ToDictionary(group => group.Key, group => group.ToList());
+
+        Dictionary<Guid, string> clientNames = await LoadClientNamesAsync(projects, cancellationToken);
+
+        IReadOnlyList<ProjectStatusCountDto> statusBreakdown = Enum.GetValues<ProjectStatus>()
+            .Select(status => new ProjectStatusCountDto(
+                status,
+                projects.Count(project => project.Status == status)))
+            .ToList();
+
+        Dictionary<ProjectHealth, int> healthCounts = Enum.GetValues<ProjectHealth>()
+            .ToDictionary(health => health, _ => 0);
+
+        List<ProjectAtRiskItemDto> atRiskProjects = [];
+
+        foreach (Project project in projects)
+        {
+            milestonesByProject.TryGetValue(project.Id, out List<Milestone>? projectMilestones);
+            tasksByProject.TryGetValue(project.Id, out List<ProjectTask>? projectTasks);
+            risksByProject.TryGetValue(project.Id, out List<ProjectRisk>? projectRisks);
+
+            projectMilestones ??= [];
+            projectTasks ??= [];
+            projectRisks ??= [];
+
+            ProjectHealth health = ProjectHealthCalculator.Calculate(
+                projectMilestones,
+                projectTasks,
+                projectRisks,
+                today);
+
+            healthCounts[health]++;
+
+            if (health is ProjectHealth.Amber or ProjectHealth.Red)
+            {
+                int overdueMilestones = projectMilestones.Count(milestone =>
+                    milestone.Status != MilestoneStatus.Completed && milestone.DueDate < today);
+                int openRisks = projectRisks.Count(risk => risk.Status == ProjectRiskStatus.Open);
+
+                clientNames.TryGetValue(project.ClientId, out string? companyName);
+
+                atRiskProjects.Add(new ProjectAtRiskItemDto(
+                    project.Id,
+                    project.Name,
+                    companyName ?? string.Empty,
+                    project.Status,
+                    health,
+                    overdueMilestones,
+                    openRisks));
+            }
+        }
+
+        IReadOnlyList<ProjectHealthCountDto> healthBreakdown = healthCounts
+            .Select(pair => new ProjectHealthCountDto(pair.Key, pair.Value))
+            .OrderBy(item => item.Health)
+            .ToList();
+
+        IReadOnlyList<ProjectBudgetByCurrencyDto> budgetByCurrency = projects
+            .GroupBy(project => NormalizeCurrency(project.Currency))
+            .Select(group => new ProjectBudgetByCurrencyDto(
+                group.Key,
+                group.Sum(project => project.Budget),
+                group.Count()))
+            .OrderByDescending(item => item.TotalBudget)
+            .ToList();
+
+        int overdueMilestoneCount = milestones.Count(milestone =>
+            milestone.Status != MilestoneStatus.Completed && milestone.DueDate < today);
+
+        int openRiskCount = risks.Count(risk => risk.Status == ProjectRiskStatus.Open);
+
+        int overdueTaskCount = tasks.Count(task =>
+            task.Status != ProjectTaskStatus.Done && task.DueDate < today);
+
+        IReadOnlyList<ProjectAtRiskItemDto> orderedAtRiskProjects = atRiskProjects
+            .OrderByDescending(item => item.Health)
+            .ThenByDescending(item => item.OverdueMilestoneCount + item.OpenRiskCount)
+            .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+            .Take(10)
+            .ToList();
+
+        return new ProjectAnalyticsDto(
+            TotalProjects: projects.Count,
+            TaskSummary: BuildTaskSummary(tasks),
+            OverdueMilestoneCount: overdueMilestoneCount,
+            OpenRiskCount: openRiskCount,
+            OverdueTaskCount: overdueTaskCount,
+            StatusBreakdown: statusBreakdown,
+            HealthBreakdown: healthBreakdown,
+            BudgetByCurrency: budgetByCurrency,
+            AtRiskProjects: orderedAtRiskProjects);
+    }
+
     public async Task<PagedResult<ProjectListItemDto>> GetPagedAsync(
         int page,
         int pageSize,
@@ -291,5 +414,11 @@ public sealed class ProjectRepository : IProjectRepository
             .OrderByDescending(item => item.OccurredAtUtc)
             .Take(20)
             .ToList();
+    }
+
+    private static string NormalizeCurrency(string currency)
+    {
+        string normalized = currency.Trim().ToUpperInvariant();
+        return normalized == string.Empty ? "USD" : normalized;
     }
 }

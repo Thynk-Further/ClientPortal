@@ -25,6 +25,9 @@ public static class ProjectsEndpoints
         projectsGroup.MapGet("/", GetProjectsAsync)
             .WithName("ProjectsGet");
 
+        projectsGroup.MapGet("/analytics", GetProjectAnalyticsAsync)
+            .WithName("ProjectsAnalyticsGet");
+
         projectsGroup.MapGet("/my-tasks", GetMyTasksAsync)
             .WithName("ProjectsMyTasksGet");
 
@@ -115,6 +118,17 @@ public static class ProjectsEndpoints
         int normalizedPageSize = pageSize <= 0 ? 20 : pageSize;
         Result<PagedResult<ProjectListItemDto>> result = await sender.Send(
             new GetProjectsQuery(normalizedPage, normalizedPageSize, status, clientId, search),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetProjectAnalyticsAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ProjectAnalyticsDto> result = await sender.Send(
+            new GetProjectAnalyticsQuery(),
             cancellationToken);
 
         return ToResponse(result);

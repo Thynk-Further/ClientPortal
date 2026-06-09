@@ -12,13 +12,13 @@ export const PROJECTS_ROUTES: Routes = [
     },
   },
   {
-    path: 'my-tasks',
+    path: 'analytics',
     loadComponent: () =>
-      import('./my-tasks.component').then((m) => m.MyTasksComponent),
+      import('./project-analytics.component').then((m) => m.ProjectAnalyticsComponent),
     data: {
-      breadcrumb: 'Kanban',
-      title: 'My Tasks',
-      description: 'Cross-client task inbox.',
+      breadcrumb: 'Project Analytics',
+      title: 'Project Analytics',
+      description: 'Portfolio-wide delivery metrics across status, health, tasks, and budget.',
     },
   },
   {

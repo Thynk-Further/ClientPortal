@@ -74,23 +74,10 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
         iconPath: 'M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z',
       },
       {
-        id: 'kanban-flow',
-        label: 'Kanban',
-        route: '/projects/my-tasks',
-        iconPath: 'M5 5v14M12 5v10M19 5v7',
-      },
-      {
-        id: 'project-timeline',
-        label: 'Milestones & Timeline',
-        route: '/projects',
-        iconPath: 'M5 12h4m6 0h4M12 5v4m0 6v4M3 3h18v18H3V3Z',
-      },
-      {
-        id: 'project-risk-status',
-        label: 'Risk & Status',
-        route: '/projects',
-        iconPath:
-          'M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.72 3h16.92a2 2 0 0 0 1.72-3L13.71 3.86a2 2 0 0 0-3.42 0Z',
+        id: 'project-analytics',
+        label: 'Project Analytics',
+        route: '/projects/analytics',
+        iconPath: 'M5 20V10m7 10V4m7 16v-7',
       },
     ],
   },

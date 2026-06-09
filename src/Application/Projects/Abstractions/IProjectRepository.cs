@@ -18,6 +18,8 @@ public interface IProjectRepository
         string? search,
         CancellationToken cancellationToken = default);
 
+    Task<ProjectAnalyticsDto> GetAnalyticsAsync(CancellationToken cancellationToken = default);
+
     void Add(Project project);
 
     void Update(Project project);

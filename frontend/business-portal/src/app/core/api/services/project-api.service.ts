@@ -93,16 +93,42 @@ export interface ProjectDashboard extends ProjectSummary {
   recentActivity: ProjectDashboardActivity[];
 }
 
-export interface MyTaskItem {
+export interface ProjectStatusCount {
+  status: ProjectStatus;
+  count: number;
+}
+
+export interface ProjectHealthCount {
+  health: ProjectHealth;
+  count: number;
+}
+
+export interface ProjectBudgetByCurrency {
+  currency: string;
+  totalBudget: number;
+  projectCount: number;
+}
+
+export interface ProjectAtRiskItem {
   id: string;
-  projectId: string;
-  projectName: string;
-  clientId: string;
+  name: string;
   clientCompanyName: string;
-  title: string;
-  status: ProjectTaskStatus;
-  priority: ProjectTaskPriority;
-  dueDate: string;
+  status: ProjectStatus;
+  health: ProjectHealth;
+  overdueMilestoneCount: number;
+  openRiskCount: number;
+}
+
+export interface ProjectAnalytics {
+  totalProjects: number;
+  taskSummary: ProjectTaskSummary;
+  overdueMilestoneCount: number;
+  openRiskCount: number;
+  overdueTaskCount: number;
+  statusBreakdown: ProjectStatusCount[];
+  healthBreakdown: ProjectHealthCount[];
+  budgetByCurrency: ProjectBudgetByCurrency[];
+  atRiskProjects: ProjectAtRiskItem[];
 }
 
 export interface ProjectListQuery {
@@ -189,9 +215,9 @@ export class ProjectApiService {
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
-  getMyTasks(page = 1, pageSize = 50): Observable<PagedResult<MyTaskItem>> {
+  getProjectAnalytics(): Observable<ProjectAnalytics> {
     return this.apiClient
-      .get<ApiEnvelope<PagedResult<MyTaskItem>>>(`${this.basePath}/my-tasks`, { page, pageSize })
+      .get<ApiEnvelope<ProjectAnalytics>>(`${this.basePath}/analytics`)
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 

@@ -8,7 +8,7 @@ import {
   CreateProjectRequest,
   CreateProjectRiskRequest,
   CreateTaskRequest,
-  MyTaskItem,
+  ProjectAnalytics,
   ProjectApiService,
   ProjectDashboard,
   ProjectListQuery,
@@ -23,21 +23,23 @@ import {
 interface ProjectState {
   projects: ProjectSummary[];
   selectedProject: ProjectDashboard | null;
-  myTasks: MyTaskItem[];
+  analytics: ProjectAnalytics | null;
   totalCount: number;
-  myTasksTotalCount: number;
   isLoading: boolean;
+  analyticsLoading: boolean;
   error: string | null;
+  analyticsError: string | null;
 }
 
 const initialState: ProjectState = {
   projects: [],
   selectedProject: null,
-  myTasks: [],
+  analytics: null,
   totalCount: 0,
-  myTasksTotalCount: 0,
   isLoading: false,
+  analyticsLoading: false,
   error: null,
+  analyticsError: null,
 };
 
 export const ProjectStore = signalStore(
@@ -59,6 +61,20 @@ export const ProjectStore = signalStore(
       }
     },
 
+    async loadProjectAnalytics(): Promise<void> {
+      patchState(store, { analyticsLoading: true, analyticsError: null });
+      try {
+        const analytics = await firstValueFrom(projectApiService.getProjectAnalytics());
+        patchState(store, { analytics });
+      } catch (error) {
+        patchState(store, {
+          analyticsError: readHttpErrorMessage(error, 'Unable to load project analytics.'),
+        });
+      } finally {
+        patchState(store, { analyticsLoading: false });
+      }
+    },
+
     async loadProjectDashboard(projectId: string): Promise<void> {
       patchState(store, { isLoading: true, error: null });
       try {
@@ -68,21 +84,6 @@ export const ProjectStore = signalStore(
         patchState(store, {
           error: readHttpErrorMessage(error, 'Unable to load project workspace.'),
         });
-      } finally {
-        patchState(store, { isLoading: false });
-      }
-    },
-
-    async loadMyTasks(page = 1, pageSize = 50): Promise<void> {
-      patchState(store, { isLoading: true, error: null });
-      try {
-        const result = await firstValueFrom(projectApiService.getMyTasks(page, pageSize));
-        patchState(store, {
-          myTasks: result.items,
-          myTasksTotalCount: result.totalCount,
-        });
-      } catch (error) {
-        patchState(store, { error: readHttpErrorMessage(error, 'Unable to load tasks.') });
       } finally {
         patchState(store, { isLoading: false });
       }
