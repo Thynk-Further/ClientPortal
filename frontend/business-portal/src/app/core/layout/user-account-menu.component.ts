@@ -44,7 +44,13 @@ import { ButtonComponent } from '@/components/ui/button.component';
       <div class="relative">
         <button
           type="button"
-          class="grid h-9 w-9 place-content-center rounded-full bg-primary text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+          class="grid h-9 w-9 place-content-center rounded-full text-xs font-semibold"
+          [class.bg-muted]="layout() === 'topbar'"
+          [class.text-foreground]="layout() === 'topbar'"
+          [class.hover:bg-muted/80]="layout() === 'topbar'"
+          [class.bg-primary]="layout() !== 'topbar'"
+          [class.text-primary-foreground]="layout() !== 'topbar'"
+          [class.hover:bg-primary/90]="layout() !== 'topbar'"
           [attr.aria-expanded]="menuOpen()"
           aria-haspopup="menu"
           aria-label="Account menu"
@@ -89,7 +95,7 @@ export class UserAccountMenuComponent {
   private readonly toast = inject(ToastNotificationService);
   private readonly elementRef = inject(ElementRef);
 
-  readonly layout = input<'header' | 'sidebar'>('header');
+  readonly layout = input<'header' | 'sidebar' | 'topbar'>('header');
 
   protected readonly menuOpen = signal(false);
 

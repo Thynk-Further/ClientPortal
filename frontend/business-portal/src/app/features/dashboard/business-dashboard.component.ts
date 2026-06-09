@@ -10,6 +10,7 @@ import {
 import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { ClientStore } from '@/app/core/stores/client.store';
+import { DashboardTopBarComponent } from '@/app/core/layout/dashboard-top-bar.component';
 import { UserAccountMenuComponent } from '@/app/core/layout/user-account-menu.component';
 import { ClientInviteOnboardingComponent } from '../clients/client-invite-onboarding.component';
 import { ClientWorkspaceComponent } from '../clients/client-workspace.component';
@@ -61,27 +62,33 @@ interface RecentActivityItem {
   selector: 'app-business-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClientInviteOnboardingComponent, ClientsListComponent, ClientWorkspaceComponent, UserAccountMenuComponent],
+  imports: [
+    ClientInviteOnboardingComponent,
+    ClientsListComponent,
+    ClientWorkspaceComponent,
+    DashboardTopBarComponent,
+    UserAccountMenuComponent,
+  ],
   template: `
     <div class="min-h-screen bg-muted/30 text-foreground">
-      <div class="flex min-h-screen">
+      <app-dashboard-top-bar
+        [isDark]="isDark()"
+        (themeToggle)="toggleTheme()"
+        (newClient)="onNewClient()"
+      />
+
+      <div class="flex min-h-[calc(100vh-3.5rem)]">
         <aside
-          class="flex min-h-screen flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 transition-all duration-300"
+          class="flex min-h-full flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 transition-all duration-300"
           [class.w-64]="!sidebarCollapsed()"
           [class.w-20]="sidebarCollapsed()"
         >
-          <div class="mb-6 flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
-              <div class="grid h-9 w-9 place-content-center rounded-lg bg-primary text-primary-foreground">
-                Z
-              </div>
-              @if (!sidebarCollapsed()) {
-                <div>
-                  <p class="text-sm font-semibold leading-4">Business Portal</p>
-                  <p class="text-xs text-muted-foreground">Dashboard</p>
-                </div>
-              }
-            </div>
+          <div class="mb-6 flex items-center" [class.justify-end]="sidebarCollapsed()" [class.justify-between]="!sidebarCollapsed()">
+            @if (!sidebarCollapsed()) {
+              <p class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
+                Navigation
+              </p>
+            }
 
             <button
               type="button"
@@ -168,70 +175,14 @@ interface RecentActivityItem {
             }
           </nav>
 
-          <div class="mt-4 border-t border-sidebar-border pt-4">
-            @if (sidebarCollapsed()) {
-              <app-user-account-menu />
-            } @else {
+          @if (!sidebarCollapsed()) {
+            <div class="mt-4 border-t border-sidebar-border pt-4">
               <app-user-account-menu layout="sidebar" />
-            }
-          </div>
+            </div>
+          }
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col">
-          <header class="flex items-center justify-between gap-3 border-b bg-background px-4 py-3 sm:px-6">
-            <div>
-              <h1 class="text-2xl font-semibold tracking-tight">Dashboard</h1>
-              <p class="text-sm text-muted-foreground">Welcome back. Here is your business snapshot.</p>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <button
-                type="button"
-                class="grid h-9 w-9 place-content-center rounded-full border bg-background hover:bg-muted"
-                (click)="toggleTheme()"
-                [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
-              >
-                @if (isDark()) {
-                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364 6.364-1.414-1.414M7.05 7.05 5.636 5.636m12.728 0L16.95 7.05M7.05 16.95l-1.414 1.414M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"
-                    />
-                  </svg>
-                } @else {
-                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M21 12.79A9 9 0 1 1 11.21 3c-.03.22-.05.44-.05.67A7.33 7.33 0 0 0 18.33 11c.23 0 .45-.02.67-.05Z"
-                    />
-                  </svg>
-                }
-              </button>
-
-              <button
-                type="button"
-                class="relative grid h-9 w-9 place-content-center rounded-full border bg-background hover:bg-muted"
-                aria-label="Open notifications"
-              >
-                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5m6 0a3 3 0 1 1-6 0m6 0H9"
-                  />
-                </svg>
-                <span class="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500"></span>
-              </button>
-
-              <app-user-account-menu />
-            </div>
-          </header>
-
           @if (activeView() === 'client-invite-onboard') {
             <app-client-invite-onboarding />
           } @else if (activeView() === 'client-list') {
@@ -756,6 +707,11 @@ export class BusinessDashboardComponent implements OnInit {
     const nextValue = !this.isDark();
     this.isDark.set(nextValue);
     this.applyTheme(nextValue);
+  }
+
+  protected onNewClient(): void {
+    this.activeView.set('client-invite-onboard');
+    void this.refreshClientCount();
   }
 
   protected onSidebarItemClick(event: Event, itemId: string): void {
