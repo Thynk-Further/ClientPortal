@@ -140,16 +140,23 @@ const CLIENT_STATUS_INVITED = 1;
                           {{ formatDate(client.invitedAt) }}
                         </td>
                         <td class="px-4 py-3">
-                          @if (isPendingInvite(client.status)) {
+                          <div class="flex flex-wrap gap-2">
                             <ui-button
                               variant="outline"
-                              [disabled]="resendingClientId() === client.id"
-                              [label]="resendingClientId() === client.id ? 'Sending...' : 'Resend invite'"
-                              (clicked)="resendInvite(client.id)"
+                              size="sm"
+                              label="Open"
+                              (clicked)="openClient(client.id)"
                             />
-                          } @else {
-                            <span class="text-xs text-muted-foreground">—</span>
-                          }
+                            @if (isPendingInvite(client.status)) {
+                              <ui-button
+                                variant="outline"
+                                size="sm"
+                                [disabled]="resendingClientId() === client.id"
+                                [label]="resendingClientId() === client.id ? 'Sending...' : 'Resend invite'"
+                                (clicked)="resendInvite(client.id)"
+                              />
+                            }
+                          </div>
                         </td>
                       </tr>
                     }
@@ -219,6 +226,10 @@ export class ClientsListComponent implements OnInit {
 
   protected goToInviteOnboarding(): void {
     void this.router.navigate(['/clients/invite-onboarding']);
+  }
+
+  protected openClient(clientId: string): void {
+    void this.router.navigate(['/clients', clientId]);
   }
 
   protected isPendingInvite(status: ClientSummary['status']): boolean {

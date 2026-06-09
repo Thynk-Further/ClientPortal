@@ -143,6 +143,13 @@ export interface CreateMilestoneRequest {
   dueDate: string;
 }
 
+export interface UpdateMilestoneRequest {
+  name: string;
+  dueDate: string;
+  status: MilestoneStatus;
+  completedAtUtc?: string | null;
+}
+
 export interface CreateTaskRequest {
   milestoneId: string;
   title: string;
@@ -210,9 +217,61 @@ export class ProjectApiService {
     );
   }
 
+  createMilestone(projectId: string, request: CreateMilestoneRequest): Observable<string> {
+    return this.apiClient
+      .post<ApiEnvelope<string>, CreateMilestoneRequest>(
+        `${this.basePath}/${projectId}/milestones`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  updateMilestone(
+    projectId: string,
+    milestoneId: string,
+    request: UpdateMilestoneRequest,
+  ): Observable<ApiOperationResult> {
+    return this.apiClient.put<ApiOperationResult, UpdateMilestoneRequest>(
+      `${this.basePath}/${projectId}/milestones/${milestoneId}`,
+      request,
+    );
+  }
+
+  deleteMilestone(projectId: string, milestoneId: string): Observable<ApiOperationResult> {
+    return this.apiClient.delete<ApiOperationResult>(
+      `${this.basePath}/${projectId}/milestones/${milestoneId}`,
+    );
+  }
+
   completeMilestone(projectId: string, milestoneId: string): Observable<ApiOperationResult> {
     return this.apiClient.post<ApiOperationResult>(
       `${this.basePath}/${projectId}/milestones/${milestoneId}/complete`,
+    );
+  }
+
+  createTask(projectId: string, request: CreateTaskRequest): Observable<string> {
+    return this.apiClient
+      .post<ApiEnvelope<string>, CreateTaskRequest>(
+        `${this.basePath}/${projectId}/tasks`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  updateTask(
+    projectId: string,
+    taskId: string,
+    request: UpdateTaskRequest,
+  ): Observable<ApiOperationResult> {
+    return this.apiClient.put<ApiOperationResult, UpdateTaskRequest>(
+      `${this.basePath}/${projectId}/tasks/${taskId}`,
+      request,
+    );
+  }
+
+  deleteTask(projectId: string, taskId: string): Observable<ApiOperationResult> {
+    return this.apiClient.delete<ApiOperationResult>(
+      `${this.basePath}/${projectId}/tasks/${taskId}`,
     );
   }
 

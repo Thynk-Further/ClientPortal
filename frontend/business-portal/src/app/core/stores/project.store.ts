@@ -4,16 +4,20 @@ import { firstValueFrom } from 'rxjs';
 
 import { readHttpErrorMessage } from '../api/api-envelope.util';
 import {
+  CreateMilestoneRequest,
   CreateProjectRequest,
   CreateProjectRiskRequest,
+  CreateTaskRequest,
   MyTaskItem,
   ProjectApiService,
   ProjectDashboard,
   ProjectListQuery,
   ProjectSummary,
   ProjectTaskStatus,
+  UpdateMilestoneRequest,
   UpdateProjectRequest,
   UpdateProjectRiskRequest,
+  UpdateTaskRequest,
 } from '../api/services/project-api.service';
 
 interface ProjectState {
@@ -110,6 +114,43 @@ export const ProjectStore = signalStore(
       }
     },
 
+    async createMilestone(projectId: string, request: CreateMilestoneRequest): Promise<boolean> {
+      try {
+        await firstValueFrom(projectApiService.createMilestone(projectId, request));
+        await this.loadProjectDashboard(projectId);
+        return true;
+      } catch (error) {
+        patchState(store, { error: readHttpErrorMessage(error, 'Unable to create milestone.') });
+        return false;
+      }
+    },
+
+    async updateMilestone(
+      projectId: string,
+      milestoneId: string,
+      request: UpdateMilestoneRequest,
+    ): Promise<boolean> {
+      try {
+        await firstValueFrom(projectApiService.updateMilestone(projectId, milestoneId, request));
+        await this.loadProjectDashboard(projectId);
+        return true;
+      } catch (error) {
+        patchState(store, { error: readHttpErrorMessage(error, 'Unable to update milestone.') });
+        return false;
+      }
+    },
+
+    async deleteMilestone(projectId: string, milestoneId: string): Promise<boolean> {
+      try {
+        await firstValueFrom(projectApiService.deleteMilestone(projectId, milestoneId));
+        await this.loadProjectDashboard(projectId);
+        return true;
+      } catch (error) {
+        patchState(store, { error: readHttpErrorMessage(error, 'Unable to delete milestone.') });
+        return false;
+      }
+    },
+
     async completeMilestone(projectId: string, milestoneId: string): Promise<boolean> {
       try {
         await firstValueFrom(projectApiService.completeMilestone(projectId, milestoneId));
@@ -117,6 +158,43 @@ export const ProjectStore = signalStore(
         return true;
       } catch (error) {
         patchState(store, { error: readHttpErrorMessage(error, 'Unable to complete milestone.') });
+        return false;
+      }
+    },
+
+    async createTask(projectId: string, request: CreateTaskRequest): Promise<boolean> {
+      try {
+        await firstValueFrom(projectApiService.createTask(projectId, request));
+        await this.loadProjectDashboard(projectId);
+        return true;
+      } catch (error) {
+        patchState(store, { error: readHttpErrorMessage(error, 'Unable to create task.') });
+        return false;
+      }
+    },
+
+    async updateTask(
+      projectId: string,
+      taskId: string,
+      request: UpdateTaskRequest,
+    ): Promise<boolean> {
+      try {
+        await firstValueFrom(projectApiService.updateTask(projectId, taskId, request));
+        await this.loadProjectDashboard(projectId);
+        return true;
+      } catch (error) {
+        patchState(store, { error: readHttpErrorMessage(error, 'Unable to update task.') });
+        return false;
+      }
+    },
+
+    async deleteTask(projectId: string, taskId: string): Promise<boolean> {
+      try {
+        await firstValueFrom(projectApiService.deleteTask(projectId, taskId));
+        await this.loadProjectDashboard(projectId);
+        return true;
+      } catch (error) {
+        patchState(store, { error: readHttpErrorMessage(error, 'Unable to delete task.') });
         return false;
       }
     },

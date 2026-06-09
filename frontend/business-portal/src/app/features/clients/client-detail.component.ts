@@ -17,7 +17,11 @@ import {
 } from '@/app/core/api/services/client-api.service';
 import { DocumentApiService, DocumentSummary } from '@/app/core/api/services/document-api.service';
 import { InvoiceApiService, InvoiceSummary } from '@/app/core/api/services/invoice-api.service';
-import { ProjectApiService, ProjectSummary } from '@/app/core/api/services/project-api.service';
+import {
+  CreateProjectMilestoneRequest,
+  ProjectApiService,
+  ProjectSummary,
+} from '@/app/core/api/services/project-api.service';
 import { ProjectStore } from '@/app/core/stores/project.store';
 import { ClientStore } from '@/app/core/stores/client.store';
 import { ButtonComponent } from '@/components/ui/button.component';
@@ -169,6 +173,7 @@ interface TabDefinition {
                       <input
                         class="rounded-md border px-3 py-2 text-sm"
                         placeholder="Project name"
+                        required
                         [value]="newProjectName()"
                         (input)="onNewProjectNameInput($event)"
                       />
@@ -176,9 +181,93 @@ interface TabDefinition {
                         class="rounded-md border px-3 py-2 text-sm"
                         placeholder="Description"
                         rows="3"
+                        required
                         [value]="newProjectDescription()"
                         (input)="onNewProjectDescriptionInput($event)"
                       ></textarea>
+                      <div class="grid gap-3 sm:grid-cols-2">
+                        <label class="space-y-1 text-sm">
+                          <span class="font-medium">Start date</span>
+                          <input
+                            type="date"
+                            class="w-full rounded-md border px-3 py-2"
+                            required
+                            [value]="newProjectStartDate()"
+                            (input)="onNewProjectStartDateInput($event)"
+                          />
+                        </label>
+                        <label class="space-y-1 text-sm">
+                          <span class="font-medium">End date</span>
+                          <input
+                            type="date"
+                            class="w-full rounded-md border px-3 py-2"
+                            required
+                            [value]="newProjectEndDate()"
+                            (input)="onNewProjectEndDateInput($event)"
+                          />
+                        </label>
+                      </div>
+                      <div class="grid gap-3 sm:grid-cols-2">
+                        <label class="space-y-1 text-sm">
+                          <span class="font-medium">Budget</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            class="w-full rounded-md border px-3 py-2"
+                            [value]="newProjectBudget()"
+                            (input)="onNewProjectBudgetInput($event)"
+                          />
+                        </label>
+                        <label class="space-y-1 text-sm">
+                          <span class="font-medium">Currency</span>
+                          <input
+                            class="w-full rounded-md border px-3 py-2"
+                            maxlength="3"
+                            [value]="newProjectCurrency()"
+                            (input)="onNewProjectCurrencyInput($event)"
+                          />
+                        </label>
+                      </div>
+                      <div class="space-y-2 rounded-md border bg-muted/20 p-3">
+                        <div class="flex items-center justify-between gap-2">
+                          <p class="text-sm font-medium">Initial milestones (optional)</p>
+                          <ui-button
+                            type="button"
+                            variant="outline"
+                            label="Add milestone"
+                            (clicked)="addScaffoldMilestone()"
+                          />
+                        </div>
+                        @if (scaffoldMilestones().length === 0) {
+                          <p class="text-xs text-muted-foreground">
+                            Add delivery phases to scaffold the project timeline.
+                          </p>
+                        } @else {
+                          @for (milestone of scaffoldMilestones(); track $index) {
+                            <div class="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+                              <input
+                                class="rounded-md border px-3 py-2 text-sm"
+                                placeholder="Milestone name"
+                                [value]="milestone.name"
+                                (input)="onScaffoldMilestoneNameInput($index, $event)"
+                              />
+                              <input
+                                type="date"
+                                class="rounded-md border px-3 py-2 text-sm"
+                                [value]="milestone.dueDate"
+                                (input)="onScaffoldMilestoneDueDateInput($index, $event)"
+                              />
+                              <ui-button
+                                type="button"
+                                variant="outline"
+                                label="Remove"
+                                (clicked)="removeScaffoldMilestone($index)"
+                              />
+                            </div>
+                          }
+                        }
+                      </div>
                       <ui-button type="submit" label="Create project" />
                     </form>
                   }
@@ -319,6 +408,11 @@ export class ClientDetailComponent implements OnInit {
   protected readonly showCreateProject = signal(false);
   protected readonly newProjectName = signal('');
   protected readonly newProjectDescription = signal('');
+  protected readonly newProjectStartDate = signal(this.formatDateInputValue(new Date()));
+  protected readonly newProjectEndDate = signal(this.formatDateInputValue(this.defaultProjectEndDate()));
+  protected readonly newProjectBudget = signal('0');
+  protected readonly newProjectCurrency = signal('ZAR');
+  protected readonly scaffoldMilestones = signal<CreateProjectMilestoneRequest[]>([]);
 
   protected readonly ongoingProjects = computed(() =>
     this.projects().filter((project) => isOngoingProject(project.status)),
@@ -437,7 +531,11 @@ export class ClientDetailComponent implements OnInit {
   }
 
   protected toggleCreateProject(): void {
-    this.showCreateProject.update((value) => !value);
+    const next = !this.showCreateProject();
+    this.showCreateProject.set(next);
+    if (next) {
+      this.resetCreateProjectForm();
+    }
   }
 
   protected onNewProjectNameInput(event: Event): void {
@@ -448,35 +546,116 @@ export class ClientDetailComponent implements OnInit {
     this.newProjectDescription.set((event.target as HTMLTextAreaElement).value);
   }
 
+  protected onNewProjectStartDateInput(event: Event): void {
+    this.newProjectStartDate.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onNewProjectEndDateInput(event: Event): void {
+    this.newProjectEndDate.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onNewProjectBudgetInput(event: Event): void {
+    this.newProjectBudget.set((event.target as HTMLInputElement).value);
+  }
+
+  protected onNewProjectCurrencyInput(event: Event): void {
+    this.newProjectCurrency.set((event.target as HTMLInputElement).value.toUpperCase());
+  }
+
+  protected addScaffoldMilestone(): void {
+    const endDate = this.newProjectEndDate();
+    this.scaffoldMilestones.update((current) => [
+      ...current,
+      { name: '', dueDate: endDate },
+    ]);
+  }
+
+  protected removeScaffoldMilestone(index: number): void {
+    this.scaffoldMilestones.update((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  protected onScaffoldMilestoneNameInput(index: number, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.scaffoldMilestones.update((current) =>
+      current.map((milestone, itemIndex) =>
+        itemIndex === index ? { ...milestone, name: value } : milestone,
+      ),
+    );
+  }
+
+  protected onScaffoldMilestoneDueDateInput(index: number, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.scaffoldMilestones.update((current) =>
+      current.map((milestone, itemIndex) =>
+        itemIndex === index ? { ...milestone, dueDate: value } : milestone,
+      ),
+    );
+  }
+
   protected async submitCreateProject(event: Event): Promise<void> {
     event.preventDefault();
     const clientId = this.clientId().trim();
     const name = this.newProjectName().trim();
     const description = this.newProjectDescription().trim();
-    if (clientId === '' || name === '' || description === '') {
+    const startDate = this.newProjectStartDate().trim();
+    const endDate = this.newProjectEndDate().trim();
+    const budget = Number.parseFloat(this.newProjectBudget());
+    const currency = this.newProjectCurrency().trim().toUpperCase();
+    if (
+      clientId === ''
+      || name === ''
+      || description === ''
+      || startDate === ''
+      || endDate === ''
+      || currency === ''
+      || Number.isNaN(budget)
+    ) {
       return;
     }
 
-    const today = new Date();
-    const end = new Date(today);
-    end.setMonth(end.getMonth() + 3);
+    const milestones = this.scaffoldMilestones()
+      .map((milestone) => ({
+        name: milestone.name.trim(),
+        dueDate: milestone.dueDate,
+      }))
+      .filter((milestone) => milestone.name !== '' && milestone.dueDate !== '');
 
     const projectId = await this.projectStore.createProject({
       clientId,
       name,
       description,
-      startDate: today.toISOString().slice(0, 10),
-      endDate: end.toISOString().slice(0, 10),
-      budget: 0,
-      currency: 'ZAR',
+      startDate,
+      endDate,
+      budget,
+      currency,
+      milestones: milestones.length > 0 ? milestones : undefined,
     });
 
     if (projectId !== null) {
-      this.newProjectName.set('');
-      this.newProjectDescription.set('');
+      this.resetCreateProjectForm();
       this.showCreateProject.set(false);
       await this.loadProjectsTab();
     }
+  }
+
+  private resetCreateProjectForm(): void {
+    this.newProjectName.set('');
+    this.newProjectDescription.set('');
+    this.newProjectStartDate.set(this.formatDateInputValue(new Date()));
+    this.newProjectEndDate.set(this.formatDateInputValue(this.defaultProjectEndDate()));
+    this.newProjectBudget.set('0');
+    this.newProjectCurrency.set('ZAR');
+    this.scaffoldMilestones.set([]);
+  }
+
+  private defaultProjectEndDate(): Date {
+    const end = new Date();
+    end.setMonth(end.getMonth() + 3);
+    return end;
+  }
+
+  private formatDateInputValue(date: Date): string {
+    return date.toISOString().slice(0, 10);
   }
 
   protected formatInvoiceStatus(status: InvoiceSummary['status']): string {
