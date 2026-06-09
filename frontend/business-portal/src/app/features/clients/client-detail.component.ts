@@ -22,6 +22,7 @@ import {
   ProjectApiService,
   ProjectSummary,
 } from '@/app/core/api/services/project-api.service';
+import { BusinessPortalBreadcrumbService } from '@/app/core/layout/business-portal-breadcrumb.service';
 import { ProjectStore } from '@/app/core/stores/project.store';
 import { ClientStore } from '@/app/core/stores/client.store';
 import { ButtonComponent } from '@/components/ui/button.component';
@@ -389,6 +390,7 @@ interface TabDefinition {
 export class ClientDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly clientStore = inject(ClientStore);
+  private readonly breadcrumbService = inject(BusinessPortalBreadcrumbService);
   private readonly projectStore = inject(ProjectStore);
   private readonly projectApiService = inject(ProjectApiService);
   private readonly invoiceApiService = inject(InvoiceApiService);
@@ -711,6 +713,10 @@ export class ClientDetailComponent implements OnInit {
         this.errorMessage.set(this.clientStore.error());
         return;
       }
+
+      this.breadcrumbService.setDynamicTrail([
+        { label: this.clientCompanyName() },
+      ]);
 
       await this.loadTabData(this.activeTab());
     } catch (error) {

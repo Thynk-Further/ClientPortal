@@ -8,6 +8,7 @@ export const SETTINGS_ROUTES: Routes = [
         (m) => m.BusinessSettingsComponent,
       ),
     data: {
+      breadcrumb: 'Settings',
       title: 'Settings',
       description: 'Branding, team members, notification, and tax settings.',
     },

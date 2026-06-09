@@ -114,7 +114,7 @@ interface TeamMember {
         </section>
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <ui-card>
+          <ui-card id="notification-preferences">
             <ui-card-header>
               <ui-card-title>Notification Preferences</ui-card-title>
               <ui-card-description>

@@ -6,6 +6,7 @@ export const PROJECTS_ROUTES: Routes = [
     loadComponent: () =>
       import('./projects-list.component').then((m) => m.ProjectsListComponent),
     data: {
+      breadcrumb: 'Projects',
       title: 'Projects',
       description: 'Project list across all clients.',
     },
@@ -15,6 +16,7 @@ export const PROJECTS_ROUTES: Routes = [
     loadComponent: () =>
       import('./my-tasks.component').then((m) => m.MyTasksComponent),
     data: {
+      breadcrumb: 'Kanban',
       title: 'My Tasks',
       description: 'Cross-client task inbox.',
     },

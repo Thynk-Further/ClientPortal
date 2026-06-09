@@ -7,8 +7,9 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 
+import { BusinessPortalBreadcrumbService } from '@/app/core/layout/business-portal-breadcrumb.service';
 import { UserSessionService } from '@/app/core/auth/user-session.service';
 import {
   MilestoneStatus,
@@ -47,7 +48,6 @@ interface KanbanColumn {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DecimalPipe,
-    RouterLink,
     ButtonComponent,
     CardComponent,
     CardHeaderComponent,
@@ -61,22 +61,6 @@ interface KanbanColumn {
     <main class="min-h-screen bg-muted/30 p-4 sm:p-6">
       <section class="mx-auto max-w-7xl space-y-6">
         <header class="space-y-2">
-          <nav class="text-sm text-muted-foreground">
-            <a class="hover:underline" [routerLink]="['/clients']">Clients</a>
-            @if (clientId() !== '') {
-              <span> / </span>
-              <a
-                class="hover:underline"
-                [routerLink]="['/clients', clientId()]"
-                [queryParams]="{ tab: 'projects' }"
-              >
-                {{ dashboard()?.clientCompanyName ?? 'Client' }}
-              </a>
-            }
-            <span> / </span>
-            <span class="text-foreground">{{ dashboard()?.name ?? 'Project' }}</span>
-          </nav>
-
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h1 class="text-2xl font-semibold tracking-tight">{{ dashboard()?.name ?? 'Project workspace' }}</h1>
@@ -472,6 +456,7 @@ interface KanbanColumn {
 export class ProjectDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   protected readonly projectStore = inject(ProjectStore);
+  private readonly breadcrumbService = inject(BusinessPortalBreadcrumbService);
   private readonly userSession = inject(UserSessionService);
 
   protected readonly projectId = computed(
@@ -883,6 +868,25 @@ export class ProjectDetailComponent implements OnInit {
     }
 
     await this.projectStore.loadProjectDashboard(projectId);
+
+    const project = this.dashboard();
+    if (project === null) {
+      return;
+    }
+
+    const clientRouteId = this.route.parent?.snapshot.paramMap.get('clientId') ?? '';
+    if (clientRouteId !== '') {
+      this.breadcrumbService.setDynamicTrail([
+        {
+          label: project.clientCompanyName,
+          route: `/clients/${clientRouteId}`,
+        },
+        { label: project.name },
+      ]);
+      return;
+    }
+
+    this.breadcrumbService.setDynamicTrail([{ label: project.name }]);
   }
 
   private todayDateInputValue(): string {

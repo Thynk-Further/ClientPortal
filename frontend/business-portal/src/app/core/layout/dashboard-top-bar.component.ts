@@ -20,30 +20,10 @@ import { UserAccountMenuComponent } from './user-account-menu.component';
   imports: [UserAccountMenuComponent],
   template: `
     <header
-      class="sticky top-0 z-40 flex h-14 items-center gap-4 border-b border-border/80 bg-background px-4 sm:px-6"
+      class="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-4 border-b border-border/70 bg-background px-5 sm:px-6"
     >
-      <div class="flex shrink-0 items-center gap-2.5">
-        <div class="grid h-8 w-8 place-content-center rounded-[9px] bg-foreground text-background">
-          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-            <path
-              d="M12 2 20 12 12 22 4 12 12 2Z"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-            />
-          </svg>
-        </div>
-
-        <div class="leading-none">
-          <p class="text-sm font-semibold tracking-tight text-foreground">Zenith</p>
-          <p class="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-            Dashboard
-          </p>
-        </div>
-      </div>
-
-      <div class="flex min-w-0 flex-1 justify-center px-2 sm:px-6">
-        <div class="relative w-full max-w-xl">
+      <div class="flex min-w-0 flex-1">
+        <div class="relative w-full max-w-2xl">
           <svg
             class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
             viewBox="0 0 24 24"
@@ -62,23 +42,32 @@ import { UserAccountMenuComponent } from './user-account-menu.component';
           <input
             #searchInput
             type="search"
-            class="h-10 w-full rounded-full border border-border bg-background py-2 pl-10 pr-[4.5rem] text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            class="h-10 w-full rounded-full border border-border bg-background py-2 pl-10 pr-11 text-sm text-foreground shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
             placeholder="Search anything..."
             aria-label="Search"
           />
 
-          <kbd
-            class="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground sm:inline-flex"
+          <button
+            type="button"
+            class="absolute right-1.5 top-1/2 grid h-7 w-7 -translate-y-1/2 place-content-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Search filters"
           >
-            {{ searchShortcutLabel() }}
-          </kbd>
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.75"
+                d="M4 6h16M4 12h10M4 18h7"
+              />
+            </svg>
+          </button>
         </div>
       </div>
 
       <div class="flex shrink-0 items-center gap-2.5 sm:gap-3">
         <button
           type="button"
-          class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-foreground px-3.5 text-sm font-medium text-background transition-colors hover:bg-foreground/90"
+          class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-foreground px-3.5 text-sm font-medium text-background shadow-sm transition-colors hover:bg-foreground/90"
           (click)="newClient.emit()"
         >
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -89,10 +78,10 @@ import { UserAccountMenuComponent } from './user-account-menu.component';
 
         <span class="hidden h-6 w-px bg-border sm:block" aria-hidden="true"></span>
 
-        <div class="flex items-center gap-0.5 sm:gap-1">
+        <div class="flex items-center gap-0.5">
           <button
             type="button"
-            class="grid h-9 w-9 place-content-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            class="grid h-9 w-9 place-content-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             (click)="themeToggle.emit()"
             [attr.aria-label]="isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
           >
@@ -119,7 +108,7 @@ import { UserAccountMenuComponent } from './user-account-menu.component';
 
           <button
             type="button"
-            class="grid h-9 w-9 place-content-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            class="grid h-9 w-9 place-content-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="Theme settings"
           >
             <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -134,7 +123,7 @@ import { UserAccountMenuComponent } from './user-account-menu.component';
 
           <button
             type="button"
-            class="relative grid h-9 w-9 place-content-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            class="grid h-9 w-9 place-content-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="Open notifications"
           >
             <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -161,14 +150,6 @@ export class DashboardTopBarComponent {
 
   readonly newClient = output<void>();
   readonly themeToggle = output<void>();
-
-  protected searchShortcutLabel(): string {
-    if (!isPlatformBrowser(this.platformId)) {
-      return '⌘K';
-    }
-
-    return /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent) ? '⌘K' : 'Ctrl+K';
-  }
 
   @HostListener('document:keydown', ['$event'])
   onSearchShortcut(event: KeyboardEvent): void {

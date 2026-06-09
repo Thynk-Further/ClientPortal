@@ -6,6 +6,7 @@ export const FINANCE_ROUTES: Routes = [
     loadComponent: () =>
       import('./invoice-list.component').then((m) => m.InvoiceListComponent),
     data: {
+      breadcrumb: 'Invoices',
       title: 'Finance',
       description:
         'Invoices, quotes, payment workflows, and reporting screens.',
@@ -16,6 +17,7 @@ export const FINANCE_ROUTES: Routes = [
     loadComponent: () =>
       import('./quote-list.component').then((m) => m.QuoteListComponent),
     data: {
+      breadcrumb: 'Quotes',
       title: 'Quotes',
       description: 'Quote list and acceptance workflow tracking.',
     },
@@ -25,6 +27,7 @@ export const FINANCE_ROUTES: Routes = [
     loadComponent: () =>
       import('./quote-builder.component').then((m) => m.QuoteBuilderComponent),
     data: {
+      breadcrumb: 'Quote Builder',
       title: 'Quote Builder',
       description: 'Create quote with line item composition.',
     },
@@ -34,6 +37,7 @@ export const FINANCE_ROUTES: Routes = [
     loadComponent: () =>
       import('./quote-workflow.component').then((m) => m.QuoteWorkflowComponent),
     data: {
+      breadcrumb: 'Quote Workflow',
       title: 'Quote Workflow',
       description: 'Send, accept, and reject quote workflow state.',
     },
@@ -45,6 +49,7 @@ export const FINANCE_ROUTES: Routes = [
         (m) => m.CreateInvoiceWizardComponent,
       ),
     data: {
+      breadcrumb: 'Invoice Wizard',
       title: 'Create Invoice',
       description: 'Multi-step wizard for invoice creation.',
     },
@@ -54,6 +59,7 @@ export const FINANCE_ROUTES: Routes = [
     loadComponent: () =>
       import('./invoice-detail.component').then((m) => m.InvoiceDetailComponent),
     data: {
+      breadcrumb: 'Invoice Detail',
       title: 'Invoice Detail',
       description: 'Invoice detail and payment recording workflow.',
     },

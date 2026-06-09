@@ -36,6 +36,7 @@ export const routes: Routes = [
           ),
         data: {
           initialView: 'client-workspace',
+          breadcrumb: 'Client Workspace',
         },
       },
       {
@@ -44,6 +45,9 @@ export const routes: Routes = [
           import('./features/clients/client-invite-onboarding.component').then(
             (m) => m.ClientInviteOnboardingComponent,
           ),
+        data: {
+          breadcrumb: 'Invite & Onboard',
+        },
       },
       {
         path: 'clients',
@@ -53,6 +57,7 @@ export const routes: Routes = [
           ),
         data: {
           initialView: 'client-list',
+          breadcrumb: 'Client List',
         },
       },
       {

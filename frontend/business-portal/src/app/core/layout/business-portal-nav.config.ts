@@ -10,6 +10,8 @@ export interface BusinessPortalNavItem {
 export interface BusinessPortalNavSection {
   readonly id: string;
   readonly label: string;
+  readonly breadcrumbLabel: string;
+  readonly pathPrefix: string;
   readonly items: ReadonlyArray<BusinessPortalNavItem>;
 }
 
@@ -17,6 +19,8 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
   {
     id: 'overview',
     label: 'Overview',
+    breadcrumbLabel: 'Overview',
+    pathPrefix: 'dashboard',
     items: [
       {
         id: 'dashboard',
@@ -37,6 +41,8 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
   {
     id: 'clients',
     label: 'Client Management',
+    breadcrumbLabel: 'Clients',
+    pathPrefix: 'clients',
     items: [
       {
         id: 'client-invite-onboard',
@@ -64,6 +70,8 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
   {
     id: 'projects',
     label: 'Project Management',
+    breadcrumbLabel: 'Projects',
+    pathPrefix: 'projects',
     items: [
       {
         id: 'project-list-detail',
@@ -95,6 +103,8 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
   {
     id: 'finance',
     label: 'Finance',
+    breadcrumbLabel: 'Finance',
+    pathPrefix: 'finance',
     items: [
       {
         id: 'invoice-list-detail',
@@ -131,6 +141,8 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
   {
     id: 'documents',
     label: 'Documents & Contracts',
+    breadcrumbLabel: 'Documents',
+    pathPrefix: 'documents',
     items: [
       {
         id: 'document-library',
@@ -157,6 +169,8 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
   {
     id: 'communication',
     label: 'Communication & Meetings',
+    breadcrumbLabel: 'Communication',
+    pathPrefix: 'communication',
     items: [
       {
         id: 'messages-inbox',
@@ -183,6 +197,8 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
   {
     id: 'reports',
     label: 'Reports',
+    breadcrumbLabel: 'Reports',
+    pathPrefix: 'reports',
     items: [
       {
         id: 'financial-reports',
@@ -213,6 +229,8 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
   {
     id: 'settings',
     label: 'Settings & Branding',
+    breadcrumbLabel: 'Settings',
+    pathPrefix: 'settings',
     items: [
       {
         id: 'company-branding',

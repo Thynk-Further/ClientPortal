@@ -24,52 +24,77 @@ import { UserAccountMenuComponent } from './user-account-menu.component';
   imports: [RouterLink, UserAccountMenuComponent],
   template: `
     <aside
-      class="flex min-h-screen flex-col border-r border-sidebar-border bg-sidebar px-3 py-4 transition-all duration-300"
+      class="relative sticky top-0 flex h-screen shrink-0 flex-col border-r border-border/70 bg-sidebar transition-[width] duration-300 ease-in-out"
       [class.w-64]="!sidebarCollapsed()"
-      [class.w-20]="sidebarCollapsed()"
+      [class.w-[4.5rem]]="sidebarCollapsed()"
     >
-      <div class="mb-6 flex items-center justify-between gap-2">
-        <a routerLink="/dashboard" class="flex items-center gap-2">
-          <div class="grid h-9 w-9 place-content-center rounded-lg bg-primary text-primary-foreground">
-            Z
+      <button
+        type="button"
+        class="absolute -right-3 top-[4.75rem] z-10 grid h-6 w-6 place-content-center rounded-full border border-border/80 bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+        (click)="toggleSidebar()"
+        [attr.aria-label]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        [attr.aria-expanded]="!sidebarCollapsed()"
+      >
+        <svg
+          class="h-3.5 w-3.5 transition-transform duration-300"
+          [class.rotate-180]="sidebarCollapsed()"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            d="m15 6-6 6 6 6"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+          />
+        </svg>
+      </button>
+
+      <div class="shrink-0 px-4 pb-4 pt-5" [class.px-3]="sidebarCollapsed()">
+        <a
+          routerLink="/dashboard"
+          class="flex items-center gap-2.5"
+          [class.justify-center]="sidebarCollapsed()"
+        >
+          <div class="grid h-8 w-8 shrink-0 place-content-center rounded-[9px] bg-foreground text-background">
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+              <path
+                d="M12 2 20 12 12 22 4 12 12 2Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+              />
+            </svg>
           </div>
           @if (!sidebarCollapsed()) {
-            <div>
-              <p class="text-sm font-semibold leading-4">Business Portal</p>
-              <p class="text-xs text-muted-foreground">Operations</p>
+            <div class="leading-none">
+              <p class="text-sm font-semibold tracking-tight text-foreground">Zenith</p>
+              <p class="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                Dashboard
+              </p>
             </div>
           }
         </a>
-
-        <button
-          type="button"
-          class="grid h-8 w-8 place-content-center rounded-md border bg-background hover:bg-muted"
-          (click)="toggleSidebar()"
-          [attr.aria-label]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
-        >
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          </svg>
-        </button>
       </div>
 
-      <nav class="flex-1 space-y-5" aria-label="Sidebar">
+      <nav
+        class="zenith-sidebar-scroll min-h-0 flex-1 space-y-5 px-3"
+        [class.px-2]="sidebarCollapsed()"
+        aria-label="Sidebar"
+      >
         @for (section of sidebarSections(); track section.id) {
-          <div class="space-y-1.5">
+          <div class="space-y-1">
             @if (!sidebarCollapsed()) {
               <button
                 type="button"
-                class="flex w-full items-center justify-between rounded-md px-2 py-1 text-left hover:bg-muted/50"
+                class="flex w-full items-center justify-between rounded-md px-2 py-1 text-left transition-colors hover:bg-muted/50"
                 [attr.aria-label]="'Toggle ' + section.label + ' section'"
                 [attr.aria-expanded]="isSidebarSectionExpanded(section.id)"
                 (click)="toggleSidebarSection(section.id)"
               >
-                <span class="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/80">
+                <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
                   {{ section.label }}
                 </span>
                 <svg
@@ -78,6 +103,7 @@ import { UserAccountMenuComponent } from './user-account-menu.component';
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     d="m9 6 6 6-6 6"
@@ -94,25 +120,29 @@ import { UserAccountMenuComponent } from './user-account-menu.component';
                 <a
                   [routerLink]="item.route"
                   [attr.title]="sidebarCollapsed() ? item.label : null"
-                  class="flex items-center rounded-lg px-3 py-2 text-sm transition-colors"
-                  [class.bg-sidebar-accent]="isItemActive(item)"
-                  [class.text-sidebar-accent-foreground]="isItemActive(item)"
+                  class="flex items-center rounded-lg py-2 text-[13px] font-medium transition-colors"
+                  [class.justify-center]="sidebarCollapsed()"
+                  [class.px-2.5]="!sidebarCollapsed()"
+                  [class.px-0]="sidebarCollapsed()"
+                  [class.bg-muted]="isItemActive(item)"
+                  [class.text-foreground]="isItemActive(item)"
                   [class.text-muted-foreground]="!isItemActive(item)"
-                  [class.hover:bg-muted]="!isItemActive(item)"
+                  [class.hover:bg-muted/70]="!isItemActive(item)"
+                  [class.hover:text-foreground]="!isItemActive(item)"
                 >
-                  <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <svg class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path
                       [attr.d]="item.iconPath"
                       stroke-linecap="round"
                       stroke-linejoin="round"
-                      stroke-width="1.8"
+                      stroke-width="1.75"
                     />
                   </svg>
                   @if (!sidebarCollapsed()) {
-                    <span class="ml-3 flex-1">{{ item.label }}</span>
+                    <span class="ml-2.5 flex-1 truncate">{{ item.label }}</span>
                     @if (item.badgeCount !== undefined) {
                       <span
-                        class="rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold leading-4 text-foreground"
+                        class="grid h-5 min-w-5 place-content-center rounded-full bg-muted px-1.5 text-[10px] font-semibold text-muted-foreground"
                       >
                         {{ item.badgeCount }}
                       </span>
@@ -125,13 +155,11 @@ import { UserAccountMenuComponent } from './user-account-menu.component';
         }
       </nav>
 
-      <div class="mt-4 border-t border-sidebar-border pt-4">
-        @if (sidebarCollapsed()) {
-          <app-user-account-menu />
-        } @else {
-          <app-user-account-menu layout="sidebar" />
-        }
-      </div>
+      @if (!sidebarCollapsed()) {
+        <div class="shrink-0 border-t border-border/70 px-3 py-3">
+          <app-user-account-menu layout="sidebar-footer" />
+        </div>
+      }
     </aside>
   `,
 })
@@ -173,7 +201,7 @@ export class BusinessPortalSidebarComponent implements OnInit {
   }
 
   protected toggleSidebar(): void {
-    this.sidebarCollapsed.update((value) => !value);
+    this.sidebarCollapsed.update((collapsed) => !collapsed);
   }
 
   protected toggleSidebarSection(sectionId: string): void {
