@@ -8,7 +8,6 @@ import {
   ClientListQuery,
   ClientSummary,
   ClientWorkspace,
-  ClientWorkspaceLanding,
   InviteClientRequest,
   UpdateClientRequest,
 } from '../api/services/client-api.service';
@@ -17,7 +16,6 @@ import { readHttpErrorMessage } from '../api/api-envelope.util';
 interface ClientState {
   clients: ClientSummary[];
   selectedClient: ClientDetail | null;
-  workspaceLanding: ClientWorkspaceLanding | null;
   clientWorkspace: ClientWorkspace | null;
   totalCount: number;
   isLoading: boolean;
@@ -27,7 +25,6 @@ interface ClientState {
 const initialState: ClientState = {
   clients: [],
   selectedClient: null,
-  workspaceLanding: null,
   clientWorkspace: null,
   totalCount: 0,
   isLoading: false,
@@ -100,18 +97,6 @@ export const ClientStore = signalStore(
       } catch (error) {
         patchState(store, { error: readErrorMessage(error) });
         return false;
-      } finally {
-        patchState(store, { isLoading: false });
-      }
-    },
-
-    async loadWorkspaceLanding(): Promise<void> {
-      patchState(store, { isLoading: true, error: null });
-      try {
-        const landing = await firstValueFrom(clientApiService.getWorkspaceLanding());
-        patchState(store, { workspaceLanding: landing });
-      } catch (error) {
-        patchState(store, { error: readErrorMessage(error) });
       } finally {
         patchState(store, { isLoading: false });
       }

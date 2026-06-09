@@ -10,7 +10,6 @@ import { ActivatedRoute } from '@angular/router';
 
 import { UserSessionService } from '@/app/core/auth/user-session.service';
 import { ClientStore } from '@/app/core/stores/client.store';
-import { ClientWorkspaceComponent } from '../clients/client-workspace.component';
 import { ClientsListComponent } from '../clients/clients-list.component';
 
 interface DashboardStat {
@@ -37,7 +36,7 @@ type OverviewMetric = 'revenue' | 'orders' | 'profit';
   selector: 'app-business-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClientsListComponent, ClientWorkspaceComponent],
+  imports: [ClientsListComponent],
   template: `
     <div class="flex min-w-0 flex-1 flex-col">
       @if (activeView() !== 'dashboard') {
@@ -49,8 +48,6 @@ type OverviewMetric = 'revenue' | 'orders' | 'profit';
 
       @if (activeView() === 'client-list') {
         <app-clients-list />
-      } @else if (activeView() === 'client-workspace') {
-        <app-client-workspace />
       } @else {
         <main class="space-y-6 p-5 sm:p-8">
           <header class="space-y-1">
@@ -236,7 +233,7 @@ export class BusinessDashboardComponent implements OnInit {
   private readonly clientStore = inject(ClientStore);
   private readonly userSession = inject(UserSessionService);
 
-  protected readonly activeView = signal<'dashboard' | 'client-list' | 'client-workspace'>('dashboard');
+  protected readonly activeView = signal<'dashboard' | 'client-list'>('dashboard');
   protected readonly overviewMetric = signal<OverviewMetric>('revenue');
   protected readonly monthlyGoalProgress = 88;
 
@@ -262,7 +259,6 @@ export class BusinessDashboardComponent implements OnInit {
     const initialView = this.route.snapshot.data['initialView'] as
       | 'dashboard'
       | 'client-list'
-      | 'client-workspace'
       | undefined;
     if (initialView !== undefined) {
       this.activeView.set(initialView);
@@ -285,8 +281,6 @@ export class BusinessDashboardComponent implements OnInit {
     switch (this.activeView()) {
       case 'client-list':
         return 'Clients';
-      case 'client-workspace':
-        return 'Client Workspace';
       default:
         return 'Dashboard';
     }
@@ -296,8 +290,6 @@ export class BusinessDashboardComponent implements OnInit {
     switch (this.activeView()) {
       case 'client-list':
         return 'Manage client folders, onboarding, and relationships.';
-      case 'client-workspace':
-        return 'Work across client folders from one operational view.';
       default:
         return 'Welcome back. Here is your business snapshot.';
     }

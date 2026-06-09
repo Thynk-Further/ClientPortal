@@ -59,12 +59,6 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
         iconPath:
           'M17 21v-2a4 4 0 0 0-3-3.87M9 21v-2a4 4 0 0 0-4-4H3m16-4a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM9 11A4 4 0 1 0 9 3a4 4 0 0 0 0 8Z',
       },
-      {
-        id: 'client-workspace',
-        label: 'Client Workspace',
-        route: '/clients/workspace',
-        iconPath: 'M3 4h18v16H3V4Zm4 4h10M7 12h6',
-      },
     ],
   },
   {

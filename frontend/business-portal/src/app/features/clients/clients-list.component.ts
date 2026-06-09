@@ -15,6 +15,7 @@ import { ClientSummary } from '@/app/core/api/services/client-api.service';
 import { ToastNotificationService } from '@/app/core/notifications/toast-notification.service';
 import { ClientStore } from '@/app/core/stores/client.store';
 import { ButtonComponent } from '@/components/ui/button.component';
+import { IconActionButtonComponent } from '@/components/ui/icon-action-button.component';
 import {
   CardComponent,
   CardContentComponent,
@@ -42,6 +43,7 @@ const CLIENT_STATUS_INVITED = 1;
     InputComponent,
     SelectComponent,
     ButtonComponent,
+    IconActionButtonComponent,
   ],
   template: `
     <main class="min-h-screen bg-muted/30 p-4 sm:p-6">
@@ -140,21 +142,36 @@ const CLIENT_STATUS_INVITED = 1;
                           {{ formatDate(client.invitedAt) }}
                         </td>
                         <td class="px-4 py-3">
-                          <div class="flex flex-wrap gap-2">
-                            <ui-button
-                              variant="outline"
-                              size="sm"
+                          <div class="flex items-center gap-1.5">
+                            <ui-icon-action-button
                               label="Open"
                               (clicked)="openClient(client.id)"
-                            />
+                            >
+                              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="1.75"
+                                  d="M15 3h6v6M10 14 21 3l7-7M21 3h-6v6"
+                                />
+                              </svg>
+                            </ui-icon-action-button>
+
                             @if (isPendingInvite(client.status)) {
-                              <ui-button
-                                variant="outline"
-                                size="sm"
-                                [disabled]="resendingClientId() === client.id"
+                              <ui-icon-action-button
                                 [label]="resendingClientId() === client.id ? 'Sending...' : 'Resend invite'"
+                                [disabled]="resendingClientId() === client.id"
                                 (clicked)="resendInvite(client.id)"
-                              />
+                              >
+                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.75"
+                                    d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"
+                                  />
+                                </svg>
+                              </ui-icon-action-button>
                             }
                           </div>
                         </td>

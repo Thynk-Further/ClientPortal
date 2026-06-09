@@ -29,17 +29,6 @@ export const routes: Routes = [
         },
       },
       {
-        path: 'clients/workspace',
-        loadComponent: () =>
-          import('./features/dashboard/business-dashboard.component').then(
-            (m) => m.BusinessDashboardComponent,
-          ),
-        data: {
-          initialView: 'client-workspace',
-          breadcrumb: 'Client Workspace',
-        },
-      },
-      {
         path: 'clients/invite-onboarding',
         loadComponent: () =>
           import('./features/clients/client-invite-onboarding.component').then(
