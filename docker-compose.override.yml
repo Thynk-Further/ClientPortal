@@ -38,6 +38,8 @@ services:
       Tenancy__TenantKey__Enabled: "true"
       Tenancy__TenantKey__HeaderName: ${TENANCY_TENANT_KEY_HEADER_NAME:-X-Tenant-Key}
       Tenancy__TenantKey__Pepper: ${TENANCY_TENANT_KEY_PEPPER:-development-only-set-user-secrets-for-production}
+      Tenancy__PublicIdHeader__Enabled: "true"
+      Tenancy__PublicIdHeader__HeaderName: ${TENANCY_PUBLIC_ID_HEADER_NAME:-X-Tenant-Id}
       RefreshToken__Pepper: ${REFRESH_TOKEN_PEPPER:-development-only-set-user-secrets-for-production}
       ClientInvitations__AcceptInvitationBaseUrl: ${CLIENT_INVITATIONS_ACCEPT_URL:-http://localhost:4201/auth/accept-invitation}
       Notifications__Email__Enabled: ${EMAIL_ENABLED:-false}
