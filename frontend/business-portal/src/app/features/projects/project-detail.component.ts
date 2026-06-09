@@ -1,4 +1,3 @@
-import { DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,6 +12,7 @@ import { BusinessPortalBreadcrumbService } from '@/app/core/layout/business-port
 import { UserSessionService } from '@/app/core/auth/user-session.service';
 import {
   MilestoneStatus,
+  ProjectDashboard,
   ProjectDashboardMilestone,
   ProjectDashboardTask,
   ProjectTaskPriority,
@@ -27,6 +27,7 @@ import {
   CardHeaderComponent,
   CardTitleComponent,
 } from '@/components/ui/card.component';
+import { StatCardComponent } from '@/components/ui/stat-card.component';
 import { StatusBadgeComponent } from '@/components/ui/status-badge.component';
 import { ProjectHealthBadgeComponent } from './project-health-badge.component';
 
@@ -47,13 +48,13 @@ interface KanbanColumn {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    DecimalPipe,
     ButtonComponent,
     CardComponent,
     CardHeaderComponent,
     CardTitleComponent,
     CardDescriptionComponent,
     CardContentComponent,
+    StatCardComponent,
     StatusBadgeComponent,
     ProjectHealthBadgeComponent,
   ],
@@ -81,14 +82,14 @@ interface KanbanColumn {
           </p>
         }
 
-        <section class="rounded-xl border bg-card p-2" aria-label="Project tabs">
-          <div class="flex flex-wrap gap-2">
+        <section class="rounded-xl border bg-card p-2" aria-label="Project detail tabs">
+          <div class="grid grid-cols-2 gap-2 md:grid-cols-6">
             @for (tab of tabs; track tab.key) {
               <button
                 type="button"
                 class="rounded-md px-3 py-2 text-sm transition-colors"
                 [class]="tab.key === activeTab() ? activeTabClasses : inactiveTabClasses"
-                (click)="activeTab.set(tab.key)"
+                (click)="setActiveTab(tab.key)"
               >
                 {{ tab.label }}
               </button>
@@ -101,44 +102,28 @@ interface KanbanColumn {
         } @else if (dashboard(); as project) {
           @switch (activeTab()) {
             @case ('overview') {
-              <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-                <ui-card>
-                  <ui-card-header><ui-card-title class="text-base">Timeline</ui-card-title></ui-card-header>
-                  <ui-card-content class="text-sm">
-                    {{ project.startDate }} → {{ project.endDate }}
-                  </ui-card-content>
-                </ui-card>
-                <ui-card>
-                  <ui-card-header><ui-card-title class="text-base">Budget</ui-card-title></ui-card-header>
-                  <ui-card-content class="text-sm">
-                    {{ project.budget | number: '1.2-2' }} {{ project.currency }}
-                  </ui-card-content>
-                </ui-card>
-                <ui-card>
-                  <ui-card-header><ui-card-title class="text-base">Milestones</ui-card-title></ui-card-header>
-                  <ui-card-content class="text-sm">
-                    {{ completedMilestones() }} / {{ project.milestones.length }} complete
-                    @if (project.overdueMilestoneCount > 0) {
-                      <span class="text-destructive"> · {{ project.overdueMilestoneCount }} overdue</span>
-                    }
-                  </ui-card-content>
-                </ui-card>
-                <ui-card>
-                  <ui-card-header><ui-card-title class="text-base">Tasks</ui-card-title></ui-card-header>
-                  <ui-card-content class="text-sm">
-                    {{ project.taskSummary.done }} / {{ project.taskSummary.total }} done
-                    @if (project.taskSummary.blocked > 0) {
-                      <span class="text-amber-700"> · {{ project.taskSummary.blocked }} blocked</span>
-                    }
-                  </ui-card-content>
-                </ui-card>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                @for (stat of overviewStatCards(); track stat.label) {
+                  <ui-stat-card
+                    [label]="stat.label"
+                    [value]="stat.value"
+                    [iconPath]="stat.iconPath"
+                    [accentColor]="stat.accentColor"
+                    [accentBg]="stat.accentBg"
+                    [sparkline]="stat.sparkline"
+                    [trendValue]="stat.trendValue"
+                    [trendLabel]="stat.trendLabel"
+                    [trendDirection]="stat.trendDirection"
+                    [footnote]="stat.footnote"
+                  />
+                }
               </div>
             }
             @case ('milestones') {
               <ui-card>
                 <ui-card-header>
                   <div class="flex flex-wrap items-center justify-between gap-2">
-                    <div>
+                    <div class="min-w-0 space-y-1">
                       <ui-card-title>Milestones</ui-card-title>
                       <ui-card-description>Define delivery phases and track completion.</ui-card-description>
                     </div>
@@ -200,7 +185,7 @@ interface KanbanColumn {
                             <div class="flex flex-wrap items-center justify-between gap-2">
                               <div>
                                 <p class="font-medium">{{ milestone.name }}</p>
-                                <p class="text-muted-foreground">Due {{ milestone.dueDate }}</p>
+                                <p class="text-muted-foreground">Due {{ formatMilestoneDueDate(milestone.dueDate) }}</p>
                               </div>
                               <div class="flex flex-wrap items-center gap-2">
                                 <ui-status-badge [status]="milestone.status === 2 ? 'Completed' : 'Planned'" />
@@ -223,7 +208,7 @@ interface KanbanColumn {
               <ui-card>
                 <ui-card-header>
                   <div class="flex flex-wrap items-center justify-between gap-2">
-                    <div>
+                    <div class="min-w-0 space-y-1">
                       <ui-card-title>Board</ui-card-title>
                       <ui-card-description>
                         Drag cards between columns or change status from the card menu.
@@ -518,6 +503,10 @@ export class ProjectDetailComponent implements OnInit {
   protected readonly inactiveTabClasses =
     'bg-background text-foreground border border-input hover:bg-muted';
 
+  protected setActiveTab(tab: ProjectTab): void {
+    this.activeTab.set(tab);
+  }
+
   protected readonly completedMilestones = computed(() => {
     const project = this.dashboard();
     if (project === null) {
@@ -525,6 +514,15 @@ export class ProjectDetailComponent implements OnInit {
     }
 
     return project.milestones.filter((milestone) => milestone.status === 2).length;
+  });
+
+  protected readonly overviewStatCards = computed(() => {
+    const project = this.dashboard();
+    if (project === null) {
+      return [];
+    }
+
+    return buildProjectOverviewStatCards(project, this.completedMilestones());
   });
 
   ngOnInit(): void {
@@ -581,6 +579,10 @@ export class ProjectDetailComponent implements OnInit {
     milestoneId: string,
   ): string {
     return project.milestones.find((milestone) => milestone.id === milestoneId)?.name ?? 'Milestone';
+  }
+
+  protected formatMilestoneDueDate(value: string): string {
+    return formatLongDueDate(value);
   }
 
   protected formatPriority(priority: ProjectTaskPriority): string {
@@ -892,4 +894,232 @@ export class ProjectDetailComponent implements OnInit {
   private todayDateInputValue(): string {
     return new Date().toISOString().slice(0, 10);
   }
+}
+
+interface ProjectOverviewStatCard {
+  readonly label: string;
+  readonly value: string;
+  readonly iconPath: string;
+  readonly accentColor: string;
+  readonly accentBg: string;
+  readonly sparkline: ReadonlyArray<number>;
+  readonly trendValue: string;
+  readonly trendLabel: string;
+  readonly trendDirection: 'up' | 'down' | 'neutral';
+  readonly footnote: string;
+}
+
+function buildProjectOverviewStatCards(
+  project: ProjectDashboard,
+  completedMilestones: number,
+): ReadonlyArray<ProjectOverviewStatCard> {
+  const milestoneTotal = project.milestones.length;
+  const { taskSummary } = project;
+  const budgetValue = formatProjectBudget(project.budget, project.currency);
+  const timelineDays = projectDurationDays(project.startDate, project.endDate);
+
+  const milestoneTrend = project.overdueMilestoneCount > 0
+    ? {
+        trendValue: String(project.overdueMilestoneCount),
+        trendLabel: ' overdue',
+        trendDirection: 'down' as const,
+        footnote: '',
+      }
+    : {
+        trendValue: '',
+        trendLabel: '',
+        trendDirection: 'up' as const,
+        footnote: `${completedMilestones} of ${milestoneTotal} complete`,
+      };
+
+  const taskTrend: {
+    readonly trendValue: string;
+    readonly trendLabel: string;
+    readonly trendDirection: 'up' | 'down' | 'neutral';
+    readonly footnote: string;
+  } = taskSummary.blocked > 0
+    ? {
+        trendValue: String(taskSummary.blocked),
+        trendLabel: ' blocked',
+        trendDirection: 'down',
+        footnote: '',
+      }
+    : {
+        trendValue: '',
+        trendLabel: '',
+        trendDirection:
+          taskSummary.done === taskSummary.total && taskSummary.total > 0 ? 'up' : 'neutral',
+        footnote: buildTaskFootnote(taskSummary),
+      };
+
+  return [
+    {
+      label: 'Timeline',
+      value: formatTimelineRange(project.startDate, project.endDate),
+      iconPath: 'M8 2v4m8-4v4M3 10h18M5 5h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z',
+      accentColor: '#3b82f6',
+      accentBg: '#dbeafe',
+      sparkline: decorativeSparkline(timelineDays + 11),
+      trendValue: '',
+      trendLabel: '',
+      trendDirection: 'neutral',
+      footnote: formatTimelineDaysLeftFootnote(project.endDate),
+    },
+    {
+      label: 'Budget',
+      value: budgetValue,
+      iconPath: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7',
+      accentColor: '#a855f7',
+      accentBg: '#f3e8ff',
+      sparkline: decorativeSparkline(Math.round(project.budget) + 51),
+      trendValue: '',
+      trendLabel: '',
+      trendDirection: 'neutral',
+      footnote: `Planned in ${project.currency.trim() === '' ? 'USD' : project.currency}`,
+    },
+    {
+      label: 'Milestones',
+      value: `${completedMilestones} / ${milestoneTotal}`,
+      iconPath: 'M9 11 12 14 22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+      accentColor: '#14b8a6',
+      accentBg: '#ccfbf1',
+      sparkline: decorativeSparkline(completedMilestones + milestoneTotal + 23),
+      trendValue: milestoneTrend.trendValue,
+      trendLabel: milestoneTrend.trendLabel,
+      trendDirection: milestoneTrend.trendDirection,
+      footnote: milestoneTrend.footnote,
+    },
+    {
+      label: 'Tasks',
+      value: `${taskSummary.done} / ${taskSummary.total}`,
+      iconPath: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2',
+      accentColor: '#f97316',
+      accentBg: '#ffedd5',
+      sparkline: decorativeSparkline(taskSummary.done + taskSummary.total + 37),
+      trendValue: taskTrend.trendValue,
+      trendLabel: taskTrend.trendLabel,
+      trendDirection: taskTrend.trendDirection,
+      footnote: taskTrend.footnote,
+    },
+  ];
+}
+
+function buildTaskFootnote(taskSummary: ProjectDashboard['taskSummary']): string {
+  if (taskSummary.total === 0) {
+    return 'No tasks yet';
+  }
+
+  if (taskSummary.done === taskSummary.total) {
+    return 'All tasks complete';
+  }
+
+  const openTasks = taskSummary.total - taskSummary.done;
+  return `${openTasks} open task${openTasks === 1 ? '' : 's'}`;
+}
+
+function formatProjectBudget(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currency.trim() === '' ? 'USD' : currency,
+      minimumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${amount.toFixed(2)} ${currency}`;
+  }
+}
+
+function formatTimelineRange(startDate: string, endDate: string): string {
+  const start = formatOverviewDate(startDate);
+  const end = formatOverviewDate(endDate);
+  return `${start} – ${end}`;
+}
+
+function formatOverviewDate(value: string): string {
+  const parsed = parseDateOnly(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return '—';
+  }
+
+  return parsed.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatLongDueDate(value: string): string {
+  const parsed = parseDateOnly(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value.trim() === '' ? '—' : value;
+  }
+
+  return parsed.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function parseDateOnly(value: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+  if (match === null) {
+    return new Date(value);
+  }
+
+  const year = Number.parseInt(match[1], 10);
+  const month = Number.parseInt(match[2], 10);
+  const day = Number.parseInt(match[3], 10);
+  return new Date(year, month - 1, day);
+}
+
+function projectDurationDays(startDate: string, endDate: string): number {
+  const start = parseDateOnly(startDate);
+  const end = parseDateOnly(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+    return 0;
+  }
+
+  return Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
+function formatTimelineDaysLeftFootnote(endDate: string): string {
+  const daysLeft = projectDaysRemaining(endDate);
+
+  if (daysLeft > 0) {
+    return `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`;
+  }
+
+  if (daysLeft === 0) {
+    return 'Ends today';
+  }
+
+  const daysOverdue = Math.abs(daysLeft);
+  return `Ended ${daysOverdue} day${daysOverdue === 1 ? '' : 's'} ago`;
+}
+
+function projectDaysRemaining(endDate: string): number {
+  const endDay = parseDateOnly(endDate);
+  if (Number.isNaN(endDay.getTime())) {
+    return 0;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  endDay.setHours(0, 0, 0, 0);
+
+  return Math.round((endDay.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function decorativeSparkline(seed: number): ReadonlyArray<number> {
+  const values: number[] = [];
+  let current = 10 + (seed % 8);
+
+  for (let index = 0; index < 12; index += 1) {
+    const delta = ((seed * (index + 3)) % 5) - 2;
+    current = Math.max(6, Math.min(34, current + delta));
+    values.push(current);
+  }
+
+  return values;
 }

@@ -79,7 +79,7 @@ export class CardHeaderComponent {
 export class CardTitleComponent {
     class = input('');
 
-    classes = computed(() => cn('leading-none font-semibold', this.class()));
+    classes = computed(() => cn('block leading-none font-semibold', this.class()));
 }
 
 @Component({
@@ -94,7 +94,7 @@ export class CardTitleComponent {
 export class CardDescriptionComponent {
     class = input('');
 
-    classes = computed(() => cn('text-muted-foreground text-sm', this.class()));
+    classes = computed(() => cn('block text-muted-foreground text-sm', this.class()));
 }
 
 @Component({
