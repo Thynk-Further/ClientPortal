@@ -408,9 +408,9 @@ export class ClientWorkspaceComponent implements OnInit {
       {
         label: 'Projects',
         description: 'Delivery timelines and active workstreams.',
-        route: '/projects',
+        route: `/clients/${clientId}`,
         metric: `${data.metrics.activeProjects} active`,
-        queryParams: clientQuery,
+        queryParams: { tab: 'projects' },
       },
       {
         label: 'Invoices',

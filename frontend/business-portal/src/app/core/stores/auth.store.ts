@@ -10,6 +10,7 @@ import {
   LoginResponse,
 } from '../api/services/auth-api.service';
 import { TenantContextService } from '../tenant/tenant-context.service';
+import { readHttpErrorMessage } from '../api/api-envelope.util';
 import { TokenStorageService } from '../auth/token-storage.service';
 
 interface AuthState {
@@ -144,9 +145,5 @@ export const AuthStore = signalStore(
 );
 
 function readErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim() !== '') {
-    return error.message;
-  }
-
-  return 'Authentication operation failed.';
+  return readHttpErrorMessage(error, 'Authentication operation failed.');
 }

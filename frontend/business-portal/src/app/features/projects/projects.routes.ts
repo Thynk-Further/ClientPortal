@@ -7,7 +7,16 @@ export const PROJECTS_ROUTES: Routes = [
       import('./projects-list.component').then((m) => m.ProjectsListComponent),
     data: {
       title: 'Projects',
-      description: 'Project list, detail pages, and kanban task workflows.',
+      description: 'Project list across all clients.',
+    },
+  },
+  {
+    path: 'my-tasks',
+    loadComponent: () =>
+      import('./my-tasks.component').then((m) => m.MyTasksComponent),
+    data: {
+      title: 'My Tasks',
+      description: 'Cross-client task inbox.',
     },
   },
   {
@@ -16,7 +25,7 @@ export const PROJECTS_ROUTES: Routes = [
       import('./project-detail.component').then((m) => m.ProjectDetailComponent),
     data: {
       title: 'Project Detail',
-      description: 'Project detail with kanban board view for execution tasks.',
+      description: 'Project workspace with milestones, tasks, and risks.',
     },
   },
 ];

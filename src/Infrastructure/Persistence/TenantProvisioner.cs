@@ -31,9 +31,9 @@ public sealed class TenantProvisioner : ITenantProvisioner
     public async Task CreateSchemaAsync(string slug, CancellationToken cancellationToken = default)
     {
         string normalizedSlug = NormalizeSlug(slug);
-        string schemaName = $"tenant_{normalizedSlug.Replace('-', '_')}";
+        string schemaName = TenantSchemaNames.FromSlug(normalizedSlug);
 
-        await CreateSchemaIfNotExistsAsync(schemaName, cancellationToken);
+        TenantSchemaBootstrapper.EnsureSchemaExists(_postgresConnectionString, schemaName);
 
         ICurrentTenant currentTenant = new ProvisioningCurrentTenant(normalizedSlug);
         await using TenantDbContext tenantDbContext = new(_postgresConnectionString, currentTenant);
@@ -98,15 +98,6 @@ public sealed class TenantProvisioner : ITenantProvisioner
         NpgsqlConnection connection = new(builder.ConnectionString);
         await connection.OpenAsync(cancellationToken);
         return connection;
-    }
-
-    private async Task CreateSchemaIfNotExistsAsync(string schemaName, CancellationToken cancellationToken)
-    {
-        await using NpgsqlConnection connection = await OpenPublicSearchPathConnectionAsync(cancellationToken);
-
-        string sql = $"CREATE SCHEMA IF NOT EXISTS \"{schemaName}\";";
-        await using NpgsqlCommand command = new(sql, connection);
-        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
     private static Task SeedDefaultsAsync(TenantDbContext dbContext, CancellationToken cancellationToken)

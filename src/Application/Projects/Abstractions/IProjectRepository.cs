@@ -15,6 +15,7 @@ public interface IProjectRepository
         int pageSize,
         ProjectStatus? status,
         Guid? clientId,
+        string? search,
         CancellationToken cancellationToken = default);
 
     void Add(Project project);

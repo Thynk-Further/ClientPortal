@@ -2,6 +2,8 @@ import { HttpErrorResponse, HttpEvent, HttpHandlerFn, HttpInterceptorFn, HttpReq
 import { inject } from '@angular/core';
 import { Observable, catchError, throwError } from 'rxjs';
 
+import { readHttpErrorMessage } from '../api/api-envelope.util';
+import { isTenantUnresolvedError } from './http-error.util';
 import { ToastNotificationService } from '../notifications/toast-notification.service';
 
 export const globalHttpErrorInterceptor: HttpInterceptorFn = (
@@ -14,6 +16,9 @@ export const globalHttpErrorInterceptor: HttpInterceptorFn = (
     catchError((error: unknown) => {
       if (error instanceof HttpErrorResponse) {
         const message = resolveErrorMessage(error);
+        if (isTenantUnresolvedError(error)) {
+          console.warn('Tenant context could not be resolved; session refresh or sign-in is required.');
+        }
         // Keep low-level detail available for debugging and telemetry.
         console.error('HTTP request failed', {
           url: request.url,
@@ -23,7 +28,8 @@ export const globalHttpErrorInterceptor: HttpInterceptorFn = (
         });
         const suppressToast =
           request.method === 'POST' &&
-          (request.url.includes('/api/v1/auth/register') ||
+          (request.url.includes('/api/v1/auth/login') ||
+            request.url.includes('/api/v1/auth/register') ||
             request.url.includes('/api/v1/auth/logout'));
 
         if (!suppressToast) {
@@ -37,35 +43,9 @@ export const globalHttpErrorInterceptor: HttpInterceptorFn = (
 };
 
 function resolveErrorMessage(error: HttpErrorResponse): string {
-  if (typeof error.error === 'string' && error.error.trim() !== '') {
-    return error.error;
+  if (isTenantUnresolvedError(error)) {
+    return 'Your session is missing tenant context. Please sign in again.';
   }
 
-  if (typeof error.error === 'object' && error.error !== null) {
-    const message = (error.error as { message?: string }).message;
-    if (typeof message === 'string' && message.trim() !== '') {
-      return message;
-    }
-  }
-
-  switch (error.status) {
-    case 0:
-      return 'Network error. Check your connection and try again.';
-    case 400:
-      return 'The request is invalid. Please review your input.';
-    case 401:
-      return 'Your session has expired. Please sign in again.';
-    case 403:
-      return 'You do not have permission to perform this action.';
-    case 404:
-      return 'The requested resource was not found.';
-    case 409:
-      return 'This operation conflicted with existing data.';
-    case 422:
-      return 'Validation failed. Please correct the highlighted fields.';
-    case 500:
-      return 'An internal server error occurred. Please try again.';
-    default:
-      return 'Something went wrong. Please try again.';
-  }
+  return readHttpErrorMessage(error, 'Something went wrong. Please try again.');
 }
