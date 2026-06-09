@@ -8,7 +8,7 @@ export const PROJECTS_ROUTES: Routes = [
     data: {
       breadcrumb: 'Projects',
       title: 'Projects',
-      description: 'Project list across all clients.',
+      description: 'Browse and manage your projects across all clients.',
     },
   },
   {

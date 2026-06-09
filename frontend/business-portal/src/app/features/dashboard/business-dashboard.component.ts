@@ -1,16 +1,12 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
 
 import { UserSessionService } from '@/app/core/auth/user-session.service';
-import { ClientStore } from '@/app/core/stores/client.store';
-import { ClientsListComponent } from '../clients/clients-list.component';
 
 interface DashboardStat {
   readonly label: string;
@@ -36,19 +32,8 @@ type OverviewMetric = 'revenue' | 'orders' | 'profit';
   selector: 'app-business-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClientsListComponent],
   template: `
     <div class="flex min-w-0 flex-1 flex-col">
-      @if (activeView() !== 'dashboard') {
-        <div class="border-b border-border/70 bg-background px-5 py-5 sm:px-8">
-          <h1 class="text-[1.75rem] font-semibold tracking-tight text-foreground">{{ pageTitle() }}</h1>
-          <p class="mt-1 text-sm text-muted-foreground">{{ pageDescription() }}</p>
-        </div>
-      }
-
-      @if (activeView() === 'client-list') {
-        <app-clients-list />
-      } @else {
         <main class="space-y-6 p-5 sm:p-8">
           <header class="space-y-1">
             <h1 class="text-[1.75rem] font-semibold tracking-tight text-foreground">Dashboard</h1>
@@ -224,16 +209,12 @@ type OverviewMetric = 'revenue' | 'orders' | 'profit';
             </div>
           </section>
         </main>
-      }
     </div>
   `,
 })
-export class BusinessDashboardComponent implements OnInit {
-  private readonly route = inject(ActivatedRoute);
-  private readonly clientStore = inject(ClientStore);
+export class BusinessDashboardComponent {
   private readonly userSession = inject(UserSessionService);
 
-  protected readonly activeView = signal<'dashboard' | 'client-list'>('dashboard');
   protected readonly overviewMetric = signal<OverviewMetric>('revenue');
   protected readonly monthlyGoalProgress = 88;
 
@@ -255,44 +236,10 @@ export class BusinessDashboardComponent implements OnInit {
     profit: [8, 10, 9, 14, 15, 13, 17, 18, 16, 19, 21, 22],
   };
 
-  constructor() {
-    const initialView = this.route.snapshot.data['initialView'] as
-      | 'dashboard'
-      | 'client-list'
-      | undefined;
-    if (initialView !== undefined) {
-      this.activeView.set(initialView);
-    }
-  }
-
-  ngOnInit(): void {
-    if (this.activeView() === 'client-list') {
-      void this.refreshClientCount();
-    }
-  }
-
   protected readonly welcomeMessage = computed(() => {
     const fullName = this.userSession.getUser()?.fullName?.trim();
     const firstName = fullName?.split(/\s+/)[0] ?? 'there';
     return `Welcome back, ${firstName}. Here's what's happening with your business today.`;
-  });
-
-  protected readonly pageTitle = computed(() => {
-    switch (this.activeView()) {
-      case 'client-list':
-        return 'Clients';
-      default:
-        return 'Dashboard';
-    }
-  });
-
-  protected readonly pageDescription = computed(() => {
-    switch (this.activeView()) {
-      case 'client-list':
-        return 'Manage client folders, onboarding, and relationships.';
-      default:
-        return 'Welcome back. Here is your business snapshot.';
-    }
   });
 
   protected readonly overviewChart = computed(() => {
@@ -417,7 +364,4 @@ export class BusinessDashboardComponent implements OnInit {
       .join(' ');
   }
 
-  private async refreshClientCount(): Promise<void> {
-    await this.clientStore.loadClients({ page: 1, pageSize: 1 });
-  }
 }

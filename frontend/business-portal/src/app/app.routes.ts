@@ -24,9 +24,6 @@ export const routes: Routes = [
           import('./features/dashboard/business-dashboard.component').then(
             (m) => m.BusinessDashboardComponent,
           ),
-        data: {
-          initialView: 'dashboard',
-        },
       },
       {
         path: 'clients/invite-onboarding',
@@ -41,11 +38,10 @@ export const routes: Routes = [
       {
         path: 'clients',
         loadComponent: () =>
-          import('./features/dashboard/business-dashboard.component').then(
-            (m) => m.BusinessDashboardComponent,
+          import('./features/clients/clients-list.component').then(
+            (m) => m.ClientsListComponent,
           ),
         data: {
-          initialView: 'client-list',
           breadcrumb: 'Client List',
         },
       },
