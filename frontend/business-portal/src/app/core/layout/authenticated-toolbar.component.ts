@@ -1,29 +1,22 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 
-import { UserAccountMenuComponent } from './user-account-menu.component';
+import { BusinessPortalSidebarComponent } from './business-portal-sidebar.component';
 
 @Component({
   selector: 'app-authenticated-toolbar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterOutlet, UserAccountMenuComponent],
+  imports: [RouterOutlet, BusinessPortalSidebarComponent],
   template: `
-    <div class="min-h-screen bg-muted/30">
-      <header
-        class="sticky top-0 z-40 flex items-center justify-between gap-3 border-b bg-background px-4 py-3 sm:px-6"
-      >
-        <a
-          routerLink="/dashboard"
-          class="text-sm font-semibold tracking-tight text-foreground hover:text-primary"
-        >
-          Business Portal
-        </a>
+    <div class="min-h-screen bg-muted/30 text-foreground">
+      <div class="flex min-h-screen">
+        <app-business-portal-sidebar />
 
-        <app-user-account-menu />
-      </header>
-
-      <router-outlet />
+        <div class="flex min-w-0 flex-1 flex-col">
+          <router-outlet />
+        </div>
+      </div>
     </div>
   `,
 })

@@ -11,36 +11,6 @@ export const routes: Routes = [
   },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   {
-    path: 'dashboard',
-    canActivate: [authGuard, tenantGuard],
-    loadChildren: () =>
-      import('./features/dashboard/dashboard.routes').then(
-        (m) => m.DASHBOARD_ROUTES,
-      ),
-  },
-  {
-    path: 'clients/workspace',
-    canActivate: [authGuard, tenantGuard],
-    loadComponent: () =>
-      import('./features/dashboard/business-dashboard.component').then(
-        (m) => m.BusinessDashboardComponent,
-      ),
-    data: {
-      initialView: 'client-workspace',
-    },
-  },
-  {
-    path: 'clients',
-    canActivate: [authGuard, tenantGuard],
-    loadComponent: () =>
-      import('./features/dashboard/business-dashboard.component').then(
-        (m) => m.BusinessDashboardComponent,
-      ),
-    data: {
-      initialView: 'client-list',
-    },
-  },
-  {
     path: '',
     canActivate: [authGuard, tenantGuard],
     loadComponent: () =>
@@ -48,6 +18,43 @@ export const routes: Routes = [
         (m) => m.AuthenticatedToolbarComponent,
       ),
     children: [
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/dashboard/business-dashboard.component').then(
+            (m) => m.BusinessDashboardComponent,
+          ),
+        data: {
+          initialView: 'dashboard',
+        },
+      },
+      {
+        path: 'clients/workspace',
+        loadComponent: () =>
+          import('./features/dashboard/business-dashboard.component').then(
+            (m) => m.BusinessDashboardComponent,
+          ),
+        data: {
+          initialView: 'client-workspace',
+        },
+      },
+      {
+        path: 'clients/invite-onboarding',
+        loadComponent: () =>
+          import('./features/clients/client-invite-onboarding.component').then(
+            (m) => m.ClientInviteOnboardingComponent,
+          ),
+      },
+      {
+        path: 'clients',
+        loadComponent: () =>
+          import('./features/dashboard/business-dashboard.component').then(
+            (m) => m.BusinessDashboardComponent,
+          ),
+        data: {
+          initialView: 'client-list',
+        },
+      },
       {
         path: 'clients/:clientId',
         children: [
