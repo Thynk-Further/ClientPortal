@@ -53,6 +53,26 @@ export interface ClientPortalMeetingsResult {
   meetings: ClientPortalMeetingCard[];
 }
 
+export interface ClientPortalNoticeListItem {
+  id: string;
+  title: string;
+  content: string;
+  publishedAt: string;
+  expiresAt: string | null;
+  isRead: boolean;
+  readAtUtc: string | null;
+}
+
+export interface ClientPortalNoticesResult {
+  notices: ClientPortalNoticeListItem[];
+  unreadCount: number;
+}
+
+export interface ClientPortalNoticesSummary {
+  unreadCount: number;
+  totalCount: number;
+}
+
 export interface ClientPortalMessagesSummary {
   unreadCount: number;
   totalThreads: number;
@@ -467,5 +487,26 @@ export class ClientPortalApiService {
     return this.apiClient
       .get<ApiEnvelope<ClientPortalMeetingsResult>>(`${this.basePath}/meetings`)
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getNoticesSummary(): Observable<ClientPortalNoticesSummary> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalNoticesSummary>>(`${this.basePath}/notices/summary`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getNotices(): Observable<ClientPortalNoticesResult> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalNoticesResult>>(`${this.basePath}/notices`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  markNoticeRead(noticeId: string): Observable<void> {
+    return this.apiClient
+      .put<ApiEnvelope<null>, Record<string, never>>(
+        `${this.basePath}/notices/${noticeId}/read`,
+        {},
+      )
+      .pipe(map(() => undefined));
   }
 }

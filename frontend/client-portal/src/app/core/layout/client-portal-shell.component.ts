@@ -3,11 +3,13 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { UserSessionService } from '../auth/user-session.service';
 import { ClientPortalMessagesSummaryService } from '../messaging/client-portal-messages-summary.service';
+import { ClientPortalNoticesSummaryService } from '../notices/client-portal-notices-summary.service';
 
 interface ClientNavItem {
   readonly label: string;
   readonly route: string;
   readonly showUnreadBadge?: boolean;
+  readonly unreadCount?: () => number;
 }
 
 @Component({
@@ -33,12 +35,12 @@ interface ClientNavItem {
                 [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
               >
                 {{ item.label }}
-                @if (item.showUnreadBadge && messagesSummary.unreadCount() > 0) {
+                @if (item.showUnreadBadge && item.unreadCount !== undefined && item.unreadCount() > 0) {
                   <span
                     class="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold leading-none text-destructive-foreground"
-                    [attr.aria-label]="messagesSummary.unreadCount() + ' unread messages'"
+                    [attr.aria-label]="item.unreadCount() + ' unread ' + item.label.toLowerCase()"
                   >
-                    {{ messagesSummary.unreadCount() }}
+                    {{ item.unreadCount() }}
                   </span>
                 }
               </a>
@@ -56,6 +58,7 @@ interface ClientNavItem {
 export class ClientPortalShellComponent implements OnInit {
   private readonly userSession = inject(UserSessionService);
   protected readonly messagesSummary = inject(ClientPortalMessagesSummaryService);
+  protected readonly noticesSummary = inject(ClientPortalNoticesSummaryService);
 
   protected readonly navItems: ReadonlyArray<ClientNavItem> = [
     { label: 'Dashboard', route: '/dashboard' },
@@ -63,13 +66,14 @@ export class ClientPortalShellComponent implements OnInit {
     { label: 'Requests', route: '/requests' },
     { label: 'Invoices', route: '/invoices' },
     { label: 'Documents', route: '/documents' },
-    { label: 'Messages', route: '/messages', showUnreadBadge: true },
+    { label: 'Messages', route: '/messages', showUnreadBadge: true, unreadCount: () => this.messagesSummary.unreadCount() },
     { label: 'Meetings', route: '/meetings' },
+    { label: 'Notices', route: '/notices', showUnreadBadge: true, unreadCount: () => this.noticesSummary.unreadCount() },
     { label: 'Profile', route: '/profile' },
   ];
 
   async ngOnInit(): Promise<void> {
-    await this.messagesSummary.refresh();
+    await Promise.all([this.messagesSummary.refresh(), this.noticesSummary.refresh()]);
   }
 
   protected greetingName(): string {

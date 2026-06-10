@@ -96,6 +96,15 @@ public static class ClientsEndpoints
         portalGroup.MapGet("/meetings", GetClientPortalMeetingsAsync)
             .WithName("ClientPortalMeetings");
 
+        portalGroup.MapGet("/notices/summary", GetClientPortalNoticesSummaryAsync)
+            .WithName("ClientPortalNoticesSummary");
+
+        portalGroup.MapGet("/notices", GetClientPortalNoticesAsync)
+            .WithName("ClientPortalNotices");
+
+        portalGroup.MapPut("/notices/{id:guid}/read", MarkClientPortalNoticeReadAsync)
+            .WithName("ClientPortalMarkNoticeRead");
+
         portalGroup.MapGet("/messages/summary", GetClientPortalMessagesSummaryAsync)
             .WithName("ClientPortalMessagesSummary");
 
@@ -407,6 +416,40 @@ public static class ClientsEndpoints
     {
         Result<ClientPortalMeetingsResultDto> result = await sender.Send(
             new GetClientPortalMeetingsQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalNoticesSummaryAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalNoticesSummaryDto> result = await sender.Send(
+            new GetClientPortalNoticesSummaryQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalNoticesAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalNoticesResultDto> result = await sender.Send(
+            new GetClientPortalNoticesQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> MarkClientPortalNoticeReadAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result result = await sender.Send(
+            new MarkClientPortalNoticeReadCommand(id),
             cancellationToken);
 
         return ToResponse(result);

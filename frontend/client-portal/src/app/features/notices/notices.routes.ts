@@ -4,9 +4,7 @@ export const NOTICES_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('../feature-shell/feature-shell.component').then(
-        (m) => m.FeatureShellComponent,
-      ),
+      import('./client-notices.component').then((m) => m.ClientNoticesComponent),
     data: {
       title: 'Notices',
       description: 'Company announcements and read/unread state handling.',
