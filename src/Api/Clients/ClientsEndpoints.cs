@@ -81,6 +81,18 @@ public static class ClientsEndpoints
         portalGroup.MapPost("/invoices/{id:guid}/payments/verify", VerifyClientPortalInvoicePaymentAsync)
             .WithName("ClientPortalInvoicePaymentVerify");
 
+        portalGroup.MapGet("/documents", GetClientPortalDocumentsAsync)
+            .WithName("ClientPortalDocuments");
+
+        portalGroup.MapGet("/documents/{id:guid}", GetClientPortalDocumentByIdAsync)
+            .WithName("ClientPortalDocumentById");
+
+        portalGroup.MapGet("/documents/{id:guid}/download", GetClientPortalDocumentDownloadUrlAsync)
+            .WithName("ClientPortalDocumentDownload");
+
+        portalGroup.MapPost("/documents/{id:guid}/sign", SignClientPortalContractAsync)
+            .WithName("ClientPortalDocumentSign");
+
         portalGroup.MapGet("/onboarding-status", GetOnboardingStatusAsync)
             .WithName("ClientPortalOnboardingStatus");
 
@@ -323,6 +335,54 @@ public static class ClientsEndpoints
         return ToResponse(result);
     }
 
+    private static async Task<IResult> GetClientPortalDocumentsAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalDocumentsResultDto> result = await sender.Send(
+            new GetClientPortalDocumentsQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalDocumentByIdAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalDocumentDetailDto> result = await sender.Send(
+            new GetClientPortalDocumentByIdQuery(id),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalDocumentDownloadUrlAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalDocumentDownloadDto> result = await sender.Send(
+            new GetClientPortalDocumentDownloadUrlQuery(id),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> SignClientPortalContractAsync(
+        Guid id,
+        SignClientPortalContractRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result result = await sender.Send(
+            new SignClientPortalContractCommand(id, request.SignerName),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
     private static async Task<IResult> GetOnboardingStatusAsync(
         ClaimsPrincipal principal,
         [FromServices] IUserAuthenticationRepository userAuthenticationRepository,
@@ -474,3 +534,5 @@ public sealed record VerifyClientPortalInvoicePaymentRequest(
     string Provider,
     string TransactionId,
     string Reference);
+
+public sealed record SignClientPortalContractRequest(string SignerName);

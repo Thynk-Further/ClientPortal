@@ -231,6 +231,42 @@ export interface ClientPortalInvoicePaymentVerification {
   outstandingAmount: number;
 }
 
+export interface ClientPortalDocumentListItem {
+  id: string;
+  name: string;
+  kind: string;
+  status: number;
+  updatedAtUtc: string;
+  requiresSignature: boolean;
+}
+
+export interface ClientPortalDocumentsResult {
+  documents: ClientPortalDocumentListItem[];
+}
+
+export interface ClientPortalDocumentDetail {
+  id: string;
+  name: string;
+  kind: string;
+  status: number;
+  signedAtUtc: string | null;
+  expiresAtUtc: string | null;
+  parties: string[];
+  createdAtUtc: string;
+  updatedAtUtc: string;
+  requiresSignature: boolean;
+  canDownload: boolean;
+}
+
+export interface ClientPortalDocumentDownload {
+  downloadUrl: string;
+  expiresAtUtc: string;
+}
+
+export interface SignClientPortalContract {
+  signerName: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ClientPortalApiService {
   private readonly basePath = '/api/v1/client-portal';
@@ -304,5 +340,34 @@ export class ClientPortalApiService {
         request,
       )
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getDocuments(): Observable<ClientPortalDocumentsResult> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalDocumentsResult>>(`${this.basePath}/documents`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getDocument(documentId: string): Observable<ClientPortalDocumentDetail> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalDocumentDetail>>(`${this.basePath}/documents/${documentId}`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getDocumentDownloadUrl(documentId: string): Observable<ClientPortalDocumentDownload> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalDocumentDownload>>(
+        `${this.basePath}/documents/${documentId}/download`,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  signContract(documentId: string, request: SignClientPortalContract): Observable<void> {
+    return this.apiClient
+      .post<ApiEnvelope<null>, SignClientPortalContract>(
+        `${this.basePath}/documents/${documentId}/sign`,
+        request,
+      )
+      .pipe(map(() => undefined));
   }
 }

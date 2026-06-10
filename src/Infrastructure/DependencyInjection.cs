@@ -93,6 +93,9 @@ public static class DependencyInjection
         services.AddScoped<IClientPortalProjectsReader, NpgsqlClientPortalProjectsReader>();
         services.AddScoped<IClientPortalRequestsReader, NpgsqlClientPortalRequestsReader>();
         services.AddScoped<IClientPortalInvoicesReader, NpgsqlClientPortalInvoicesReader>();
+        services.AddScoped<IClientPortalDocumentsReader, NpgsqlClientPortalDocumentsReader>();
+        services.Configure<DocumentStorageOptions>(configuration.GetSection(DocumentStorageOptions.SectionName));
+        services.AddSingleton<IContractDownloadUrlService, ContractDownloadUrlService>();
         services.Configure<ClientPortalPaymentOptions>(configuration.GetSection(ClientPortalPaymentOptions.SectionName));
         services.AddSingleton(serviceProvider =>
             serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ClientPortalPaymentOptions>>().Value);
