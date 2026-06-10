@@ -160,6 +160,77 @@ export interface ClientPortalProjectDetail {
   requests: ClientPortalProjectRequest[];
 }
 
+export interface ClientPortalInvoiceListItem {
+  id: string;
+  projectId: string;
+  invoiceNumber: string;
+  status: number;
+  total: number;
+  amountPaid: number;
+  outstandingAmount: number;
+  currency: string;
+  dueDate: string;
+  createdAt: string;
+}
+
+export interface ClientPortalInvoicesResult {
+  invoices: ClientPortalInvoiceListItem[];
+}
+
+export interface ClientPortalInvoiceLineItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  amount: number;
+}
+
+export interface ClientPortalInvoiceDetail {
+  id: string;
+  projectId: string;
+  invoiceNumber: string;
+  status: number;
+  lineItems: ClientPortalInvoiceLineItem[];
+  subtotal: number;
+  taxAmount: number;
+  total: number;
+  amountPaid: number;
+  outstandingAmount: number;
+  currency: string;
+  dueDate: string;
+  paidAt: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface ClientPortalInvoicePaymentSession {
+  provider: string;
+  transactionId: string;
+  reference: string;
+  status: string;
+  amount: number;
+  currency: string;
+  redirectUrl: string | null;
+}
+
+export interface InitiateClientPortalInvoicePayment {
+  callbackUrl: string;
+  provider?: string | null;
+}
+
+export interface VerifyClientPortalInvoicePayment {
+  provider: string;
+  transactionId: string;
+  reference: string;
+}
+
+export interface ClientPortalInvoicePaymentVerification {
+  invoiceId: string;
+  status: number;
+  amountPaid: number;
+  outstandingAmount: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ClientPortalApiService {
   private readonly basePath = '/api/v1/client-portal';
@@ -194,6 +265,42 @@ export class ClientPortalApiService {
     return this.apiClient
       .post<ApiEnvelope<string>, SubmitClientPortalRequest>(
         `${this.basePath}/requests`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getInvoices(): Observable<ClientPortalInvoicesResult> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalInvoicesResult>>(`${this.basePath}/invoices`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getInvoice(invoiceId: string): Observable<ClientPortalInvoiceDetail> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalInvoiceDetail>>(`${this.basePath}/invoices/${invoiceId}`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  initiateInvoicePayment(
+    invoiceId: string,
+    request: InitiateClientPortalInvoicePayment,
+  ): Observable<ClientPortalInvoicePaymentSession> {
+    return this.apiClient
+      .post<ApiEnvelope<ClientPortalInvoicePaymentSession>, InitiateClientPortalInvoicePayment>(
+        `${this.basePath}/invoices/${invoiceId}/pay`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  verifyInvoicePayment(
+    invoiceId: string,
+    request: VerifyClientPortalInvoicePayment,
+  ): Observable<ClientPortalInvoicePaymentVerification> {
+    return this.apiClient
+      .post<ApiEnvelope<ClientPortalInvoicePaymentVerification>, VerifyClientPortalInvoicePayment>(
+        `${this.basePath}/invoices/${invoiceId}/payments/verify`,
         request,
       )
       .pipe(map((response) => unwrapApiEnvelopeData(response)));

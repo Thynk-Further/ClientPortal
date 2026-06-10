@@ -69,6 +69,18 @@ public static class ClientsEndpoints
         portalGroup.MapPost("/requests", SubmitClientPortalRequestAsync)
             .WithName("ClientPortalRequestsCreate");
 
+        portalGroup.MapGet("/invoices", GetClientPortalInvoicesAsync)
+            .WithName("ClientPortalInvoices");
+
+        portalGroup.MapGet("/invoices/{id:guid}", GetClientPortalInvoiceByIdAsync)
+            .WithName("ClientPortalInvoiceById");
+
+        portalGroup.MapPost("/invoices/{id:guid}/pay", InitiateClientPortalInvoicePaymentAsync)
+            .WithName("ClientPortalInvoicePay");
+
+        portalGroup.MapPost("/invoices/{id:guid}/payments/verify", VerifyClientPortalInvoicePaymentAsync)
+            .WithName("ClientPortalInvoicePaymentVerify");
+
         portalGroup.MapGet("/onboarding-status", GetOnboardingStatusAsync)
             .WithName("ClientPortalOnboardingStatus");
 
@@ -255,6 +267,62 @@ public static class ClientsEndpoints
         return ToResponse(result);
     }
 
+    private static async Task<IResult> GetClientPortalInvoicesAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalInvoicesResultDto> result = await sender.Send(
+            new GetClientPortalInvoicesQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalInvoiceByIdAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalInvoiceDetailDto> result = await sender.Send(
+            new GetClientPortalInvoiceByIdQuery(id),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> InitiateClientPortalInvoicePaymentAsync(
+        Guid id,
+        InitiateClientPortalInvoicePaymentRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalInvoicePaymentSessionDto> result = await sender.Send(
+            new InitiateClientPortalInvoicePaymentCommand(
+                id,
+                request.CallbackUrl,
+                request.Provider),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> VerifyClientPortalInvoicePaymentAsync(
+        Guid id,
+        VerifyClientPortalInvoicePaymentRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalInvoicePaymentVerificationDto> result = await sender.Send(
+            new VerifyClientPortalInvoicePaymentCommand(
+                id,
+                request.Provider,
+                request.TransactionId,
+                request.Reference),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
     private static async Task<IResult> GetOnboardingStatusAsync(
         ClaimsPrincipal principal,
         [FromServices] IUserAuthenticationRepository userAuthenticationRepository,
@@ -397,3 +465,12 @@ public sealed record SubmitClientPortalRequestRequest(
     string Title,
     string Description,
     ClientRequestPriority Priority = ClientRequestPriority.Medium);
+
+public sealed record InitiateClientPortalInvoicePaymentRequest(
+    string CallbackUrl,
+    string? Provider = null);
+
+public sealed record VerifyClientPortalInvoicePaymentRequest(
+    string Provider,
+    string TransactionId,
+    string Reference);

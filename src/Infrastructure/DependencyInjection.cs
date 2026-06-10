@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using Application.Abstractions;
 using Application.Auth.Abstractions;
+using Application.Clients;
 using Application.Clients.Abstractions;
 using Application.Documents.Abstractions;
 using Application.Messaging.Abstractions;
@@ -91,6 +92,10 @@ public static class DependencyInjection
         services.AddScoped<IClientPortalDashboardReader, NpgsqlClientPortalDashboardReader>();
         services.AddScoped<IClientPortalProjectsReader, NpgsqlClientPortalProjectsReader>();
         services.AddScoped<IClientPortalRequestsReader, NpgsqlClientPortalRequestsReader>();
+        services.AddScoped<IClientPortalInvoicesReader, NpgsqlClientPortalInvoicesReader>();
+        services.Configure<ClientPortalPaymentOptions>(configuration.GetSection(ClientPortalPaymentOptions.SectionName));
+        services.AddSingleton(serviceProvider =>
+            serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ClientPortalPaymentOptions>>().Value);
         services.AddScoped<IClientRequestRepository, ClientRequestRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IMilestoneRepository, MilestoneRepository>();
