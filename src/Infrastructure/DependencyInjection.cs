@@ -82,6 +82,7 @@ public static class DependencyInjection
         services.AddScoped<ITenantKeyHasher, TenantKeyHasher>();
         services.AddScoped<ITenantKeyLookup, NpgsqlTenantKeyLookup>();
         services.AddScoped<ITenantPublicIdLookup, NpgsqlTenantPublicIdLookup>();
+        services.AddScoped<ITenantPublicRecordLookup, NpgsqlTenantPublicRecordLookup>();
         services.AddDbContext<TenantDbContext>();
         services.AddDbContext<PublicDbContext>();
         services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();

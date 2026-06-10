@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
+import { TenantBrandingService } from '../branding/tenant-branding.service';
 import { UserSessionService } from '../auth/user-session.service';
 import { ClientPortalMessagesSummaryService } from '../messaging/client-portal-messages-summary.service';
 import { ClientPortalNoticesSummaryService } from '../notices/client-portal-notices-summary.service';
@@ -21,9 +22,18 @@ interface ClientNavItem {
     <div class="flex min-h-screen flex-col bg-muted/30">
       <header class="border-b border-border/70 bg-card">
         <div class="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Client Portal</p>
-            <p class="text-sm font-semibold text-foreground">{{ greetingName() }}</p>
+          <div class="flex min-w-0 items-center gap-3">
+            @if (brandingService.branding()?.logoUrl; as logoUrl) {
+              <img
+                [src]="logoUrl"
+                [alt]="tenantDisplayName() + ' logo'"
+                class="h-9 w-auto max-w-[140px] object-contain"
+              />
+            }
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-foreground">{{ tenantDisplayName() }}</p>
+              <p class="text-xs text-muted-foreground">Client portal</p>
+            </div>
           </div>
 
           <nav class="flex flex-wrap gap-1" aria-label="Client portal">
@@ -57,6 +67,7 @@ interface ClientNavItem {
 })
 export class ClientPortalShellComponent implements OnInit {
   private readonly userSession = inject(UserSessionService);
+  protected readonly brandingService = inject(TenantBrandingService);
   protected readonly messagesSummary = inject(ClientPortalMessagesSummaryService);
   protected readonly noticesSummary = inject(ClientPortalNoticesSummaryService);
 
@@ -83,5 +94,9 @@ export class ClientPortalShellComponent implements OnInit {
     }
 
     return 'Welcome';
+  }
+
+  protected tenantDisplayName(): string {
+    return this.brandingService.branding()?.tenantName ?? 'Client Portal';
   }
 }

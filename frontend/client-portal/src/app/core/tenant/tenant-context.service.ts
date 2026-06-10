@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@angular/core';
 
 import { AuthContextService } from '../auth/auth-context.service';
 import { TENANT_CONTEXT_CONFIG, TenantContextConfig } from './tenant-context.config';
+import { resolveTenantSlugFromHost } from '../branding/tenant-host.util';
 
 @Injectable({ providedIn: 'root' })
 export class TenantContextService {
@@ -19,8 +20,25 @@ export class TenantContextService {
     return this.authContext.getTenantId();
   }
 
+  getTenantSlug(): string | null {
+    const storedSlug = localStorage.getItem(this.config.tenantSlugStorageKey);
+    if (storedSlug !== null && storedSlug.trim() !== '') {
+      return storedSlug;
+    }
+
+    if (typeof window !== 'undefined') {
+      return resolveTenantSlugFromHost(window.location.hostname);
+    }
+
+    return null;
+  }
+
   setTenantId(tenantId: string): void {
     localStorage.setItem(this.config.tenantStorageKey, tenantId);
+  }
+
+  setTenantSlug(tenantSlug: string): void {
+    localStorage.setItem(this.config.tenantSlugStorageKey, tenantSlug.trim().toLowerCase());
   }
 
   syncTenantIdFromAccessToken(accessToken: string): void {
@@ -37,8 +55,16 @@ export class TenantContextService {
     localStorage.removeItem(this.config.tenantStorageKey);
   }
 
+  clearTenantSlug(): void {
+    localStorage.removeItem(this.config.tenantSlugStorageKey);
+  }
+
   getHeaderName(): string {
     return this.config.tenantHeaderName;
+  }
+
+  getSlugHeaderName(): string {
+    return this.config.tenantSlugHeaderName;
   }
 
   private parseTenantId(token: string): string | null {

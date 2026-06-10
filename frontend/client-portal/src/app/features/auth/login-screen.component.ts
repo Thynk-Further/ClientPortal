@@ -9,6 +9,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { AuthStore } from '@/app/core/stores/auth.store';
+import { TenantBrandingService } from '@/app/core/branding/tenant-branding.service';
 import { ButtonComponent } from '@/components/ui/button.component';
 import {
   CardComponent,
@@ -38,6 +39,20 @@ import { InputComponent } from '@/components/ui/input.component';
   ],
   template: `
     <main class="min-h-screen bg-muted/30 px-4 py-8 sm:px-6">
+      <div class="mx-auto mb-6 flex w-full max-w-md flex-col items-center gap-3 text-center">
+        @if (brandingService.branding()?.logoUrl; as logoUrl) {
+          <img
+            [src]="logoUrl"
+            [alt]="tenantDisplayName() + ' logo'"
+            class="h-12 w-auto max-w-[180px] object-contain"
+          />
+        }
+        <div>
+          <h1 class="text-lg font-semibold tracking-tight text-foreground">{{ tenantDisplayName() }}</h1>
+          <p class="text-sm text-muted-foreground">Client portal sign in</p>
+        </div>
+      </div>
+
       <ui-card class="mx-auto w-full max-w-md">
         <ui-card-header>
           <ui-card-title class="text-xl">Sign in</ui-card-title>
@@ -132,6 +147,7 @@ export class LoginScreenComponent {
   private readonly authStore = inject(AuthStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  protected readonly brandingService = inject(TenantBrandingService);
 
   readonly form = this.formBuilder.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -200,5 +216,9 @@ export class LoginScreenComponent {
     const safeReturnUrl =
       returnUrl !== null && returnUrl.startsWith('/') ? returnUrl : '/dashboard';
     await this.router.navigateByUrl(safeReturnUrl);
+  }
+
+  protected tenantDisplayName(): string {
+    return this.brandingService.branding()?.tenantName ?? 'Client Portal';
   }
 }

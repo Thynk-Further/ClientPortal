@@ -1,4 +1,5 @@
 using Api.Contracts;
+using Application.Abstractions;
 using Domain;
 
 namespace Api.Tenancy;
@@ -6,11 +7,16 @@ namespace Api.Tenancy;
 public sealed class TenantMiddleware : IMiddleware
 {
     private readonly IEnumerable<ITenantResolver> _tenantResolvers;
+    private readonly ITenantPublicRecordLookup _tenantPublicRecordLookup;
     private readonly ILogger<TenantMiddleware> _logger;
 
-    public TenantMiddleware(IEnumerable<ITenantResolver> tenantResolvers, ILogger<TenantMiddleware> logger)
+    public TenantMiddleware(
+        IEnumerable<ITenantResolver> tenantResolvers,
+        ITenantPublicRecordLookup tenantPublicRecordLookup,
+        ILogger<TenantMiddleware> logger)
     {
         _tenantResolvers = tenantResolvers;
+        _tenantPublicRecordLookup = tenantPublicRecordLookup;
         _logger = logger;
     }
 
@@ -31,9 +37,20 @@ public sealed class TenantMiddleware : IMiddleware
 
         if (resolvedTenant is not null)
         {
-            context.Items[TenantHttpContextKeys.TenantId] = resolvedTenant.Value.Value;
-            context.Items[TenantHttpContextKeys.TenantSlug] = resolvedTenant.Value.Value;
-            context.Items[TenantHttpContextKeys.TenantSettings] = TenantSettings.Default();
+            string slug = resolvedTenant.Value.Value;
+            context.Items[TenantHttpContextKeys.TenantId] = slug;
+            context.Items[TenantHttpContextKeys.TenantSlug] = slug;
+
+            TenantPublicRecord? tenantRecord = await _tenantPublicRecordLookup.FindBySlugAsync(
+                slug,
+                context.RequestAborted);
+
+            context.Items[TenantHttpContextKeys.TenantSettings] = tenantRecord?.Settings ?? TenantSettings.Default();
+            if (tenantRecord is not null)
+            {
+                context.Items[TenantHttpContextKeys.TenantPublicId] = tenantRecord.Id;
+            }
+
             await next(context);
             return;
         }
