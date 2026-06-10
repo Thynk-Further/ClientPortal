@@ -87,6 +87,8 @@ public static class DependencyInjection
         services.AddScoped<IClientRepository, ClientRepository>();
         services.AddScoped<IClientUserAccountRepository, ClientUserAccountRepository>();
         services.AddScoped<IClientWorkspaceReader, NpgsqlClientWorkspaceReader>();
+        services.AddScoped<ICurrentClientResolver, CurrentClientResolver>();
+        services.AddScoped<IClientPortalDashboardReader, NpgsqlClientPortalDashboardReader>();
         services.AddScoped<IClientRequestRepository, ClientRequestRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IMilestoneRepository, MilestoneRepository>();

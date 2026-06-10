@@ -4,9 +4,7 @@ export const DASHBOARD_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('../feature-shell/feature-shell.component').then(
-        (m) => m.FeatureShellComponent,
-      ),
+      import('./client-dashboard.component').then((m) => m.ClientDashboardComponent),
     data: {
       title: 'Client Dashboard',
       description:

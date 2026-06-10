@@ -2,6 +2,15 @@ import { Routes } from '@angular/router';
 
 export const AUTH_ROUTES: Routes = [
   {
+    path: '',
+    loadComponent: () =>
+      import('./login-screen.component').then((m) => m.LoginScreenComponent),
+    data: {
+      title: 'Sign in',
+      description: 'Email and password authentication for client portal users.',
+    },
+  },
+  {
     path: 'accept-invitation',
     loadComponent: () =>
       import('./accept-invitation-screen.component').then(
@@ -13,14 +22,14 @@ export const AUTH_ROUTES: Routes = [
     },
   },
   {
-    path: '',
+    path: 'forgot-password',
     loadComponent: () =>
       import('../feature-shell/feature-shell.component').then(
         (m) => m.FeatureShellComponent,
       ),
     data: {
-      title: 'Client Authentication',
-      description: 'Sign in to your client portal workspace.',
+      title: 'Forgot Password',
+      description: 'Password reset flow placeholder for client portal users.',
     },
   },
 ];

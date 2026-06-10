@@ -54,6 +54,9 @@ public static class ClientsEndpoints
             .RequireTenant()
             .RequireAuthorization(AuthorizationPolicies.RequireClientUser);
 
+        portalGroup.MapGet("/dashboard", GetClientPortalDashboardAsync)
+            .WithName("ClientPortalDashboard");
+
         portalGroup.MapGet("/onboarding-status", GetOnboardingStatusAsync)
             .WithName("ClientPortalOnboardingStatus");
 
@@ -170,6 +173,17 @@ public static class ClientsEndpoints
         CancellationToken cancellationToken)
     {
         Result result = await sender.Send(new ResendClientInvitationCommand(id), cancellationToken);
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalDashboardAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalDashboardDto> result = await sender.Send(
+            new GetClientPortalDashboardQuery(),
+            cancellationToken);
+
         return ToResponse(result);
     }
 

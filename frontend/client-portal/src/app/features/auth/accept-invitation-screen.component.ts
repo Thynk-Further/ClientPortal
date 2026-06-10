@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthApiService } from '@/app/core/api/auth-api.service';
+import { readHttpErrorMessage } from '@/app/core/api/api-envelope.util';
 import { ButtonComponent } from '@/components/ui/button.component';
 import {
   CardComponent,
@@ -90,7 +91,10 @@ import { InputComponent } from '@/components/ui/input.component';
           </form>
 
           <p class="mt-4 text-center text-sm text-muted-foreground">
-            After activation, sign in with your email and new password.
+            Already activated?
+            <a routerLink="/auth" class="text-primary underline-offset-4 hover:underline">
+              Sign in
+            </a>
           </p>
         </ui-card-content>
       </ui-card>
@@ -153,9 +157,5 @@ export class AcceptInvitationScreenComponent {
 }
 
 function readErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim() !== '') {
-    return error.message;
-  }
-
-  return 'Unable to accept invitation.';
+  return readHttpErrorMessage(error, 'Unable to accept invitation.');
 }
