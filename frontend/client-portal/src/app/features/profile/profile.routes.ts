@@ -4,9 +4,7 @@ export const PROFILE_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('../feature-shell/feature-shell.component').then(
-        (m) => m.FeatureShellComponent,
-      ),
+      import('./client-profile.component').then((m) => m.ClientProfileComponent),
     data: {
       title: 'Profile',
       description: 'Manage personal details, password, and notification settings.',

@@ -96,6 +96,7 @@ public static class DependencyInjection
         services.AddScoped<IClientPortalDocumentsReader, NpgsqlClientPortalDocumentsReader>();
         services.AddScoped<IClientPortalMeetingsReader, NpgsqlClientPortalMeetingsReader>();
         services.AddScoped<IClientPortalNoticesReader, NpgsqlClientPortalNoticesReader>();
+        services.AddScoped<IClientPortalProfileReader, NpgsqlClientPortalProfileReader>();
         services.AddScoped<INoticeReadReceiptRepository, NoticeReadReceiptRepository>();
         services.Configure<DocumentStorageOptions>(configuration.GetSection(DocumentStorageOptions.SectionName));
         services.AddSingleton<IContractDownloadUrlService, ContractDownloadUrlService>();

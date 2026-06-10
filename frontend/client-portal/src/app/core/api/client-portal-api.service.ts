@@ -73,6 +73,31 @@ export interface ClientPortalNoticesSummary {
   totalCount: number;
 }
 
+export interface ClientPortalProfile {
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+}
+
+export interface UpdateClientPortalProfile {
+  contactName: string;
+  phone: string;
+}
+
+export interface ChangeClientPortalPassword {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ClientPortalNotificationPreferences {
+  emailEnabled: boolean;
+  whatsAppEnabled: boolean;
+  smsEnabled: boolean;
+  inAppEnabled: boolean;
+  frequency: number;
+}
+
 export interface ClientPortalMessagesSummary {
   unreadCount: number;
   totalThreads: number;
@@ -508,5 +533,48 @@ export class ClientPortalApiService {
         {},
       )
       .pipe(map(() => undefined));
+  }
+
+  getProfile(): Observable<ClientPortalProfile> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalProfile>>(`${this.basePath}/profile`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  updateProfile(request: UpdateClientPortalProfile): Observable<ClientPortalProfile> {
+    return this.apiClient
+      .put<ApiEnvelope<ClientPortalProfile>, UpdateClientPortalProfile>(
+        `${this.basePath}/profile`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  changePassword(request: ChangeClientPortalPassword): Observable<void> {
+    return this.apiClient
+      .put<ApiEnvelope<null>, ChangeClientPortalPassword>(
+        `${this.basePath}/profile/password`,
+        request,
+      )
+      .pipe(map(() => undefined));
+  }
+
+  getNotificationPreferences(): Observable<ClientPortalNotificationPreferences> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalNotificationPreferences>>(
+        `${this.basePath}/profile/notification-preferences`,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  updateNotificationPreferences(
+    request: ClientPortalNotificationPreferences,
+  ): Observable<ClientPortalNotificationPreferences> {
+    return this.apiClient
+      .put<ApiEnvelope<ClientPortalNotificationPreferences>, ClientPortalNotificationPreferences>(
+        `${this.basePath}/profile/notification-preferences`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 }

@@ -1,6 +1,7 @@
 using Application.Clients;
 using Application.Clients.Dtos;
 using Application.Auth.Abstractions;
+using Application.Notifications.Dtos;
 using Api.Auth;
 using Api.Contracts;
 using Api.Tenancy;
@@ -119,6 +120,21 @@ public static class ClientsEndpoints
 
         portalGroup.MapPut("/messages/threads/{id:guid}/read", MarkClientPortalThreadReadAsync)
             .WithName("ClientPortalMarkThreadRead");
+
+        portalGroup.MapGet("/profile", GetClientPortalProfileAsync)
+            .WithName("ClientPortalProfile");
+
+        portalGroup.MapPut("/profile", UpdateClientPortalProfileAsync)
+            .WithName("ClientPortalProfileUpdate");
+
+        portalGroup.MapPut("/profile/password", ChangeClientPortalPasswordAsync)
+            .WithName("ClientPortalChangePassword");
+
+        portalGroup.MapGet("/profile/notification-preferences", GetClientPortalNotificationPreferencesAsync)
+            .WithName("ClientPortalNotificationPreferences");
+
+        portalGroup.MapPut("/profile/notification-preferences", UpdateClientPortalNotificationPreferencesAsync)
+            .WithName("ClientPortalNotificationPreferencesUpdate");
 
         portalGroup.MapGet("/onboarding-status", GetOnboardingStatusAsync)
             .WithName("ClientPortalOnboardingStatus");
@@ -529,6 +545,69 @@ public static class ClientsEndpoints
         return ToResponse(result);
     }
 
+    private static async Task<IResult> GetClientPortalProfileAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalProfileDto> result = await sender.Send(
+            new GetClientPortalProfileQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> UpdateClientPortalProfileAsync(
+        UpdateClientPortalProfileRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalProfileDto> result = await sender.Send(
+            new UpdateClientPortalProfileCommand(request.ContactName, request.Phone),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> ChangeClientPortalPasswordAsync(
+        ChangeClientPortalPasswordRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result result = await sender.Send(
+            new ChangeClientPortalPasswordCommand(request.CurrentPassword, request.NewPassword),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalNotificationPreferencesAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<NotificationPreferencesDto> result = await sender.Send(
+            new GetClientPortalNotificationPreferencesQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> UpdateClientPortalNotificationPreferencesAsync(
+        UpdateClientPortalNotificationPreferencesRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<NotificationPreferencesDto> result = await sender.Send(
+            new UpdateClientPortalNotificationPreferencesCommand(
+                request.EmailEnabled,
+                request.WhatsAppEnabled,
+                request.SmsEnabled,
+                request.InAppEnabled,
+                request.Frequency),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
     private static async Task<IResult> GetOnboardingStatusAsync(
         ClaimsPrincipal principal,
         [FromServices] IUserAuthenticationRepository userAuthenticationRepository,
@@ -686,3 +765,18 @@ public sealed record SignClientPortalContractRequest(string SignerName);
 public sealed record SendClientPortalMessageRequest(
     string ClientMessageId,
     string Content);
+
+public sealed record UpdateClientPortalProfileRequest(
+    string ContactName,
+    string Phone);
+
+public sealed record ChangeClientPortalPasswordRequest(
+    string CurrentPassword,
+    string NewPassword);
+
+public sealed record UpdateClientPortalNotificationPreferencesRequest(
+    bool EmailEnabled,
+    bool WhatsAppEnabled,
+    bool SmsEnabled,
+    bool InAppEnabled,
+    NotificationPreferenceFrequency Frequency);
