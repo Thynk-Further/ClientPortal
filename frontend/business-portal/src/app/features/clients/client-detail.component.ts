@@ -158,7 +158,10 @@ interface TabDefinition {
                   </div>
                 }
                 @case ('projects') {
-                  <app-client-projects-tab [clientId]="clientId()" />
+                  <app-client-projects-tab
+                    [clientId]="clientId()"
+                    [clientName]="clientCompanyName()"
+                  />
                 }
                 @case ('invoices') {
                   @if (invoices().length === 0) {

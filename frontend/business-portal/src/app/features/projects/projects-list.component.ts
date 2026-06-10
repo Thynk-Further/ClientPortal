@@ -16,6 +16,7 @@ import {
 } from '@/app/core/api/services/project-api.service';
 import { ProjectStore } from '@/app/core/stores/project.store';
 import { AppendToBodyDirective } from '@/components/ui/append-to-body.directive';
+import { CreateProjectDialogComponent } from './create-project-dialog.component';
 import { ProjectViewDialogComponent } from './project-view-dialog.component';
 
 interface RowActionMenu {
@@ -43,7 +44,12 @@ interface TableColumn {
   selector: 'app-projects-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, AppendToBodyDirective, ProjectViewDialogComponent],
+  imports: [
+    ReactiveFormsModule,
+    AppendToBodyDirective,
+    CreateProjectDialogComponent,
+    ProjectViewDialogComponent,
+  ],
   template: `
     <div class="px-5 pb-10 sm:px-8">
       <header class="flex items-center justify-between gap-4 pb-5">
@@ -57,11 +63,17 @@ interface TableColumn {
         <button
           type="button"
           class="inline-flex h-9 shrink-0 items-center rounded-lg bg-neutral-950 px-4 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
-          (click)="goToAddProject()"
+          (click)="openCreateProjectDialog()"
         >
           + Add Project
         </button>
       </header>
+
+      <app-create-project-dialog
+        [open]="createProjectDialogOpen()"
+        (openChange)="onCreateProjectDialogOpenChange($event)"
+        (created)="onProjectCreated()"
+      />
 
       <div class="flex flex-wrap gap-1 pb-4">
         @for (tab of statusTabs; track tab.id) {
@@ -356,6 +368,7 @@ export class ProjectsListComponent implements OnInit {
   protected readonly rowMenu = signal<RowActionMenu | null>(null);
   protected readonly viewDialogOpen = signal(false);
   protected readonly viewDialogProjectId = signal<string | null>(null);
+  protected readonly createProjectDialogOpen = signal(false);
   protected readonly page = signal(1);
   protected readonly pageSize = signal(10);
   protected readonly pageSizeOptions = [10, 20, 50] as const;
@@ -516,8 +529,17 @@ export class ProjectsListComponent implements OnInit {
       : 'M8 15l4 4 4-4';
   }
 
-  protected goToAddProject(): void {
-    void this.router.navigate(['/clients']);
+  protected openCreateProjectDialog(): void {
+    this.createProjectDialogOpen.set(true);
+  }
+
+  protected onCreateProjectDialogOpenChange(open: boolean): void {
+    this.createProjectDialogOpen.set(open);
+  }
+
+  protected async onProjectCreated(): Promise<void> {
+    this.createProjectDialogOpen.set(false);
+    await this.applyFilters();
   }
 
   protected viewProject(project: ProjectSummary): void {

@@ -12,14 +12,13 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
 import {
-  CreateProjectMilestoneRequest,
   ProjectDashboard,
   ProjectStatus,
   ProjectSummary,
 } from '@/app/core/api/services/project-api.service';
 import { ProjectStore } from '@/app/core/stores/project.store';
 import { AppendToBodyDirective } from '@/components/ui/append-to-body.directive';
-import { ButtonComponent } from '@/components/ui/button.component';
+import { CreateProjectDialogComponent } from '../projects/create-project-dialog.component';
 import { ProjectViewDialogComponent } from '../projects/project-view-dialog.component';
 
 type StatusTab = 'all' | ProjectStatus;
@@ -50,7 +49,7 @@ interface TableColumn {
   imports: [
     ReactiveFormsModule,
     AppendToBodyDirective,
-    ButtonComponent,
+    CreateProjectDialogComponent,
     ProjectViewDialogComponent,
   ],
   template: `
@@ -76,11 +75,19 @@ interface TableColumn {
         <button
           type="button"
           class="inline-flex h-9 shrink-0 items-center rounded-lg bg-neutral-950 px-4 text-sm font-medium text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-200"
-          (click)="toggleCreateProject()"
+          (click)="openCreateProjectDialog()"
         >
-          {{ showCreateProject() ? 'Cancel' : '+ Create Project' }}
+          + Create Project
         </button>
       </div>
+
+      <app-create-project-dialog
+        [open]="createProjectDialogOpen()"
+        [clientId]="clientId()"
+        [clientName]="clientName()"
+        (openChange)="onCreateProjectDialogOpenChange($event)"
+        (created)="onProjectCreated()"
+      />
 
       <form class="max-w-md" [formGroup]="filterForm" (ngSubmit)="$event.preventDefault()">
         <div class="relative min-w-0">
@@ -106,115 +113,6 @@ interface TableColumn {
           />
         </div>
       </form>
-
-      @if (showCreateProject()) {
-        <form
-          class="grid gap-3 rounded-xl border border-border/70 bg-muted/20 p-4 dark:border-white/10"
-          (submit)="submitCreateProject($event)"
-        >
-          <input
-            class="h-9 rounded-lg border border-border/80 bg-background px-3 text-sm outline-none focus-visible:border-neutral-400"
-            placeholder="Project name"
-            required
-            [value]="newProjectName()"
-            (input)="onNewProjectNameInput($event)"
-          />
-          <textarea
-            class="rounded-lg border border-border/80 bg-background px-3 py-2 text-sm outline-none focus-visible:border-neutral-400"
-            placeholder="Description"
-            rows="3"
-            required
-            [value]="newProjectDescription()"
-            (input)="onNewProjectDescriptionInput($event)"
-          ></textarea>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <label class="space-y-1 text-sm">
-              <span class="font-medium text-foreground">Start date</span>
-              <input
-                type="date"
-                class="h-9 w-full rounded-lg border border-border/80 bg-background px-3 outline-none focus-visible:border-neutral-400"
-                required
-                [value]="newProjectStartDate()"
-                (input)="onNewProjectStartDateInput($event)"
-              />
-            </label>
-            <label class="space-y-1 text-sm">
-              <span class="font-medium text-foreground">End date</span>
-              <input
-                type="date"
-                class="h-9 w-full rounded-lg border border-border/80 bg-background px-3 outline-none focus-visible:border-neutral-400"
-                required
-                [value]="newProjectEndDate()"
-                (input)="onNewProjectEndDateInput($event)"
-              />
-            </label>
-          </div>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <label class="space-y-1 text-sm">
-              <span class="font-medium text-foreground">Budget</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                class="h-9 w-full rounded-lg border border-border/80 bg-background px-3 outline-none focus-visible:border-neutral-400"
-                [value]="newProjectBudget()"
-                (input)="onNewProjectBudgetInput($event)"
-              />
-            </label>
-            <label class="space-y-1 text-sm">
-              <span class="font-medium text-foreground">Currency</span>
-              <input
-                class="h-9 w-full rounded-lg border border-border/80 bg-background px-3 outline-none focus-visible:border-neutral-400"
-                maxlength="3"
-                [value]="newProjectCurrency()"
-                (input)="onNewProjectCurrencyInput($event)"
-              />
-            </label>
-          </div>
-          <div class="space-y-2 rounded-lg border border-border/70 bg-background p-3 dark:border-white/10">
-            <div class="flex items-center justify-between gap-2">
-              <p class="text-sm font-medium text-foreground">Initial milestones (optional)</p>
-              <ui-button
-                type="button"
-                variant="outline"
-                label="Add milestone"
-                (clicked)="addScaffoldMilestone()"
-              />
-            </div>
-            @if (scaffoldMilestones().length === 0) {
-              <p class="text-xs text-muted-foreground">
-                Add delivery phases to scaffold the project timeline.
-              </p>
-            } @else {
-              @for (milestone of scaffoldMilestones(); track $index) {
-                <div class="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-                  <input
-                    class="h-9 rounded-lg border border-border/80 bg-background px-3 text-sm outline-none focus-visible:border-neutral-400"
-                    placeholder="Milestone name"
-                    [value]="milestone.name"
-                    (input)="onScaffoldMilestoneNameInput($index, $event)"
-                  />
-                  <input
-                    type="date"
-                    class="h-9 rounded-lg border border-border/80 bg-background px-3 text-sm outline-none focus-visible:border-neutral-400"
-                    [value]="milestone.dueDate"
-                    (input)="onScaffoldMilestoneDueDateInput($index, $event)"
-                  />
-                  <ui-button
-                    type="button"
-                    variant="outline"
-                    label="Remove"
-                    (clicked)="removeScaffoldMilestone($index)"
-                  />
-                </div>
-              }
-            }
-          </div>
-          <div class="flex justify-end">
-            <ui-button type="submit" label="Create project" />
-          </div>
-        </form>
-      }
 
       @if (projectStore.error(); as error) {
         <p class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -457,6 +355,7 @@ export class ClientProjectsTabComponent implements OnInit {
   private readonly router = inject(Router);
 
   readonly clientId = input.required<string>();
+  readonly clientName = input('');
 
   protected readonly projectStore = inject(ProjectStore);
 
@@ -470,18 +369,10 @@ export class ClientProjectsTabComponent implements OnInit {
   protected readonly rowMenu = signal<RowActionMenu | null>(null);
   protected readonly viewDialogOpen = signal(false);
   protected readonly viewDialogProjectId = signal<string | null>(null);
-  protected readonly showCreateProject = signal(false);
+  protected readonly createProjectDialogOpen = signal(false);
   protected readonly page = signal(1);
   protected readonly pageSize = signal(10);
   protected readonly pageSizeOptions = [10, 20, 50] as const;
-
-  protected readonly newProjectName = signal('');
-  protected readonly newProjectDescription = signal('');
-  protected readonly newProjectStartDate = signal(this.formatDateInputValue(new Date()));
-  protected readonly newProjectEndDate = signal(this.formatDateInputValue(this.defaultProjectEndDate()));
-  protected readonly newProjectBudget = signal('0');
-  protected readonly newProjectCurrency = signal('ZAR');
-  protected readonly scaffoldMilestones = signal<CreateProjectMilestoneRequest[]>([]);
 
   protected readonly statusTabs: ReadonlyArray<StatusTabOption> = [
     { id: 'all', label: 'All' },
@@ -553,12 +444,17 @@ export class ClientProjectsTabComponent implements OnInit {
     void this.applyFilters();
   }
 
-  protected toggleCreateProject(): void {
-    const next = !this.showCreateProject();
-    this.showCreateProject.set(next);
-    if (next) {
-      this.resetCreateProjectForm();
-    }
+  protected openCreateProjectDialog(): void {
+    this.createProjectDialogOpen.set(true);
+  }
+
+  protected onCreateProjectDialogOpenChange(open: boolean): void {
+    this.createProjectDialogOpen.set(open);
+  }
+
+  protected async onProjectCreated(): Promise<void> {
+    this.createProjectDialogOpen.set(false);
+    await this.applyFilters();
   }
 
   protected canGoPrevious(): boolean {
@@ -716,126 +612,6 @@ export class ClientProjectsTabComponent implements OnInit {
 
   protected formatDate(value: string): string {
     return formatDate(value);
-  }
-
-  protected onNewProjectNameInput(event: Event): void {
-    this.newProjectName.set((event.target as HTMLInputElement).value);
-  }
-
-  protected onNewProjectDescriptionInput(event: Event): void {
-    this.newProjectDescription.set((event.target as HTMLTextAreaElement).value);
-  }
-
-  protected onNewProjectStartDateInput(event: Event): void {
-    this.newProjectStartDate.set((event.target as HTMLInputElement).value);
-  }
-
-  protected onNewProjectEndDateInput(event: Event): void {
-    this.newProjectEndDate.set((event.target as HTMLInputElement).value);
-  }
-
-  protected onNewProjectBudgetInput(event: Event): void {
-    this.newProjectBudget.set((event.target as HTMLInputElement).value);
-  }
-
-  protected onNewProjectCurrencyInput(event: Event): void {
-    this.newProjectCurrency.set((event.target as HTMLInputElement).value.toUpperCase());
-  }
-
-  protected addScaffoldMilestone(): void {
-    const endDate = this.newProjectEndDate();
-    this.scaffoldMilestones.update((current) => [
-      ...current,
-      { name: '', dueDate: endDate },
-    ]);
-  }
-
-  protected removeScaffoldMilestone(index: number): void {
-    this.scaffoldMilestones.update((current) => current.filter((_, itemIndex) => itemIndex !== index));
-  }
-
-  protected onScaffoldMilestoneNameInput(index: number, event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.scaffoldMilestones.update((current) =>
-      current.map((milestone, itemIndex) =>
-        itemIndex === index ? { ...milestone, name: value } : milestone,
-      ),
-    );
-  }
-
-  protected onScaffoldMilestoneDueDateInput(index: number, event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.scaffoldMilestones.update((current) =>
-      current.map((milestone, itemIndex) =>
-        itemIndex === index ? { ...milestone, dueDate: value } : milestone,
-      ),
-    );
-  }
-
-  protected async submitCreateProject(event: Event): Promise<void> {
-    event.preventDefault();
-    const clientId = this.clientId().trim();
-    const name = this.newProjectName().trim();
-    const description = this.newProjectDescription().trim();
-    const startDate = this.newProjectStartDate().trim();
-    const endDate = this.newProjectEndDate().trim();
-    const budget = Number.parseFloat(this.newProjectBudget());
-    const currency = this.newProjectCurrency().trim().toUpperCase();
-    if (
-      clientId === ''
-      || name === ''
-      || description === ''
-      || startDate === ''
-      || endDate === ''
-      || currency === ''
-      || Number.isNaN(budget)
-    ) {
-      return;
-    }
-
-    const milestones = this.scaffoldMilestones()
-      .map((milestone) => ({
-        name: milestone.name.trim(),
-        dueDate: milestone.dueDate,
-      }))
-      .filter((milestone) => milestone.name !== '' && milestone.dueDate !== '');
-
-    const projectId = await this.projectStore.createProject({
-      clientId,
-      name,
-      description,
-      startDate,
-      endDate,
-      budget,
-      currency,
-      milestones: milestones.length > 0 ? milestones : undefined,
-    });
-
-    if (projectId !== null) {
-      this.resetCreateProjectForm();
-      this.showCreateProject.set(false);
-      await this.applyFilters();
-    }
-  }
-
-  private resetCreateProjectForm(): void {
-    this.newProjectName.set('');
-    this.newProjectDescription.set('');
-    this.newProjectStartDate.set(this.formatDateInputValue(new Date()));
-    this.newProjectEndDate.set(this.formatDateInputValue(this.defaultProjectEndDate()));
-    this.newProjectBudget.set('0');
-    this.newProjectCurrency.set('ZAR');
-    this.scaffoldMilestones.set([]);
-  }
-
-  private defaultProjectEndDate(): Date {
-    const end = new Date();
-    end.setMonth(end.getMonth() + 3);
-    return end;
-  }
-
-  private formatDateInputValue(date: Date): string {
-    return date.toISOString().slice(0, 10);
   }
 
   private async applyFilters(): Promise<void> {

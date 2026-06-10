@@ -100,21 +100,21 @@ interface BreakdownBar {
             <h2 class="text-base font-semibold text-foreground">Task pipeline</h2>
             <p class="mt-0.5 text-sm text-muted-foreground">Aggregated tasks across all projects.</p>
             <dl class="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div class="rounded-xl border border-border/60 bg-muted/20 p-3">
-                <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">To Do</dt>
-                <dd class="mt-1 text-2xl font-semibold text-foreground">{{ data.taskSummary.todo }}</dd>
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+                <dt class="text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">To Do</dt>
+                <dd class="mt-1 text-2xl font-semibold text-slate-800 dark:text-slate-100">{{ data.taskSummary.todo }}</dd>
               </div>
-              <div class="rounded-xl border border-border/60 bg-muted/20 p-3">
-                <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">In Progress</dt>
-                <dd class="mt-1 text-2xl font-semibold text-foreground">{{ data.taskSummary.inProgress }}</dd>
+              <div class="rounded-xl border border-blue-200 bg-blue-50 p-3 dark:border-blue-500/30 dark:bg-blue-500/10">
+                <dt class="text-xs font-semibold uppercase tracking-wide text-blue-700 dark:text-blue-400">In Progress</dt>
+                <dd class="mt-1 text-2xl font-semibold text-blue-800 dark:text-blue-300">{{ data.taskSummary.inProgress }}</dd>
               </div>
-              <div class="rounded-xl border border-border/60 bg-muted/20 p-3">
-                <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Blocked</dt>
-                <dd class="mt-1 text-2xl font-semibold text-foreground">{{ data.taskSummary.blocked }}</dd>
+              <div class="rounded-xl border border-red-200 bg-red-50 p-3 dark:border-red-500/30 dark:bg-red-500/10">
+                <dt class="text-xs font-semibold uppercase tracking-wide text-red-700 dark:text-red-400">Blocked</dt>
+                <dd class="mt-1 text-2xl font-semibold text-red-800 dark:text-red-300">{{ data.taskSummary.blocked }}</dd>
               </div>
-              <div class="rounded-xl border border-border/60 bg-muted/20 p-3">
-                <dt class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Done</dt>
-                <dd class="mt-1 text-2xl font-semibold text-foreground">{{ data.taskSummary.done }}</dd>
+              <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                <dt class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">Done</dt>
+                <dd class="mt-1 text-2xl font-semibold text-emerald-800 dark:text-emerald-300">{{ data.taskSummary.done }}</dd>
               </div>
             </dl>
           </article>
