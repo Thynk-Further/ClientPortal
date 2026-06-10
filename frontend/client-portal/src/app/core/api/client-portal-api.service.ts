@@ -122,6 +122,29 @@ export interface ClientPortalProjectRequest {
   createdAtUtc: string;
 }
 
+export interface ClientPortalRequestListItem {
+  id: string;
+  projectId: string;
+  projectName: string;
+  title: string;
+  description: string;
+  status: number;
+  priority: number;
+  createdAtUtc: string;
+  updatedAtUtc: string;
+}
+
+export interface ClientPortalRequestsResult {
+  requests: ClientPortalRequestListItem[];
+}
+
+export interface SubmitClientPortalRequest {
+  projectId: string;
+  title: string;
+  description: string;
+  priority: number;
+}
+
 export interface ClientPortalProjectDetail {
   id: string;
   name: string;
@@ -158,6 +181,21 @@ export class ClientPortalApiService {
   getProject(projectId: string): Observable<ClientPortalProjectDetail> {
     return this.apiClient
       .get<ApiEnvelope<ClientPortalProjectDetail>>(`${this.basePath}/projects/${projectId}`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getRequests(): Observable<ClientPortalRequestsResult> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalRequestsResult>>(`${this.basePath}/requests`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  submitRequest(request: SubmitClientPortalRequest): Observable<string> {
+    return this.apiClient
+      .post<ApiEnvelope<string>, SubmitClientPortalRequest>(
+        `${this.basePath}/requests`,
+        request,
+      )
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 }

@@ -49,6 +49,7 @@ export class ClientPortalShellComponent {
   protected readonly navItems: ReadonlyArray<ClientNavItem> = [
     { label: 'Dashboard', route: '/dashboard' },
     { label: 'Projects', route: '/projects' },
+    { label: 'Requests', route: '/requests' },
     { label: 'Invoices', route: '/invoices' },
     { label: 'Documents', route: '/documents' },
     { label: 'Messages', route: '/messages' },

@@ -63,6 +63,12 @@ public static class ClientsEndpoints
         portalGroup.MapGet("/projects/{id:guid}", GetClientPortalProjectDetailAsync)
             .WithName("ClientPortalProjectDetail");
 
+        portalGroup.MapGet("/requests", GetClientPortalRequestsAsync)
+            .WithName("ClientPortalRequests");
+
+        portalGroup.MapPost("/requests", SubmitClientPortalRequestAsync)
+            .WithName("ClientPortalRequestsCreate");
+
         portalGroup.MapGet("/onboarding-status", GetOnboardingStatusAsync)
             .WithName("ClientPortalOnboardingStatus");
 
@@ -216,6 +222,39 @@ public static class ClientsEndpoints
         return ToResponse(result);
     }
 
+    private static async Task<IResult> GetClientPortalRequestsAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalRequestsResultDto> result = await sender.Send(
+            new GetClientPortalRequestsQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> SubmitClientPortalRequestAsync(
+        SubmitClientPortalRequestRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> result = await sender.Send(
+            new SubmitClientPortalRequestCommand(
+                request.ProjectId,
+                request.Title,
+                request.Description,
+                request.Priority),
+            cancellationToken);
+
+        if (result.IsSuccess && result.Value != Guid.Empty)
+        {
+            string location = $"/api/v1/client-portal/requests/{result.Value}";
+            return Results.Created(location, ApiResponse<Guid>.Ok(result.Value));
+        }
+
+        return ToResponse(result);
+    }
+
     private static async Task<IResult> GetOnboardingStatusAsync(
         ClaimsPrincipal principal,
         [FromServices] IUserAuthenticationRepository userAuthenticationRepository,
@@ -352,3 +391,9 @@ public sealed record UpdateClientRequest(
     string Phone,
     string? Notes,
     ClientStatus Status);
+
+public sealed record SubmitClientPortalRequestRequest(
+    Guid ProjectId,
+    string Title,
+    string Description,
+    ClientRequestPriority Priority = ClientRequestPriority.Medium);
