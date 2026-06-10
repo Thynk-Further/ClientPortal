@@ -12,4 +12,15 @@ export const PROJECTS_ROUTES: Routes = [
       description: 'Project overview, progress, milestones, and activity timeline.',
     },
   },
+  {
+    path: ':projectId',
+    loadComponent: () =>
+      import('./client-project-detail.component').then(
+        (m) => m.ClientProjectDetailComponent,
+      ),
+    data: {
+      title: 'Project Detail',
+      description: 'Milestones, tasks, documents, messages, and requests for a project.',
+    },
+  },
 ];

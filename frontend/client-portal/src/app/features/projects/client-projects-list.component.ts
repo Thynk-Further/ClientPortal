@@ -5,6 +5,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import {
@@ -47,6 +48,7 @@ const ACTIVITY_TYPE_LABELS: Record<string, string> = {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RouterLink,
     CardComponent,
     CardHeaderComponent,
     CardTitleComponent,
@@ -82,11 +84,18 @@ const ACTIVITY_TYPE_LABELS: Record<string, string> = {
       } @else {
         <section class="grid grid-cols-1 gap-4 lg:grid-cols-2" aria-label="Project cards">
           @for (project of projects(); track project.id) {
-            <ui-card>
+            <ui-card class="transition-shadow hover:shadow-md">
               <ui-card-header class="gap-3">
                 <div class="flex items-start justify-between gap-3">
                   <div class="min-w-0">
-                    <ui-card-title class="truncate text-lg">{{ project.name }}</ui-card-title>
+                    <ui-card-title class="truncate text-lg">
+                      <a
+                        [routerLink]="['/projects', project.id]"
+                        class="hover:text-primary hover:underline underline-offset-4"
+                      >
+                        {{ project.name }}
+                      </a>
+                    </ui-card-title>
                     <ui-card-description>
                       {{ formatDate(project.startDate) }} – {{ formatDate(project.endDate) }}
                     </ui-card-description>
@@ -142,6 +151,13 @@ const ACTIVITY_TYPE_LABELS: Record<string, string> = {
                     </ul>
                   }
                 </div>
+
+                <a
+                  [routerLink]="['/projects', project.id]"
+                  class="inline-flex text-sm font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  View project details
+                </a>
               </ui-card-content>
             </ui-card>
           }

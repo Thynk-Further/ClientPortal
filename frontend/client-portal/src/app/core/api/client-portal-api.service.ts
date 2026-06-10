@@ -89,6 +89,54 @@ export interface ClientPortalProjectsResult {
   projects: ClientPortalProjectListItem[];
 }
 
+export interface ClientPortalMilestone {
+  id: string;
+  name: string;
+  dueDate: string;
+  status: number;
+  completedAtUtc: string | null;
+}
+
+export interface ClientPortalTask {
+  id: string;
+  milestoneId: string;
+  title: string;
+  status: number;
+  priority: number;
+  dueDate: string;
+}
+
+export interface ClientPortalMessageThread {
+  id: string;
+  subject: string;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
+export interface ClientPortalProjectRequest {
+  id: string;
+  title: string;
+  description: string;
+  status: number;
+  priority: number;
+  createdAtUtc: string;
+}
+
+export interface ClientPortalProjectDetail {
+  id: string;
+  name: string;
+  description: string;
+  status: number;
+  startDate: string;
+  endDate: string;
+  milestoneProgress: ClientPortalMilestoneProgress;
+  milestones: ClientPortalMilestone[];
+  tasks: ClientPortalTask[];
+  documents: ClientPortalDocumentCard[];
+  messageThreads: ClientPortalMessageThread[];
+  requests: ClientPortalProjectRequest[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ClientPortalApiService {
   private readonly basePath = '/api/v1/client-portal';
@@ -104,6 +152,12 @@ export class ClientPortalApiService {
   getProjects(): Observable<ClientPortalProjectsResult> {
     return this.apiClient
       .get<ApiEnvelope<ClientPortalProjectsResult>>(`${this.basePath}/projects`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getProject(projectId: string): Observable<ClientPortalProjectDetail> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalProjectDetail>>(`${this.basePath}/projects/${projectId}`)
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 }

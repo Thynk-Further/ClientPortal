@@ -60,6 +60,9 @@ public static class ClientsEndpoints
         portalGroup.MapGet("/projects", GetClientPortalProjectsAsync)
             .WithName("ClientPortalProjects");
 
+        portalGroup.MapGet("/projects/{id:guid}", GetClientPortalProjectDetailAsync)
+            .WithName("ClientPortalProjectDetail");
+
         portalGroup.MapGet("/onboarding-status", GetOnboardingStatusAsync)
             .WithName("ClientPortalOnboardingStatus");
 
@@ -196,6 +199,18 @@ public static class ClientsEndpoints
     {
         Result<ClientPortalProjectsResultDto> result = await sender.Send(
             new GetClientPortalProjectsQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalProjectDetailAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalProjectDetailDto> result = await sender.Send(
+            new GetClientPortalProjectDetailQuery(id),
             cancellationToken);
 
         return ToResponse(result);

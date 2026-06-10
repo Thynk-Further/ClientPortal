@@ -76,6 +76,121 @@ public sealed class NpgsqlClientPortalProjectsReader : IClientPortalProjectsRead
         return new ClientPortalProjectsResultDto(items);
     }
 
+    public async Task<ClientPortalProjectDetailDto?> GetProjectDetailAsync(
+        Guid clientId,
+        Guid projectId,
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        Project? project = await _tenantDbContext.Set<Project>()
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                entity => entity.Id == projectId && entity.ClientId == clientId,
+                cancellationToken);
+
+        if (project is null)
+        {
+            return null;
+        }
+
+        List<Milestone> milestones = await _tenantDbContext.Set<Milestone>()
+            .AsNoTracking()
+            .Where(milestone => milestone.ProjectId == projectId)
+            .OrderBy(milestone => milestone.DueDate)
+            .ToListAsync(cancellationToken);
+
+        List<ProjectTask> tasks = await _tenantDbContext.Set<ProjectTask>()
+            .AsNoTracking()
+            .Where(task => task.ProjectId == projectId)
+            .OrderBy(task => task.DueDate)
+            .ToListAsync(cancellationToken);
+
+        List<ClientRequest> requests = await _tenantDbContext.Set<ClientRequest>()
+            .AsNoTracking()
+            .Where(request => request.ProjectId == projectId)
+            .OrderByDescending(request => request.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        List<Contract> contracts = await _tenantDbContext.Set<Contract>()
+            .AsNoTracking()
+            .Where(contract => contract.ClientId == clientId)
+            .OrderByDescending(contract => contract.UpdatedAt)
+            .Take(20)
+            .ToListAsync(cancellationToken);
+
+        List<MessageThread> threads = await _tenantDbContext.Set<MessageThread>()
+            .AsNoTracking()
+            .Where(thread =>
+                thread.ClientId == clientId
+                && thread.ProjectId == projectId
+                && thread.Participants.Contains(userId))
+            .OrderByDescending(thread => thread.LastMessageAt)
+            .ToListAsync(cancellationToken);
+
+        Guid[] threadIds = threads.Select(thread => thread.Id).ToArray();
+        Dictionary<Guid, int> unreadCounts = threadIds.Length == 0
+            ? []
+            : await _tenantDbContext.Set<Message>()
+                .AsNoTracking()
+                .Where(message =>
+                    threadIds.Contains(message.ThreadId)
+                    && message.SenderId != userId
+                    && message.Status != MessageStatus.Read)
+                .GroupBy(message => message.ThreadId)
+                .Select(group => new { ThreadId = group.Key, Count = group.Count() })
+                .ToDictionaryAsync(entry => entry.ThreadId, entry => entry.Count, cancellationToken);
+
+        return new ClientPortalProjectDetailDto(
+            project.Id,
+            project.Name,
+            project.Description,
+            project.Status,
+            project.StartDate,
+            project.EndDate,
+            BuildMilestoneProgress(milestones),
+            milestones
+                .Select(milestone => new ClientPortalMilestoneDto(
+                    milestone.Id,
+                    milestone.Name,
+                    milestone.DueDate,
+                    milestone.Status,
+                    milestone.CompletedAt))
+                .ToList(),
+            tasks
+                .Select(task => new ClientPortalTaskDto(
+                    task.Id,
+                    task.MilestoneId,
+                    task.Title,
+                    task.Status,
+                    task.Priority,
+                    task.DueDate))
+                .ToList(),
+            contracts
+                .Select(contract => new ClientPortalDocumentCardDto(
+                    contract.Id,
+                    contract.Title,
+                    "contract",
+                    contract.Status.ToString(),
+                    contract.UpdatedAt))
+                .ToList(),
+            threads
+                .Select(thread => new ClientPortalMessageThreadDto(
+                    thread.Id,
+                    thread.Subject,
+                    thread.LastMessageAt,
+                    unreadCounts.GetValueOrDefault(thread.Id, 0)))
+                .ToList(),
+            requests
+                .Select(request => new ClientPortalProjectRequestDto(
+                    request.Id,
+                    request.Title,
+                    request.Description,
+                    request.Status,
+                    request.Priority,
+                    request.CreatedAt))
+                .ToList());
+    }
+
     private static ClientPortalMilestoneProgressDto BuildMilestoneProgress(
         IReadOnlyCollection<Milestone> milestones)
     {
