@@ -267,6 +267,48 @@ export interface SignClientPortalContract {
   signerName: string;
 }
 
+export interface ClientPortalMessageThread {
+  id: string;
+  projectId: string | null;
+  subject: string;
+  lastMessageAt: string;
+  unreadCount: number;
+}
+
+export interface ClientPortalMessageThreadsResult {
+  threads: ClientPortalMessageThread[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface ClientPortalMessagesSummary {
+  unreadCount: number;
+  totalThreads: number;
+}
+
+export interface ClientPortalMessage {
+  id: string;
+  threadId: string;
+  senderId: string;
+  senderRole: string;
+  content: string;
+  status: number;
+  sentAt: string;
+}
+
+export interface ClientPortalThreadMessagesResult {
+  messages: ClientPortalMessage[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface SendClientPortalMessage {
+  clientMessageId: string;
+  content: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ClientPortalApiService {
   private readonly basePath = '/api/v1/client-portal';
@@ -369,5 +411,51 @@ export class ClientPortalApiService {
         request,
       )
       .pipe(map(() => undefined));
+  }
+
+  getMessagesSummary(): Observable<ClientPortalMessagesSummary> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalMessagesSummary>>(`${this.basePath}/messages/summary`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getMessageThreads(page = 1, pageSize = 20): Observable<ClientPortalMessageThreadsResult> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalMessageThreadsResult>>(`${this.basePath}/messages/threads`, {
+        page,
+        pageSize,
+      })
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getThreadMessages(
+    threadId: string,
+    page = 1,
+    pageSize = 50,
+  ): Observable<ClientPortalThreadMessagesResult> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalThreadMessagesResult>>(
+        `${this.basePath}/messages/threads/${threadId}/messages`,
+        { page, pageSize },
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  sendMessage(threadId: string, request: SendClientPortalMessage): Observable<string> {
+    return this.apiClient
+      .post<ApiEnvelope<string>, SendClientPortalMessage>(
+        `${this.basePath}/messages/threads/${threadId}/messages`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  markThreadRead(threadId: string): Observable<number> {
+    return this.apiClient
+      .put<ApiEnvelope<number>, Record<string, never>>(
+        `${this.basePath}/messages/threads/${threadId}/read`,
+        {},
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 }

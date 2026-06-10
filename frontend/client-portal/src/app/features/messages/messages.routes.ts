@@ -4,8 +4,8 @@ export const MESSAGES_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('../feature-shell/feature-shell.component').then(
-        (m) => m.FeatureShellComponent,
+      import('./client-messages-inbox.component').then(
+        (m) => m.ClientMessagesInboxComponent,
       ),
     data: {
       title: 'Messages',

@@ -93,6 +93,21 @@ public static class ClientsEndpoints
         portalGroup.MapPost("/documents/{id:guid}/sign", SignClientPortalContractAsync)
             .WithName("ClientPortalDocumentSign");
 
+        portalGroup.MapGet("/messages/summary", GetClientPortalMessagesSummaryAsync)
+            .WithName("ClientPortalMessagesSummary");
+
+        portalGroup.MapGet("/messages/threads", GetClientPortalMessageThreadsAsync)
+            .WithName("ClientPortalMessageThreads");
+
+        portalGroup.MapGet("/messages/threads/{id:guid}/messages", GetClientPortalThreadMessagesAsync)
+            .WithName("ClientPortalThreadMessages");
+
+        portalGroup.MapPost("/messages/threads/{id:guid}/messages", SendClientPortalMessageAsync)
+            .WithName("ClientPortalSendMessage");
+
+        portalGroup.MapPut("/messages/threads/{id:guid}/read", MarkClientPortalThreadReadAsync)
+            .WithName("ClientPortalMarkThreadRead");
+
         portalGroup.MapGet("/onboarding-status", GetOnboardingStatusAsync)
             .WithName("ClientPortalOnboardingStatus");
 
@@ -383,6 +398,80 @@ public static class ClientsEndpoints
         return ToResponse(result);
     }
 
+    private static async Task<IResult> GetClientPortalMessagesSummaryAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalMessagesSummaryDto> result = await sender.Send(
+            new GetClientPortalMessagesSummaryQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalMessageThreadsAsync(
+        ISender sender,
+        CancellationToken cancellationToken,
+        int page = 1,
+        int pageSize = 20)
+    {
+        Result<ClientPortalMessageThreadsResultDto> result = await sender.Send(
+            new GetClientPortalMessageThreadsQuery(
+                page <= 0 ? 1 : page,
+                pageSize <= 0 ? 20 : pageSize),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalThreadMessagesAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken,
+        int page = 1,
+        int pageSize = 50)
+    {
+        Result<ClientPortalThreadMessagesResultDto> result = await sender.Send(
+            new GetClientPortalThreadMessagesQuery(
+                id,
+                page <= 0 ? 1 : page,
+                pageSize <= 0 ? 50 : pageSize),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> SendClientPortalMessageAsync(
+        Guid id,
+        SendClientPortalMessageRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> result = await sender.Send(
+            new SendClientPortalMessageCommand(id, request.ClientMessageId, request.Content),
+            cancellationToken);
+
+        if (result.IsSuccess && result.Value != Guid.Empty)
+        {
+            string location = $"/api/v1/client-portal/messages/threads/{id}/messages/{result.Value}";
+            return Results.Created(location, ApiResponse<Guid>.Ok(result.Value));
+        }
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> MarkClientPortalThreadReadAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<int> result = await sender.Send(
+            new MarkClientPortalThreadReadCommand(id),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
     private static async Task<IResult> GetOnboardingStatusAsync(
         ClaimsPrincipal principal,
         [FromServices] IUserAuthenticationRepository userAuthenticationRepository,
@@ -536,3 +625,7 @@ public sealed record VerifyClientPortalInvoicePaymentRequest(
     string Reference);
 
 public sealed record SignClientPortalContractRequest(string SignerName);
+
+public sealed record SendClientPortalMessageRequest(
+    string ClientMessageId,
+    string Content);

@@ -35,6 +35,18 @@ export class ApiClientService {
     });
   }
 
+  put<TResponse, TBody = unknown>(
+    url: string,
+    body?: TBody,
+    query?: QueryParams,
+    options?: RequestOptions,
+  ): Observable<TResponse> {
+    return this.httpClient.put<TResponse>(url, body ?? {}, {
+      params: this.toHttpParams(query),
+      withCredentials: options?.withCredentials,
+    });
+  }
+
   private toHttpParams(query?: QueryParams): HttpParams | undefined {
     if (query === undefined) {
       return undefined;

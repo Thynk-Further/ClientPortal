@@ -1,11 +1,13 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { UserSessionService } from '../auth/user-session.service';
+import { ClientPortalMessagesSummaryService } from '../messaging/client-portal-messages-summary.service';
 
 interface ClientNavItem {
   readonly label: string;
   readonly route: string;
+  readonly showUnreadBadge?: boolean;
 }
 
 @Component({
@@ -27,10 +29,18 @@ interface ClientNavItem {
               <a
                 [routerLink]="item.route"
                 routerLinkActive="bg-primary text-primary-foreground"
-                class="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                class="relative rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
               >
                 {{ item.label }}
+                @if (item.showUnreadBadge && messagesSummary.unreadCount() > 0) {
+                  <span
+                    class="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold leading-none text-destructive-foreground"
+                    [attr.aria-label]="messagesSummary.unreadCount() + ' unread messages'"
+                  >
+                    {{ messagesSummary.unreadCount() }}
+                  </span>
+                }
               </a>
             }
           </nav>
@@ -43,8 +53,9 @@ interface ClientNavItem {
     </div>
   `,
 })
-export class ClientPortalShellComponent {
+export class ClientPortalShellComponent implements OnInit {
   private readonly userSession = inject(UserSessionService);
+  protected readonly messagesSummary = inject(ClientPortalMessagesSummaryService);
 
   protected readonly navItems: ReadonlyArray<ClientNavItem> = [
     { label: 'Dashboard', route: '/dashboard' },
@@ -52,10 +63,14 @@ export class ClientPortalShellComponent {
     { label: 'Requests', route: '/requests' },
     { label: 'Invoices', route: '/invoices' },
     { label: 'Documents', route: '/documents' },
-    { label: 'Messages', route: '/messages' },
+    { label: 'Messages', route: '/messages', showUnreadBadge: true },
     { label: 'Meetings', route: '/meetings' },
     { label: 'Profile', route: '/profile' },
   ];
+
+  async ngOnInit(): Promise<void> {
+    await this.messagesSummary.refresh();
+  }
 
   protected greetingName(): string {
     const user = this.userSession.getUser();
