@@ -22,14 +22,15 @@ public sealed class NpgsqlClientPortalNoticesReader : IClientPortalNoticesReader
     {
         DateTime nowUtc = DateTime.UtcNow;
 
-        List<Notice> notices = await _tenantDbContext.Set<Notice>()
+        List<Notice> notices = (await _tenantDbContext.Set<Notice>()
             .AsNoTracking()
             .Where(notice =>
                 notice.IsActive
-                && (!notice.ExpiresAt.HasValue || notice.ExpiresAt > nowUtc)
-                && (notice.TargetClientIds == null || notice.TargetClientIds.Contains(clientId)))
+                && (!notice.ExpiresAt.HasValue || notice.ExpiresAt > nowUtc))
+            .ToListAsync(cancellationToken))
+            .Where(notice => notice.TargetClientIds is null || notice.TargetClientIds.Contains(clientId))
             .OrderByDescending(notice => notice.PublishedAt)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         Dictionary<Guid, DateTime> readReceipts = await _tenantDbContext.Set<NoticeReadReceipt>()
             .AsNoTracking()

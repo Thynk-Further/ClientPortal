@@ -27,10 +27,11 @@ public sealed class MessageThreadRepository : IMessageThreadRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        List<MessageThread> participantThreads = await _tenantDbContext.Set<MessageThread>()
-            .Where(thread => thread.Participants.Contains(participantId))
+        List<MessageThread> participantThreads = (await _tenantDbContext.Set<MessageThread>()
             .OrderByDescending(thread => thread.LastMessageAt)
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellationToken))
+            .Where(thread => thread.Participants.Contains(participantId))
+            .ToList();
 
         int totalCount = participantThreads.Count;
         IReadOnlyList<Guid> pageThreadIds = participantThreads

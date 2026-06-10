@@ -109,11 +109,15 @@ public sealed class NpgsqlClientPortalDashboardReader : IClientPortalDashboardRe
                 meeting.Attendees))
             .ToListAsync(cancellationToken);
 
-        List<Guid> threadIds = await _tenantDbContext.Set<MessageThread>()
+        List<MessageThread> clientThreads = await _tenantDbContext.Set<MessageThread>()
             .AsNoTracking()
-            .Where(thread => thread.ClientId == clientId && thread.Participants.Contains(userId))
-            .Select(thread => thread.Id)
+            .Where(thread => thread.ClientId == clientId)
             .ToListAsync(cancellationToken);
+
+        List<Guid> threadIds = clientThreads
+            .Where(thread => thread.Participants.Contains(userId))
+            .Select(thread => thread.Id)
+            .ToList();
 
         int unreadCount = threadIds.Count == 0
             ? 0

@@ -118,14 +118,13 @@ public sealed class NpgsqlClientPortalProjectsReader : IClientPortalProjectsRead
             .Take(20)
             .ToListAsync(cancellationToken);
 
-        List<MessageThread> threads = await _tenantDbContext.Set<MessageThread>()
+        List<MessageThread> threads = (await _tenantDbContext.Set<MessageThread>()
             .AsNoTracking()
-            .Where(thread =>
-                thread.ClientId == clientId
-                && thread.ProjectId == projectId
-                && thread.Participants.Contains(userId))
+            .Where(thread => thread.ClientId == clientId && thread.ProjectId == projectId)
             .OrderByDescending(thread => thread.LastMessageAt)
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellationToken))
+            .Where(thread => thread.Participants.Contains(userId))
+            .ToList();
 
         Guid[] threadIds = threads.Select(thread => thread.Id).ToArray();
         Dictionary<Guid, int> unreadCounts = threadIds.Length == 0
