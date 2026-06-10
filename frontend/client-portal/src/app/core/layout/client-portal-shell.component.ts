@@ -2,9 +2,10 @@ import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/cor
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 
 import { TenantBrandingService } from '../branding/tenant-branding.service';
-import { UserSessionService } from '../auth/user-session.service';
 import { ClientPortalMessagesSummaryService } from '../messaging/client-portal-messages-summary.service';
 import { ClientPortalNoticesSummaryService } from '../notices/client-portal-notices-summary.service';
+import { ClientUserAccountMenuComponent } from './client-user-account-menu.component';
+import { ThemeToggleComponent } from './theme-toggle.component';
 
 interface ClientNavItem {
   readonly label: string;
@@ -17,7 +18,7 @@ interface ClientNavItem {
   selector: 'app-client-portal-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ClientUserAccountMenuComponent, ThemeToggleComponent],
   template: `
     <div class="flex min-h-screen flex-col bg-muted/30">
       <header class="border-b border-border/70 bg-card">
@@ -36,26 +37,31 @@ interface ClientNavItem {
             </div>
           </div>
 
-          <nav class="flex flex-wrap gap-1" aria-label="Client portal">
-            @for (item of navItems; track item.route) {
-              <a
-                [routerLink]="item.route"
-                routerLinkActive="bg-primary text-primary-foreground"
-                class="relative rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
-              >
-                {{ item.label }}
-                @if (item.showUnreadBadge && item.unreadCount !== undefined && item.unreadCount() > 0) {
-                  <span
-                    class="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold leading-none text-destructive-foreground"
-                    [attr.aria-label]="item.unreadCount() + ' unread ' + item.label.toLowerCase()"
-                  >
-                    {{ item.unreadCount() }}
-                  </span>
-                }
-              </a>
-            }
-          </nav>
+          <div class="flex flex-wrap items-center gap-2">
+            <nav class="flex flex-wrap gap-1" aria-label="Client portal">
+              @for (item of navItems; track item.route) {
+                <a
+                  [routerLink]="item.route"
+                  routerLinkActive="bg-primary text-primary-foreground"
+                  class="relative rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+                >
+                  {{ item.label }}
+                  @if (item.showUnreadBadge && item.unreadCount !== undefined && item.unreadCount() > 0) {
+                    <span
+                      class="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold leading-none text-destructive-foreground"
+                      [attr.aria-label]="item.unreadCount() + ' unread ' + item.label.toLowerCase()"
+                    >
+                      {{ item.unreadCount() }}
+                    </span>
+                  }
+                </a>
+              }
+            </nav>
+
+            <app-theme-toggle />
+            <app-client-user-account-menu />
+          </div>
         </div>
       </header>
 
@@ -66,7 +72,6 @@ interface ClientNavItem {
   `,
 })
 export class ClientPortalShellComponent implements OnInit {
-  private readonly userSession = inject(UserSessionService);
   protected readonly brandingService = inject(TenantBrandingService);
   protected readonly messagesSummary = inject(ClientPortalMessagesSummaryService);
   protected readonly noticesSummary = inject(ClientPortalNoticesSummaryService);
@@ -85,15 +90,6 @@ export class ClientPortalShellComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.messagesSummary.refresh(), this.noticesSummary.refresh()]);
-  }
-
-  protected greetingName(): string {
-    const user = this.userSession.getUser();
-    if (user?.fullName?.trim()) {
-      return user.fullName.trim();
-    }
-
-    return 'Welcome';
   }
 
   protected tenantDisplayName(): string {

@@ -14,6 +14,7 @@ import {
   CardTitleComponent,
 } from '@/components/ui/card.component';
 import { InputComponent } from '@/components/ui/input.component';
+import { ThemeToggleComponent } from '@/app/core/layout/theme-toggle.component';
 
 @Component({
   selector: 'app-accept-invitation-screen',
@@ -29,9 +30,13 @@ import { InputComponent } from '@/components/ui/input.component';
     CardDescriptionComponent,
     CardContentComponent,
     InputComponent,
+    ThemeToggleComponent,
   ],
   template: `
-    <main class="min-h-screen bg-muted/30 px-4 py-8 sm:px-6">
+    <main class="relative min-h-screen bg-muted/30 px-4 py-8 sm:px-6">
+      <div class="absolute right-4 top-4 sm:right-6">
+        <app-theme-toggle />
+      </div>
       <ui-card class="mx-auto w-full max-w-md">
         <ui-card-header>
           <ui-card-title class="text-xl">Accept invitation</ui-card-title>

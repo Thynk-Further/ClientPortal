@@ -20,6 +20,7 @@ import {
   CardTitleComponent,
 } from '@/components/ui/card.component';
 import { InputComponent } from '@/components/ui/input.component';
+import { ThemeToggleComponent } from '@/app/core/layout/theme-toggle.component';
 
 @Component({
   selector: 'app-login-screen',
@@ -36,9 +37,13 @@ import { InputComponent } from '@/components/ui/input.component';
     CardContentComponent,
     CardFooterComponent,
     InputComponent,
+    ThemeToggleComponent,
   ],
   template: `
-    <main class="min-h-screen bg-muted/30 px-4 py-8 sm:px-6">
+    <main class="relative min-h-screen bg-muted/30 px-4 py-8 sm:px-6">
+      <div class="absolute right-4 top-4 sm:right-6">
+        <app-theme-toggle />
+      </div>
       <div class="mx-auto mb-6 flex w-full max-w-md flex-col items-center gap-3 text-center">
         @if (brandingService.branding()?.logoUrl; as logoUrl) {
           <img
