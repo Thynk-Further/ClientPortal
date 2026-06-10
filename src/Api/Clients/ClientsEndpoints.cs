@@ -57,6 +57,9 @@ public static class ClientsEndpoints
         portalGroup.MapGet("/dashboard", GetClientPortalDashboardAsync)
             .WithName("ClientPortalDashboard");
 
+        portalGroup.MapGet("/projects", GetClientPortalProjectsAsync)
+            .WithName("ClientPortalProjects");
+
         portalGroup.MapGet("/onboarding-status", GetOnboardingStatusAsync)
             .WithName("ClientPortalOnboardingStatus");
 
@@ -182,6 +185,17 @@ public static class ClientsEndpoints
     {
         Result<ClientPortalDashboardDto> result = await sender.Send(
             new GetClientPortalDashboardQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalProjectsAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalProjectsResultDto> result = await sender.Send(
+            new GetClientPortalProjectsQuery(),
             cancellationToken);
 
         return ToResponse(result);

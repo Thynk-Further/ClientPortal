@@ -63,6 +63,32 @@ export interface ClientPortalDashboard {
   messages: ClientPortalMessagesSummary;
 }
 
+export interface ClientPortalMilestoneProgress {
+  totalCount: number;
+  completedCount: number;
+  progressPercent: number;
+}
+
+export interface ClientPortalProjectActivity {
+  occurredAtUtc: string;
+  type: string;
+  description: string;
+}
+
+export interface ClientPortalProjectListItem {
+  id: string;
+  name: string;
+  status: number;
+  startDate: string;
+  endDate: string;
+  milestoneProgress: ClientPortalMilestoneProgress;
+  recentActivity: ClientPortalProjectActivity[];
+}
+
+export interface ClientPortalProjectsResult {
+  projects: ClientPortalProjectListItem[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ClientPortalApiService {
   private readonly basePath = '/api/v1/client-portal';
@@ -72,6 +98,12 @@ export class ClientPortalApiService {
   getDashboard(): Observable<ClientPortalDashboard> {
     return this.apiClient
       .get<ApiEnvelope<ClientPortalDashboard>>(`${this.basePath}/dashboard`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getProjects(): Observable<ClientPortalProjectsResult> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalProjectsResult>>(`${this.basePath}/projects`)
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 }

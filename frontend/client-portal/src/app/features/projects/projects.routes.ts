@@ -4,8 +4,8 @@ export const PROJECTS_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('../feature-shell/feature-shell.component').then(
-        (m) => m.FeatureShellComponent,
+      import('./client-projects-list.component').then(
+        (m) => m.ClientProjectsListComponent,
       ),
     data: {
       title: 'Projects',
