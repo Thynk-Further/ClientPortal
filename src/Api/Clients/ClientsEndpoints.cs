@@ -93,6 +93,9 @@ public static class ClientsEndpoints
         portalGroup.MapPost("/documents/{id:guid}/sign", SignClientPortalContractAsync)
             .WithName("ClientPortalDocumentSign");
 
+        portalGroup.MapGet("/meetings", GetClientPortalMeetingsAsync)
+            .WithName("ClientPortalMeetings");
+
         portalGroup.MapGet("/messages/summary", GetClientPortalMessagesSummaryAsync)
             .WithName("ClientPortalMessagesSummary");
 
@@ -393,6 +396,17 @@ public static class ClientsEndpoints
     {
         Result result = await sender.Send(
             new SignClientPortalContractCommand(id, request.SignerName),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalMeetingsAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalMeetingsResultDto> result = await sender.Send(
+            new GetClientPortalMeetingsQuery(),
             cancellationToken);
 
         return ToResponse(result);

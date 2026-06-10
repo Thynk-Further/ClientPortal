@@ -49,6 +49,10 @@ export interface ClientPortalMeetingCard {
   attendees: string[];
 }
 
+export interface ClientPortalMeetingsResult {
+  meetings: ClientPortalMeetingCard[];
+}
+
 export interface ClientPortalMessagesSummary {
   unreadCount: number;
   totalThreads: number;
@@ -456,6 +460,12 @@ export class ClientPortalApiService {
         `${this.basePath}/messages/threads/${threadId}/read`,
         {},
       )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getMeetings(): Observable<ClientPortalMeetingsResult> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalMeetingsResult>>(`${this.basePath}/meetings`)
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 }
