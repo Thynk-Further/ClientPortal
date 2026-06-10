@@ -8,7 +8,11 @@ public interface IMilestoneRepository
 
     Task<bool> ExistsIncompleteByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Milestone>> GetByProjectIdAsync(Guid projectId, CancellationToken cancellationToken = default);
+
     void Add(Milestone milestone);
 
     void Update(Milestone milestone);
+
+    void Remove(Milestone milestone);
 }

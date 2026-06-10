@@ -6,6 +6,7 @@ export const REPORTS_ROUTES: Routes = [
     loadComponent: () =>
       import('./business-reports.component').then((m) => m.BusinessReportsComponent),
     data: {
+      breadcrumb: 'Reports',
       title: 'Reports',
       description:
         'Financial summary charts, project status overview, and client activity.',

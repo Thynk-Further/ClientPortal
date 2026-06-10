@@ -23,6 +23,7 @@ public sealed class GetProjectsQueryHandler : IRequestHandler<GetProjectsQuery, 
             pageSize: request.PageSize,
             status: request.Status,
             clientId: request.ClientId,
+            search: request.Search,
             cancellationToken: cancellationToken);
 
         return Result<PagedResult<ProjectListItemDto>>.Success(projects);

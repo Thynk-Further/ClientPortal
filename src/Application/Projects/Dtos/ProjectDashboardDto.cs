@@ -5,6 +5,7 @@ namespace Application.Projects.Dtos;
 public sealed record ProjectDashboardDto(
     Guid ProjectId,
     Guid ClientId,
+    string ClientCompanyName,
     string Name,
     string Description,
     ProjectStatus Status,
@@ -12,9 +13,14 @@ public sealed record ProjectDashboardDto(
     DateOnly EndDate,
     decimal Budget,
     string Currency,
+    ProjectHealth Health,
+    int OpenRiskCount,
+    int OverdueMilestoneCount,
+    ProjectTaskSummaryDto TaskSummary,
     IReadOnlyCollection<ProjectDashboardMilestoneDto> Milestones,
     IReadOnlyCollection<ProjectDashboardTaskDto> Tasks,
     IReadOnlyCollection<ProjectDashboardRequestDto> Requests,
+    IReadOnlyCollection<ProjectDashboardRiskDto> Risks,
     IReadOnlyCollection<ProjectDashboardActivityDto> RecentActivity);
 
 public sealed record ProjectDashboardMilestoneDto(
@@ -40,6 +46,15 @@ public sealed record ProjectDashboardRequestDto(
     string Description,
     ClientRequestStatus Status,
     ClientRequestPriority Priority);
+
+public sealed record ProjectDashboardRiskDto(
+    Guid Id,
+    string Title,
+    string Description,
+    ProjectRiskSeverity Severity,
+    ProjectRiskStatus Status,
+    Guid OwnerId,
+    DateOnly? DueDate);
 
 public sealed record ProjectDashboardActivityDto(
     DateTime OccurredAtUtc,

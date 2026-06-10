@@ -99,12 +99,6 @@ export interface ClientWorkspace {
   recentActivity: ClientActivityItem[];
 }
 
-export interface ClientWorkspaceLanding {
-  totalClients: number;
-  recentClients: ClientSummary[];
-  pendingInvites: ClientSummary[];
-}
-
 @Injectable({ providedIn: 'root' })
 export class ClientApiService {
   private readonly basePath = '/api/v1/clients';
@@ -121,12 +115,6 @@ export class ClientApiService {
   getClientById(clientId: string): Observable<ClientDetail> {
     return this.apiClient
       .get<ApiEnvelope<ClientDetail>>(`${this.basePath}/${clientId}`)
-      .pipe(map((response) => this.unwrapEnvelopeData(response)));
-  }
-
-  getWorkspaceLanding(): Observable<ClientWorkspaceLanding> {
-    return this.apiClient
-      .get<ApiEnvelope<ClientWorkspaceLanding>>(`${this.basePath}/workspace`)
       .pipe(map((response) => this.unwrapEnvelopeData(response)));
   }
 

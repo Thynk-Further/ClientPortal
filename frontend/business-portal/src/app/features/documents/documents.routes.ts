@@ -8,6 +8,7 @@ export const DOCUMENTS_ROUTES: Routes = [
         (m) => m.DocumentsLibraryComponent,
       ),
     data: {
+      breadcrumb: 'Document Library',
       title: 'Documents',
       description: 'Document library, upload, preview, and contract signing.',
     },

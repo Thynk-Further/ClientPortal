@@ -1,26 +1,42 @@
+using Application.Abstractions;
+
 namespace Api.Tenancy;
 
 /// <summary>
-/// Uses the <c>tenantSlug</c> claim from an authenticated JWT (runs after authentication middleware in the pipeline).
+/// Uses <c>tenantSlug</c> or <c>tenantId</c> claims from an authenticated JWT (runs after authentication middleware).
 /// Removes the need for <c>X-Tenant-Key</c> / <c>X-Tenant-Id</c> on typical Bearer-authenticated API calls.
 /// </summary>
 public sealed class JwtClaimsTenantResolver : ITenantResolver
 {
-    public ValueTask<TenantId?> ResolveAsync(HttpContext httpContext, CancellationToken cancellationToken = default)
+    private readonly ITenantPublicIdLookup _tenantPublicIdLookup;
+
+    public JwtClaimsTenantResolver(ITenantPublicIdLookup tenantPublicIdLookup)
+    {
+        _tenantPublicIdLookup = tenantPublicIdLookup;
+    }
+
+    public async ValueTask<TenantId?> ResolveAsync(HttpContext httpContext, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
 
         if (httpContext.User.Identity?.IsAuthenticated != true)
         {
-            return ValueTask.FromResult<TenantId?>(null);
+            return null;
         }
 
         string? slug = httpContext.User.FindFirst("tenantSlug")?.Value;
-        if (string.IsNullOrWhiteSpace(slug))
+        if (!string.IsNullOrWhiteSpace(slug))
         {
-            return ValueTask.FromResult<TenantId?>(null);
+            return new TenantId(slug);
         }
 
-        return ValueTask.FromResult<TenantId?>(new TenantId(slug));
+        string? tenantIdRaw = httpContext.User.FindFirst("tenantId")?.Value;
+        if (!Guid.TryParse(tenantIdRaw, out Guid tenantId))
+        {
+            return null;
+        }
+
+        slug = await _tenantPublicIdLookup.ResolveSlugByPublicIdAsync(tenantId, cancellationToken);
+        return string.IsNullOrWhiteSpace(slug) ? null : new TenantId(slug);
     }
 }
