@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using Application.Abstractions;
 using Application.Auth.Abstractions;
+using Application.Clients;
 using Application.Clients.Abstractions;
 using Application.Documents.Abstractions;
 using Application.Messaging.Abstractions;
@@ -81,12 +82,28 @@ public static class DependencyInjection
         services.AddScoped<ITenantKeyHasher, TenantKeyHasher>();
         services.AddScoped<ITenantKeyLookup, NpgsqlTenantKeyLookup>();
         services.AddScoped<ITenantPublicIdLookup, NpgsqlTenantPublicIdLookup>();
+        services.AddScoped<ITenantPublicRecordLookup, NpgsqlTenantPublicRecordLookup>();
         services.AddDbContext<TenantDbContext>();
         services.AddDbContext<PublicDbContext>();
         services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
         services.AddScoped<IClientRepository, ClientRepository>();
         services.AddScoped<IClientUserAccountRepository, ClientUserAccountRepository>();
         services.AddScoped<IClientWorkspaceReader, NpgsqlClientWorkspaceReader>();
+        services.AddScoped<ICurrentClientResolver, CurrentClientResolver>();
+        services.AddScoped<IClientPortalDashboardReader, NpgsqlClientPortalDashboardReader>();
+        services.AddScoped<IClientPortalProjectsReader, NpgsqlClientPortalProjectsReader>();
+        services.AddScoped<IClientPortalRequestsReader, NpgsqlClientPortalRequestsReader>();
+        services.AddScoped<IClientPortalInvoicesReader, NpgsqlClientPortalInvoicesReader>();
+        services.AddScoped<IClientPortalDocumentsReader, NpgsqlClientPortalDocumentsReader>();
+        services.AddScoped<IClientPortalMeetingsReader, NpgsqlClientPortalMeetingsReader>();
+        services.AddScoped<IClientPortalNoticesReader, NpgsqlClientPortalNoticesReader>();
+        services.AddScoped<IClientPortalProfileReader, NpgsqlClientPortalProfileReader>();
+        services.AddScoped<INoticeReadReceiptRepository, NoticeReadReceiptRepository>();
+        services.Configure<DocumentStorageOptions>(configuration.GetSection(DocumentStorageOptions.SectionName));
+        services.AddSingleton<IContractDownloadUrlService, ContractDownloadUrlService>();
+        services.Configure<ClientPortalPaymentOptions>(configuration.GetSection(ClientPortalPaymentOptions.SectionName));
+        services.AddSingleton(serviceProvider =>
+            serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<ClientPortalPaymentOptions>>().Value);
         services.AddScoped<IClientRequestRepository, ClientRequestRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IMilestoneRepository, MilestoneRepository>();

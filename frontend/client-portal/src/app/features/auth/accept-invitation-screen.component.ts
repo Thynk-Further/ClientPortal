@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { AuthApiService } from '@/app/core/api/auth-api.service';
+import { readHttpErrorMessage } from '@/app/core/api/api-envelope.util';
 import { ButtonComponent } from '@/components/ui/button.component';
 import {
   CardComponent,
@@ -13,6 +14,7 @@ import {
   CardTitleComponent,
 } from '@/components/ui/card.component';
 import { InputComponent } from '@/components/ui/input.component';
+import { ThemeToggleComponent } from '@/app/core/layout/theme-toggle.component';
 
 @Component({
   selector: 'app-accept-invitation-screen',
@@ -28,9 +30,13 @@ import { InputComponent } from '@/components/ui/input.component';
     CardDescriptionComponent,
     CardContentComponent,
     InputComponent,
+    ThemeToggleComponent,
   ],
   template: `
-    <main class="min-h-screen bg-muted/30 px-4 py-8 sm:px-6">
+    <main class="relative min-h-screen bg-muted/30 px-4 py-8 sm:px-6">
+      <div class="absolute right-4 top-4 sm:right-6">
+        <app-theme-toggle />
+      </div>
       <ui-card class="mx-auto w-full max-w-md">
         <ui-card-header>
           <ui-card-title class="text-xl">Accept invitation</ui-card-title>
@@ -90,7 +96,10 @@ import { InputComponent } from '@/components/ui/input.component';
           </form>
 
           <p class="mt-4 text-center text-sm text-muted-foreground">
-            After activation, sign in with your email and new password.
+            Already activated?
+            <a routerLink="/auth" class="text-primary underline-offset-4 hover:underline">
+              Sign in
+            </a>
           </p>
         </ui-card-content>
       </ui-card>
@@ -153,9 +162,5 @@ export class AcceptInvitationScreenComponent {
 }
 
 function readErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim() !== '') {
-    return error.message;
-  }
-
-  return 'Unable to accept invitation.';
+  return readHttpErrorMessage(error, 'Unable to accept invitation.');
 }

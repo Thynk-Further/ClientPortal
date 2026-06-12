@@ -689,6 +689,43 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("notices", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.NoticeReadReceipt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("NoticeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("notice_id");
+
+                    b.Property<DateTime>("ReadAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_notice_read_receipts");
+
+                    b.HasIndex("NoticeId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_notice_read_receipts_notice_id_user_id");
+
+                    b.ToTable("notice_read_receipts", (string)null);
+                });
+
             modelBuilder.Entity("Domain.OnboardingChecklist", b =>
                 {
                     b.Property<Guid>("Id")

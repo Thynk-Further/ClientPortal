@@ -4,8 +4,8 @@ export const REQUESTS_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('../feature-shell/feature-shell.component').then(
-        (m) => m.FeatureShellComponent,
+      import('./client-requests-page.component').then(
+        (m) => m.ClientRequestsPageComponent,
       ),
     data: {
       title: 'Requests',

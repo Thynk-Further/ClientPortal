@@ -1,6 +1,7 @@
 using Application.Clients;
 using Application.Clients.Dtos;
 using Application.Auth.Abstractions;
+using Application.Notifications.Dtos;
 using Api.Auth;
 using Api.Contracts;
 using Api.Tenancy;
@@ -53,6 +54,87 @@ public static class ClientsEndpoints
             .WithTags("Client Portal")
             .RequireTenant()
             .RequireAuthorization(AuthorizationPolicies.RequireClientUser);
+
+        portalGroup.MapGet("/dashboard", GetClientPortalDashboardAsync)
+            .WithName("ClientPortalDashboard");
+
+        portalGroup.MapGet("/projects", GetClientPortalProjectsAsync)
+            .WithName("ClientPortalProjects");
+
+        portalGroup.MapGet("/projects/{id:guid}", GetClientPortalProjectDetailAsync)
+            .WithName("ClientPortalProjectDetail");
+
+        portalGroup.MapGet("/requests", GetClientPortalRequestsAsync)
+            .WithName("ClientPortalRequests");
+
+        portalGroup.MapPost("/requests", SubmitClientPortalRequestAsync)
+            .WithName("ClientPortalRequestsCreate");
+
+        portalGroup.MapGet("/invoices", GetClientPortalInvoicesAsync)
+            .WithName("ClientPortalInvoices");
+
+        portalGroup.MapGet("/invoices/{id:guid}", GetClientPortalInvoiceByIdAsync)
+            .WithName("ClientPortalInvoiceById");
+
+        portalGroup.MapPost("/invoices/{id:guid}/pay", InitiateClientPortalInvoicePaymentAsync)
+            .WithName("ClientPortalInvoicePay");
+
+        portalGroup.MapPost("/invoices/{id:guid}/payments/verify", VerifyClientPortalInvoicePaymentAsync)
+            .WithName("ClientPortalInvoicePaymentVerify");
+
+        portalGroup.MapGet("/documents", GetClientPortalDocumentsAsync)
+            .WithName("ClientPortalDocuments");
+
+        portalGroup.MapGet("/documents/{id:guid}", GetClientPortalDocumentByIdAsync)
+            .WithName("ClientPortalDocumentById");
+
+        portalGroup.MapGet("/documents/{id:guid}/download", GetClientPortalDocumentDownloadUrlAsync)
+            .WithName("ClientPortalDocumentDownload");
+
+        portalGroup.MapPost("/documents/{id:guid}/sign", SignClientPortalContractAsync)
+            .WithName("ClientPortalDocumentSign");
+
+        portalGroup.MapGet("/meetings", GetClientPortalMeetingsAsync)
+            .WithName("ClientPortalMeetings");
+
+        portalGroup.MapGet("/notices/summary", GetClientPortalNoticesSummaryAsync)
+            .WithName("ClientPortalNoticesSummary");
+
+        portalGroup.MapGet("/notices", GetClientPortalNoticesAsync)
+            .WithName("ClientPortalNotices");
+
+        portalGroup.MapPut("/notices/{id:guid}/read", MarkClientPortalNoticeReadAsync)
+            .WithName("ClientPortalMarkNoticeRead");
+
+        portalGroup.MapGet("/messages/summary", GetClientPortalMessagesSummaryAsync)
+            .WithName("ClientPortalMessagesSummary");
+
+        portalGroup.MapGet("/messages/threads", GetClientPortalMessageThreadsAsync)
+            .WithName("ClientPortalMessageThreads");
+
+        portalGroup.MapGet("/messages/threads/{id:guid}/messages", GetClientPortalThreadMessagesAsync)
+            .WithName("ClientPortalThreadMessages");
+
+        portalGroup.MapPost("/messages/threads/{id:guid}/messages", SendClientPortalMessageAsync)
+            .WithName("ClientPortalSendMessage");
+
+        portalGroup.MapPut("/messages/threads/{id:guid}/read", MarkClientPortalThreadReadAsync)
+            .WithName("ClientPortalMarkThreadRead");
+
+        portalGroup.MapGet("/profile", GetClientPortalProfileAsync)
+            .WithName("ClientPortalProfile");
+
+        portalGroup.MapPut("/profile", UpdateClientPortalProfileAsync)
+            .WithName("ClientPortalProfileUpdate");
+
+        portalGroup.MapPut("/profile/password", ChangeClientPortalPasswordAsync)
+            .WithName("ClientPortalChangePassword");
+
+        portalGroup.MapGet("/profile/notification-preferences", GetClientPortalNotificationPreferencesAsync)
+            .WithName("ClientPortalNotificationPreferences");
+
+        portalGroup.MapPut("/profile/notification-preferences", UpdateClientPortalNotificationPreferencesAsync)
+            .WithName("ClientPortalNotificationPreferencesUpdate");
 
         portalGroup.MapGet("/onboarding-status", GetOnboardingStatusAsync)
             .WithName("ClientPortalOnboardingStatus");
@@ -170,6 +252,359 @@ public static class ClientsEndpoints
         CancellationToken cancellationToken)
     {
         Result result = await sender.Send(new ResendClientInvitationCommand(id), cancellationToken);
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalDashboardAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalDashboardDto> result = await sender.Send(
+            new GetClientPortalDashboardQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalProjectsAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalProjectsResultDto> result = await sender.Send(
+            new GetClientPortalProjectsQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalProjectDetailAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalProjectDetailDto> result = await sender.Send(
+            new GetClientPortalProjectDetailQuery(id),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalRequestsAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalRequestsResultDto> result = await sender.Send(
+            new GetClientPortalRequestsQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> SubmitClientPortalRequestAsync(
+        SubmitClientPortalRequestRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> result = await sender.Send(
+            new SubmitClientPortalRequestCommand(
+                request.ProjectId,
+                request.Title,
+                request.Description,
+                request.Priority),
+            cancellationToken);
+
+        if (result.IsSuccess && result.Value != Guid.Empty)
+        {
+            string location = $"/api/v1/client-portal/requests/{result.Value}";
+            return Results.Created(location, ApiResponse<Guid>.Ok(result.Value));
+        }
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalInvoicesAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalInvoicesResultDto> result = await sender.Send(
+            new GetClientPortalInvoicesQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalInvoiceByIdAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalInvoiceDetailDto> result = await sender.Send(
+            new GetClientPortalInvoiceByIdQuery(id),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> InitiateClientPortalInvoicePaymentAsync(
+        Guid id,
+        InitiateClientPortalInvoicePaymentRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalInvoicePaymentSessionDto> result = await sender.Send(
+            new InitiateClientPortalInvoicePaymentCommand(
+                id,
+                request.CallbackUrl,
+                request.Provider),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> VerifyClientPortalInvoicePaymentAsync(
+        Guid id,
+        VerifyClientPortalInvoicePaymentRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalInvoicePaymentVerificationDto> result = await sender.Send(
+            new VerifyClientPortalInvoicePaymentCommand(
+                id,
+                request.Provider,
+                request.TransactionId,
+                request.Reference),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalDocumentsAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalDocumentsResultDto> result = await sender.Send(
+            new GetClientPortalDocumentsQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalDocumentByIdAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalDocumentDetailDto> result = await sender.Send(
+            new GetClientPortalDocumentByIdQuery(id),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalDocumentDownloadUrlAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalDocumentDownloadDto> result = await sender.Send(
+            new GetClientPortalDocumentDownloadUrlQuery(id),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> SignClientPortalContractAsync(
+        Guid id,
+        SignClientPortalContractRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result result = await sender.Send(
+            new SignClientPortalContractCommand(id, request.SignerName),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalMeetingsAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalMeetingsResultDto> result = await sender.Send(
+            new GetClientPortalMeetingsQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalNoticesSummaryAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalNoticesSummaryDto> result = await sender.Send(
+            new GetClientPortalNoticesSummaryQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalNoticesAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalNoticesResultDto> result = await sender.Send(
+            new GetClientPortalNoticesQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> MarkClientPortalNoticeReadAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result result = await sender.Send(
+            new MarkClientPortalNoticeReadCommand(id),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalMessagesSummaryAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalMessagesSummaryDto> result = await sender.Send(
+            new GetClientPortalMessagesSummaryQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalMessageThreadsAsync(
+        ISender sender,
+        CancellationToken cancellationToken,
+        int page = 1,
+        int pageSize = 20)
+    {
+        Result<ClientPortalMessageThreadsResultDto> result = await sender.Send(
+            new GetClientPortalMessageThreadsQuery(
+                page <= 0 ? 1 : page,
+                pageSize <= 0 ? 20 : pageSize),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalThreadMessagesAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken,
+        int page = 1,
+        int pageSize = 50)
+    {
+        Result<ClientPortalThreadMessagesResultDto> result = await sender.Send(
+            new GetClientPortalThreadMessagesQuery(
+                id,
+                page <= 0 ? 1 : page,
+                pageSize <= 0 ? 50 : pageSize),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> SendClientPortalMessageAsync(
+        Guid id,
+        SendClientPortalMessageRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> result = await sender.Send(
+            new SendClientPortalMessageCommand(id, request.ClientMessageId, request.Content),
+            cancellationToken);
+
+        if (result.IsSuccess && result.Value != Guid.Empty)
+        {
+            string location = $"/api/v1/client-portal/messages/threads/{id}/messages/{result.Value}";
+            return Results.Created(location, ApiResponse<Guid>.Ok(result.Value));
+        }
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> MarkClientPortalThreadReadAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<int> result = await sender.Send(
+            new MarkClientPortalThreadReadCommand(id),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalProfileAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalProfileDto> result = await sender.Send(
+            new GetClientPortalProfileQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> UpdateClientPortalProfileAsync(
+        UpdateClientPortalProfileRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<ClientPortalProfileDto> result = await sender.Send(
+            new UpdateClientPortalProfileCommand(request.ContactName, request.Phone),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> ChangeClientPortalPasswordAsync(
+        ChangeClientPortalPasswordRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result result = await sender.Send(
+            new ChangeClientPortalPasswordCommand(request.CurrentPassword, request.NewPassword),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalNotificationPreferencesAsync(
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<NotificationPreferencesDto> result = await sender.Send(
+            new GetClientPortalNotificationPreferencesQuery(),
+            cancellationToken);
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> UpdateClientPortalNotificationPreferencesAsync(
+        UpdateClientPortalNotificationPreferencesRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<NotificationPreferencesDto> result = await sender.Send(
+            new UpdateClientPortalNotificationPreferencesCommand(
+                request.EmailEnabled,
+                request.WhatsAppEnabled,
+                request.SmsEnabled,
+                request.InAppEnabled,
+                request.Frequency),
+            cancellationToken);
+
         return ToResponse(result);
     }
 
@@ -309,3 +744,39 @@ public sealed record UpdateClientRequest(
     string Phone,
     string? Notes,
     ClientStatus Status);
+
+public sealed record SubmitClientPortalRequestRequest(
+    Guid ProjectId,
+    string Title,
+    string Description,
+    ClientRequestPriority Priority = ClientRequestPriority.Medium);
+
+public sealed record InitiateClientPortalInvoicePaymentRequest(
+    string CallbackUrl,
+    string? Provider = null);
+
+public sealed record VerifyClientPortalInvoicePaymentRequest(
+    string Provider,
+    string TransactionId,
+    string Reference);
+
+public sealed record SignClientPortalContractRequest(string SignerName);
+
+public sealed record SendClientPortalMessageRequest(
+    string ClientMessageId,
+    string Content);
+
+public sealed record UpdateClientPortalProfileRequest(
+    string ContactName,
+    string Phone);
+
+public sealed record ChangeClientPortalPasswordRequest(
+    string CurrentPassword,
+    string NewPassword);
+
+public sealed record UpdateClientPortalNotificationPreferencesRequest(
+    bool EmailEnabled,
+    bool WhatsAppEnabled,
+    bool SmsEnabled,
+    bool InAppEnabled,
+    NotificationPreferenceFrequency Frequency);

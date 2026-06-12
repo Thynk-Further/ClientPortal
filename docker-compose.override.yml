@@ -57,11 +57,16 @@ services:
     container_name: clientportal-client-app-dev
     working_dir: /workspace/client-portal
     command: >
-      sh -c "npm install &&
+      sh -c "cd /workspace/shared-ui &&
+             npm install &&
+             npm run build &&
+             cd /workspace/client-portal &&
+             npm install &&
              npm run start -- --host 0.0.0.0 --port 4200 --poll 2000"
     volumes:
       - ./frontend:/workspace
       - /workspace/client-portal/node_modules
+      - /workspace/shared-ui/node_modules
     environment:
       NODE_ENV: ${NODE_ENV_DEVELOPMENT}
 
@@ -71,10 +76,15 @@ services:
     container_name: clientportal-business-app-dev
     working_dir: /workspace/business-portal
     command: >
-      sh -c "npm install &&
+      sh -c "cd /workspace/shared-ui &&
+             npm install &&
+             npm run build &&
+             cd /workspace/business-portal &&
+             npm install &&
              npm run start -- --host 0.0.0.0 --port 4200 --poll 2000"
     volumes:
       - ./frontend:/workspace
       - /workspace/business-portal/node_modules
+      - /workspace/shared-ui/node_modules
     environment:
       NODE_ENV: ${NODE_ENV_DEVELOPMENT}

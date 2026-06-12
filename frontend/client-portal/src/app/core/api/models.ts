@@ -10,3 +10,8 @@ export interface ApiEnvelope<T> {
   errors: ApiErrorDto[];
   meta: Record<string, unknown>;
 }
+
+export interface ApiOperationResult {
+  success: boolean;
+  message?: string;
+}

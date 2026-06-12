@@ -36,16 +36,21 @@ public sealed class NoticeRepository : INoticeRepository
             query = query.Where(notice => notice.IsActive && (!notice.ExpiresAt.HasValue || notice.ExpiresAt > nowUtc));
         }
 
+        List<Notice> notices = await query
+            .OrderByDescending(notice => notice.PublishedAt)
+            .ToListAsync(cancellationToken);
+
         if (clientId.HasValue)
         {
             Guid targetClientId = clientId.Value;
-            query = query.Where(notice => notice.TargetClientIds == null || notice.TargetClientIds.Contains(targetClientId));
+            notices = notices
+                .Where(notice => notice.TargetClientIds is null || notice.TargetClientIds.Contains(targetClientId))
+                .ToList();
         }
 
-        int totalCount = await query.CountAsync(cancellationToken);
+        int totalCount = notices.Count;
 
-        IReadOnlyList<NoticeListItemDto> items = await query
-            .OrderByDescending(notice => notice.PublishedAt)
+        IReadOnlyList<NoticeListItemDto> items = notices
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(notice => new NoticeListItemDto(
@@ -56,7 +61,7 @@ public sealed class NoticeRepository : INoticeRepository
                 notice.ExpiresAt,
                 notice.IsActive,
                 notice.TargetClientIds))
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         return new PagedResult<NoticeListItemDto>(items, totalCount, page, pageSize);
     }

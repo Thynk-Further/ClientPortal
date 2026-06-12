@@ -224,7 +224,8 @@ builder.Services.AddScoped<IRealtimeMessagingService, SignalRRealtimeMessagingSe
 builder.Services.AddSingleton<IConnectionPresenceTracker, ConnectionPresenceTracker>();
 builder.Services.AddSingleton<IUserPresenceService, ConnectionPresenceService>();
 builder.Services.AddSingleton<IHubFilter, MessagesHubGuardFilter>();
-builder.Services.AddScoped<ITenantDomainLookup, NullTenantDomainLookup>();
+builder.Services.AddScoped<ITenantDomainLookup, PublicRecordTenantDomainLookup>();
+builder.Services.AddScoped<ITenantResolver, SlugHeaderTenantResolver>();
 builder.Services.AddScoped<ITenantResolver, JwtClaimsTenantResolver>();
 builder.Services.AddScoped<ITenantResolver, SubdomainTenantResolver>();
 builder.Services.AddScoped<ITenantResolver, CustomDomainTenantResolver>();
@@ -333,6 +334,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapAuthEndpoints();
+app.MapTenancyEndpoints();
 app.MapClientsEndpoints();
 app.MapProjectsEndpoints();
 app.MapDocumentsEndpoints();
