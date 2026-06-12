@@ -343,7 +343,6 @@ export interface CreateClientPortalRfqLineItem {
 
 export interface CreateClientPortalRfq {
   projectId: string;
-  rfqNumber: string;
   currency: string;
   lineItems: CreateClientPortalRfqLineItem[];
   notes?: string | null;

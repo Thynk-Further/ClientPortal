@@ -12,15 +12,18 @@ public sealed class CreateClientPortalRfqCommandHandler
     : IRequestHandler<CreateClientPortalRfqCommand, Result<RfqDto>>
 {
     private readonly ICurrentClientResolver _currentClientResolver;
+    private readonly IRfqNumberGenerator _rfqNumberGenerator;
     private readonly IRfqRepository _rfqRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public CreateClientPortalRfqCommandHandler(
         ICurrentClientResolver currentClientResolver,
+        IRfqNumberGenerator rfqNumberGenerator,
         IRfqRepository rfqRepository,
         IUnitOfWork unitOfWork)
     {
         _currentClientResolver = currentClientResolver;
+        _rfqNumberGenerator = rfqNumberGenerator;
         _rfqRepository = rfqRepository;
         _unitOfWork = unitOfWork;
     }
@@ -33,11 +36,22 @@ public sealed class CreateClientPortalRfqCommandHandler
             return Result<RfqDto>.Failure(clientIdResult.Errors);
         }
 
+        Result<string> rfqNumberResult = await _rfqNumberGenerator.GenerateAsync(
+            clientIdResult.Value,
+            cancellationToken);
+
+        if (rfqNumberResult.IsFailed || string.IsNullOrWhiteSpace(rfqNumberResult.Value))
+        {
+            return Result<RfqDto>.Failure(rfqNumberResult.Errors);
+        }
+
+        string rfqNumber = rfqNumberResult.Value;
+
         Rfq rfq = Rfq.Create(
             Guid.CreateVersion7(),
             clientIdResult.Value,
             request.ProjectId,
-            request.RfqNumber,
+            rfqNumber,
             request.LineItems.Select(item => new RfqLineItem(item.Description, item.Quantity)),
             request.Currency,
             request.Notes);

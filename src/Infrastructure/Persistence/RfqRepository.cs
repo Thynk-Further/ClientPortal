@@ -60,6 +60,13 @@ public sealed class RfqRepository : IRfqRepository
         return _tenantDbContext.Set<Rfq>().SingleOrDefaultAsync(rfq => rfq.Id == id, cancellationToken);
     }
 
+    public Task<int> CountByRfqNumberPrefixAsync(string prefix, CancellationToken cancellationToken)
+    {
+        return _tenantDbContext.Set<Rfq>()
+            .AsNoTracking()
+            .CountAsync(rfq => rfq.RfqNumber.StartsWith(prefix), cancellationToken);
+    }
+
     public void Add(Rfq rfq)
     {
         _tenantDbContext.Set<Rfq>().Add(rfq);

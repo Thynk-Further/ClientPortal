@@ -13,6 +13,7 @@ using Application.Projects.Abstractions;
 using Infrastructure.Auth;
 using Infrastructure.Clients;
 using Infrastructure.Documents;
+using Infrastructure.Finance;
 using Infrastructure.Invoices;
 using Infrastructure.Messaging;
 using Infrastructure.Meetings;
@@ -117,6 +118,7 @@ public static class DependencyInjection
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<IRfqRepository, RfqRepository>();
+        services.AddScoped<IRfqNumberGenerator, RfqNumberGenerator>();
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<IInvoicePaymentSubmissionRepository, InvoicePaymentSubmissionRepository>();
         services.AddScoped<IOverdueInvoiceMarker, OverdueInvoiceMarker>();

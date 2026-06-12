@@ -15,6 +15,8 @@ public interface IRfqRepository
 
     Task<Rfq?> FindByIdAsync(Guid id, CancellationToken cancellationToken);
 
+    Task<int> CountByRfqNumberPrefixAsync(string prefix, CancellationToken cancellationToken);
+
     void Add(Rfq rfq);
 
     void Update(Rfq rfq);

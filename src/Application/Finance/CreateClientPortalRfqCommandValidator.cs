@@ -7,7 +7,6 @@ public sealed class CreateClientPortalRfqCommandValidator : AbstractValidator<Cr
     public CreateClientPortalRfqCommandValidator()
     {
         RuleFor(command => command.ProjectId).NotEmpty();
-        RuleFor(command => command.RfqNumber).NotEmpty().MaximumLength(64);
         RuleFor(command => command.Currency).NotEmpty().Length(3);
         RuleFor(command => command.LineItems).NotEmpty();
         RuleForEach(command => command.LineItems).ChildRules(item =>

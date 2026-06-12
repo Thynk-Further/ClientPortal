@@ -64,7 +64,9 @@ const RFQ_STATUS: Record<number, string> = {
         </ui-card-header>
         <ui-card-content>
           <form [formGroup]="form" class="space-y-3" (ngSubmit)="createRfq()">
-            <ui-input formControlName="rfqNumber" placeholder="RFQ number" />
+            <p class="text-sm text-muted-foreground">
+              RFQ numbers are assigned automatically from your provider and company initials plus today&apos;s date.
+            </p>
             <ui-input formControlName="currency" placeholder="Currency (e.g. ZAR)" />
             <select formControlName="projectId" class="w-full rounded-md border px-3 py-2 text-sm">
               <option value="">Select project</option>
@@ -115,7 +117,6 @@ export class ClientRfqsPageComponent implements OnInit {
   protected readonly isSaving = signal(false);
 
   protected readonly form = this.fb.group({
-    rfqNumber: ['', Validators.required],
     currency: ['ZAR', Validators.required],
     projectId: ['', Validators.required],
     notes: [''],
@@ -154,7 +155,6 @@ export class ClientRfqsPageComponent implements OnInit {
       await firstValueFrom(
         this.api.createRfq({
           projectId: value.projectId ?? '',
-          rfqNumber: value.rfqNumber ?? '',
           currency: value.currency ?? 'ZAR',
           notes: value.notes,
           lineItems: this.lineItems.controls.map((ctrl) => ({

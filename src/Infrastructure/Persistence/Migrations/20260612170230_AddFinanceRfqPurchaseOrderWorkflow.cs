@@ -16,7 +16,7 @@ namespace Infrastructure.Persistence.Migrations
                 table: "quotes",
                 type: "integer",
                 nullable: false,
-                defaultValue: 0);
+                defaultValue: 1);
 
             migrationBuilder.AddColumn<Guid>(
                 name: "purchase_order_id",
