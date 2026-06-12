@@ -33,6 +33,10 @@ public sealed class Invoice : AggregateRoot<Guid>
 
     public string? Notes { get; private set; }
 
+    public Guid? PurchaseOrderId { get; private set; }
+
+    public Guid? QuotationId { get; private set; }
+
     private Invoice()
     {
     }
@@ -47,7 +51,9 @@ public sealed class Invoice : AggregateRoot<Guid>
         string currency,
         DateOnly dueDate,
         DateTime? paidAtUtc,
-        string? notes)
+        string? notes,
+        Guid? purchaseOrderId,
+        Guid? quotationId)
         : base(id)
     {
         ClientId = NormalizeRequiredId(clientId, nameof(clientId));
@@ -59,6 +65,8 @@ public sealed class Invoice : AggregateRoot<Guid>
         AmountPaid = 0m;
         PaidAt = NormalizeOptionalUtc(paidAtUtc, nameof(paidAtUtc), allowFuture: false);
         Notes = NormalizeOptionalText(notes);
+        PurchaseOrderId = NormalizeOptionalId(purchaseOrderId);
+        QuotationId = NormalizeOptionalId(quotationId);
 
         ReplaceLineItemsInternal(lineItems);
         EnsureStateConsistency();
@@ -84,7 +92,36 @@ public sealed class Invoice : AggregateRoot<Guid>
             currency,
             dueDate,
             paidAtUtc: null,
-            notes);
+            notes,
+            purchaseOrderId: null,
+            quotationId: null);
+    }
+
+    public static Invoice CreateFromPurchaseOrder(
+        Guid id,
+        Guid clientId,
+        Guid projectId,
+        string invoiceNumber,
+        IEnumerable<LineItem> lineItems,
+        string currency,
+        DateOnly dueDate,
+        Guid purchaseOrderId,
+        Guid quotationId,
+        string? notes = null)
+    {
+        return new Invoice(
+            id,
+            clientId,
+            projectId,
+            invoiceNumber,
+            InvoiceStatus.Draft,
+            lineItems,
+            currency,
+            dueDate,
+            paidAtUtc: null,
+            notes,
+            purchaseOrderId,
+            quotationId);
     }
 
     public void ReplaceLineItems(IEnumerable<LineItem> lineItems)
@@ -168,6 +205,22 @@ public sealed class Invoice : AggregateRoot<Guid>
         }
 
         Status = InvoiceStatus.Cancelled;
+        MarkUpdated();
+    }
+
+    public void MarkOverdue(DateOnly asOfDate)
+    {
+        if (Status is not (InvoiceStatus.Sent or InvoiceStatus.Viewed or InvoiceStatus.PartiallyPaid))
+        {
+            throw new InvalidOperationException("Only sent, viewed, or partially paid invoices can be marked overdue.");
+        }
+
+        if (DueDate >= asOfDate)
+        {
+            throw new InvalidOperationException("Invoice due date has not passed.");
+        }
+
+        Status = InvoiceStatus.Overdue;
         MarkUpdated();
     }
 
@@ -265,6 +318,16 @@ public sealed class Invoice : AggregateRoot<Guid>
         }
 
         return value;
+    }
+
+    private static Guid? NormalizeOptionalId(Guid? value)
+    {
+        if (!value.HasValue || value.Value == Guid.Empty)
+        {
+            return null;
+        }
+
+        return value.Value;
     }
 
     private static string NormalizeRequiredText(string value, string paramName)

@@ -41,6 +41,7 @@ public static class InvoicesEndpoints
         quotesGroup.MapPut("/{id:guid}", UpdateQuoteAsync).WithName("QuotesUpdate");
         quotesGroup.MapDelete("/{id:guid}", DeleteQuoteAsync).WithName("QuotesDelete");
         quotesGroup.MapPost("/{id:guid}/convert", ConvertQuoteAsync).WithName("QuotesConvert");
+        quotesGroup.MapPost("/{id:guid}/send", SendQuoteAsync).WithName("QuotesSend");
 
         RouteGroupBuilder reportsGroup = endpoints.MapGroup("/api/v1/reports")
             .WithTags("Financial Reports")
@@ -174,6 +175,11 @@ public static class InvoicesEndpoints
     private static async Task<IResult> ConvertQuoteAsync(Guid id, ConvertQuoteApiRequest request, ISender sender, CancellationToken cancellationToken)
     {
         return ToResponse(await sender.Send(new ConvertQuoteToInvoiceCommand(id, request.ClientId, request.InvoiceNumber, request.DueDate), cancellationToken));
+    }
+
+    private static async Task<IResult> SendQuoteAsync(Guid id, InvoiceClientRequest request, ISender sender, CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(new SendQuoteCommand(id, request.ClientId), cancellationToken));
     }
 
     private static async Task<IResult> GetFinancialSummaryAsync(

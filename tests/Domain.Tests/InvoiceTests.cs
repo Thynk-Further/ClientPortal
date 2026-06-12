@@ -160,4 +160,22 @@ public sealed class InvoiceTests
         Assert.Equal(invoice.ClientId, @event.ClientId);
         Assert.Equal(paidAt, @event.PaidAt);
     }
+
+    [Fact]
+    public void MarkOverdue_WhenDueDatePassed_UpdatesStatus()
+    {
+        Invoice invoice = Invoice.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "INV-OVERDUE",
+            [new LineItem("Support", 1m, 100m, 0m)],
+            "USD",
+            new DateOnly(2026, 01, 01));
+
+        invoice.MarkSent();
+        invoice.MarkOverdue(new DateOnly(2026, 06, 01));
+
+        Assert.Equal(InvoiceStatus.Overdue, invoice.Status);
+    }
 }

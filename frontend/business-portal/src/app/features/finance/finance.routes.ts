@@ -13,6 +13,30 @@ export const FINANCE_ROUTES: Routes = [
     },
   },
   {
+    path: 'rfqs',
+    loadComponent: () =>
+      import('./rfq-list.component').then((m) => m.RfqListComponent),
+    data: { breadcrumb: 'RFQs', title: 'Client RFQs' },
+  },
+  {
+    path: 'rfqs/:rfqId',
+    loadComponent: () =>
+      import('./rfq-detail.component').then((m) => m.RfqDetailComponent),
+    data: { breadcrumb: 'RFQ Detail', title: 'RFQ Detail' },
+  },
+  {
+    path: 'purchase-orders',
+    loadComponent: () =>
+      import('./purchase-order-list.component').then((m) => m.PurchaseOrderListComponent),
+    data: { breadcrumb: 'Purchase Orders', title: 'Purchase Orders' },
+  },
+  {
+    path: 'purchase-orders/:poId',
+    loadComponent: () =>
+      import('./purchase-order-detail.component').then((m) => m.PurchaseOrderDetailComponent),
+    data: { breadcrumb: 'Purchase Order', title: 'Purchase Order' },
+  },
+  {
     path: 'quotes',
     loadComponent: () =>
       import('./quote-list.component').then((m) => m.QuoteListComponent),

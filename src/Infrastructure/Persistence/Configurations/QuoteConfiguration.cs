@@ -21,6 +21,9 @@ internal sealed class QuoteConfiguration : IEntityTypeConfiguration<Quote>
         builder.Property(quote => quote.DueDate).IsRequired();
         builder.Property(quote => quote.Notes).HasMaxLength(4000);
         builder.Property(quote => quote.ConvertedInvoiceId);
+        builder.Property(quote => quote.RfqId);
+        builder.Property(quote => quote.PurchaseOrderId);
+        builder.Property(quote => quote.Origin).HasConversion<int>().IsRequired();
         builder.Property(quote => quote.CreatedAt).IsRequired();
         builder.Property(quote => quote.UpdatedAt).IsRequired();
         builder.HasIndex(quote => quote.ClientId);

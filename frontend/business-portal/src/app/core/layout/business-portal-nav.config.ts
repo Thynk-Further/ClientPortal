@@ -106,6 +106,18 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
         iconPath: 'M4 4h16v16H4V4Zm4 4h8M8 12h8M8 16h5',
       },
       {
+        id: 'rfq-list',
+        label: 'Client RFQs',
+        route: '/finance/rfqs',
+        iconPath: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2',
+      },
+      {
+        id: 'purchase-orders',
+        label: 'Purchase Orders',
+        route: '/finance/purchase-orders',
+        iconPath: 'M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm3 6h6M9 12h6',
+      },
+      {
         id: 'overdue-reminders',
         label: 'Overdue & Reminders',
         route: '/finance',

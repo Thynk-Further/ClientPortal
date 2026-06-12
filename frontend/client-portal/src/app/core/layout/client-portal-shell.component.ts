@@ -80,6 +80,7 @@ export class ClientPortalShellComponent implements OnInit {
     { label: 'Dashboard', route: '/dashboard' },
     { label: 'Projects', route: '/projects' },
     { label: 'Requests', route: '/requests' },
+    { label: 'RFQs', route: '/rfqs' },
     { label: 'Invoices', route: '/invoices' },
     { label: 'Documents', route: '/documents' },
     { label: 'Messages', route: '/messages', showUnreadBadge: true, unreadCount: () => this.messagesSummary.unreadCount() },

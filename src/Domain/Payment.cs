@@ -19,6 +19,8 @@ public sealed class Payment : Entity<Guid>
 
     public string? Notes { get; private set; }
 
+    public Guid? SubmissionId { get; private set; }
+
     private Payment()
     {
     }
@@ -31,7 +33,8 @@ public sealed class Payment : Entity<Guid>
         string method,
         string reference,
         DateTime paidAtUtc,
-        string? notes)
+        string? notes,
+        Guid? submissionId)
         : base(id)
     {
         InvoiceId = NormalizeRequiredId(invoiceId, nameof(invoiceId));
@@ -41,6 +44,7 @@ public sealed class Payment : Entity<Guid>
         Reference = NormalizeRequiredText(reference, nameof(reference));
         PaidAt = NormalizeUtc(paidAtUtc, nameof(paidAtUtc), allowFuture: false);
         Notes = NormalizeOptionalText(notes);
+        SubmissionId = NormalizeOptionalId(submissionId);
     }
 
     public static Payment Create(
@@ -51,9 +55,10 @@ public sealed class Payment : Entity<Guid>
         string method,
         string reference,
         DateTime paidAtUtc,
-        string? notes = null)
+        string? notes = null,
+        Guid? submissionId = null)
     {
-        return new Payment(id, invoiceId, amount, currency, method, reference, paidAtUtc, notes);
+        return new Payment(id, invoiceId, amount, currency, method, reference, paidAtUtc, notes, submissionId);
     }
 
     public void UpdateDetails(string method, string reference, string? notes)
@@ -62,6 +67,16 @@ public sealed class Payment : Entity<Guid>
         Reference = NormalizeRequiredText(reference, nameof(reference));
         Notes = NormalizeOptionalText(notes);
         MarkUpdated();
+    }
+
+    private static Guid? NormalizeOptionalId(Guid? value)
+    {
+        if (!value.HasValue || value.Value == Guid.Empty)
+        {
+            return null;
+        }
+
+        return value.Value;
     }
 
     private static Guid NormalizeRequiredId(Guid value, string paramName)

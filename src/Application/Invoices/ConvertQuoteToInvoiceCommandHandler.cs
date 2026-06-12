@@ -72,37 +72,6 @@ public sealed class ConvertQuoteToInvoiceCommandHandler : IRequestHandler<Conver
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result<InvoiceDto>.Success(Map(invoice));
-    }
-
-    private static InvoiceDto Map(Invoice invoice)
-    {
-        IReadOnlyCollection<InvoiceLineItemDto> lineItems = invoice.LineItems
-            .Select(lineItem => new InvoiceLineItemDto(
-                lineItem.Description,
-                lineItem.Quantity,
-                lineItem.UnitPrice,
-                lineItem.TaxRate,
-                lineItem.Amount))
-            .ToList()
-            .AsReadOnly();
-
-        return new InvoiceDto(
-            invoice.Id,
-            invoice.ClientId,
-            invoice.ProjectId,
-            invoice.InvoiceNumber,
-            invoice.Status,
-            lineItems,
-            invoice.Subtotal,
-            invoice.TaxAmount,
-            invoice.Total,
-            invoice.AmountPaid,
-            invoice.Currency,
-            invoice.DueDate,
-            invoice.PaidAt,
-            invoice.Notes,
-            invoice.CreatedAt,
-            invoice.UpdatedAt);
+        return Result<InvoiceDto>.Success(InvoiceMapping.Map(invoice));
     }
 }

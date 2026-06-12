@@ -31,6 +31,12 @@ public sealed class Quote : AggregateRoot<Guid>
 
     public Guid? ConvertedInvoiceId { get; private set; }
 
+    public Guid? RfqId { get; private set; }
+
+    public Guid? PurchaseOrderId { get; private set; }
+
+    public QuoteOrigin Origin { get; private set; } = QuoteOrigin.BusinessInitiated;
+
     private Quote()
     {
     }
@@ -44,7 +50,9 @@ public sealed class Quote : AggregateRoot<Guid>
         IEnumerable<LineItem> lineItems,
         string currency,
         DateOnly dueDate,
-        string? notes)
+        string? notes,
+        QuoteOrigin origin,
+        Guid? rfqId)
         : base(id)
     {
         ClientId = NormalizeRequiredId(clientId, nameof(clientId));
@@ -55,6 +63,9 @@ public sealed class Quote : AggregateRoot<Guid>
         DueDate = dueDate;
         Notes = NormalizeOptionalText(notes);
         ConvertedInvoiceId = null;
+        Origin = origin;
+        RfqId = NormalizeOptionalId(rfqId);
+        PurchaseOrderId = null;
 
         ReplaceLineItemsInternal(lineItems);
     }
@@ -69,7 +80,69 @@ public sealed class Quote : AggregateRoot<Guid>
         DateOnly dueDate,
         string? notes = null)
     {
-        return new Quote(id, clientId, projectId, quoteNumber, QuoteStatus.Draft, lineItems, currency, dueDate, notes);
+        return new Quote(
+            id,
+            clientId,
+            projectId,
+            quoteNumber,
+            QuoteStatus.Draft,
+            lineItems,
+            currency,
+            dueDate,
+            notes,
+            QuoteOrigin.BusinessInitiated,
+            rfqId: null);
+    }
+
+    public static Quote CreateFromRfq(
+        Guid id,
+        Guid clientId,
+        Guid projectId,
+        Guid rfqId,
+        string quoteNumber,
+        IEnumerable<LineItem> lineItems,
+        string currency,
+        DateOnly dueDate,
+        string? notes = null)
+    {
+        if (rfqId == Guid.Empty)
+        {
+            throw new ArgumentException("RFQ identifier cannot be empty.", nameof(rfqId));
+        }
+
+        return new Quote(
+            id,
+            clientId,
+            projectId,
+            quoteNumber,
+            QuoteStatus.Draft,
+            lineItems,
+            currency,
+            dueDate,
+            notes,
+            QuoteOrigin.RfqResponse,
+            rfqId);
+    }
+
+    public void LinkPurchaseOrder(Guid purchaseOrderId)
+    {
+        if (Origin != QuoteOrigin.RfqResponse)
+        {
+            throw new InvalidOperationException("Only RFQ response quotations can be linked to purchase orders.");
+        }
+
+        if (Status != QuoteStatus.Accepted)
+        {
+            throw new InvalidOperationException("Only accepted quotations can be linked to purchase orders.");
+        }
+
+        if (purchaseOrderId == Guid.Empty)
+        {
+            throw new ArgumentException("Purchase order identifier cannot be empty.", nameof(purchaseOrderId));
+        }
+
+        PurchaseOrderId = purchaseOrderId;
+        MarkUpdated();
     }
 
     public void ReplaceLineItems(IEnumerable<LineItem> lineItems)
@@ -114,6 +187,7 @@ public sealed class Quote : AggregateRoot<Guid>
         }
 
         Status = QuoteStatus.Sent;
+        AddDomainEvent(new QuotationSentEvent(Id, ClientId, DateTime.UtcNow));
         MarkUpdated();
     }
 
@@ -131,6 +205,11 @@ public sealed class Quote : AggregateRoot<Guid>
 
     public void MarkConvertedToInvoice(Guid invoiceId)
     {
+        if (Origin == QuoteOrigin.RfqResponse)
+        {
+            throw new InvalidOperationException("RFQ response quotations must be invoiced through purchase order approval.");
+        }
+
         if (Status != QuoteStatus.Accepted)
         {
             throw new InvalidOperationException("Only accepted quotes can be converted to invoices.");
@@ -212,6 +291,16 @@ public sealed class Quote : AggregateRoot<Guid>
         Subtotal = decimal.Round(subtotal, 2, MidpointRounding.ToEven);
         TaxAmount = decimal.Round(taxAmount, 2, MidpointRounding.ToEven);
         Total = decimal.Round(Subtotal + TaxAmount, 2, MidpointRounding.ToEven);
+    }
+
+    private static Guid? NormalizeOptionalId(Guid? value)
+    {
+        if (!value.HasValue || value.Value == Guid.Empty)
+        {
+            return null;
+        }
+
+        return value.Value;
     }
 
     private static Guid NormalizeRequiredId(Guid value, string paramName)

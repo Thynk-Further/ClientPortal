@@ -24,6 +24,6 @@ public sealed class GetInvoiceByIdQueryHandler : IRequestHandler<GetInvoiceByIdQ
             return Result<InvoiceDto>.Failure(InvoiceNotFoundError);
         }
 
-        return Result<InvoiceDto>.Success(CreateInvoiceCommandHandler.Map(invoice));
+        return Result<InvoiceDto>.Success(InvoiceMapping.Map(invoice));
     }
 }

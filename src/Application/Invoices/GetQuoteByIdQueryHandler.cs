@@ -24,6 +24,6 @@ public sealed class GetQuoteByIdQueryHandler : IRequestHandler<GetQuoteByIdQuery
             return Result<QuoteDto>.Failure(QuoteNotFoundError);
         }
 
-        return Result<QuoteDto>.Success(CreateQuoteCommandHandler.Map(quote));
+        return Result<QuoteDto>.Success(QuoteMapping.Map(quote));
     }
 }

@@ -46,6 +46,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'rfqs',
+        loadChildren: () =>
+          import('./features/rfqs/rfqs.routes').then((m) => m.RFQS_ROUTES),
+      },
+      {
         path: 'documents',
         loadChildren: () =>
           import('./features/documents/documents.routes').then(

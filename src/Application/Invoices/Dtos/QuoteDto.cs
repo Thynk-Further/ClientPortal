@@ -17,6 +17,9 @@ public sealed record QuoteDto(
     DateOnly DueDate,
     string? Notes,
     Guid? ConvertedInvoiceId,
+    Guid? RfqId,
+    Guid? PurchaseOrderId,
+    QuoteOrigin Origin,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 
@@ -30,6 +33,8 @@ public sealed record QuoteListItemDto(
     string Currency,
     DateOnly DueDate,
     Guid? ConvertedInvoiceId,
+    Guid? RfqId,
+    QuoteOrigin Origin,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 

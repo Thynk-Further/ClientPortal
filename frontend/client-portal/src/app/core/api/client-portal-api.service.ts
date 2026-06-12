@@ -280,6 +280,94 @@ export interface ClientPortalInvoicePaymentVerification {
   outstandingAmount: number;
 }
 
+export interface ClientPortalPaymentProofUploadRequest {
+  fileName: string;
+  contentType: string;
+}
+
+export interface ClientPortalPaymentProofUpload {
+  documentId: string;
+  uploadUrl: string;
+  expiresAtUtc: string;
+}
+
+export interface SubmitClientPortalInvoicePayment {
+  amount: number;
+  currency: string;
+  method: string;
+  reference: string;
+  proofDocumentId: string;
+  gatewayProvider?: string | null;
+  gatewayReference?: string | null;
+}
+
+export interface ClientPortalInvoicePaymentSubmission {
+  id: string;
+  invoiceId: string;
+  amount: number;
+  currency: string;
+  method: string;
+  reference: string;
+  status: number;
+  createdAt: string;
+}
+
+export interface ClientPortalRfqLineItem {
+  description: string;
+  quantity: number;
+}
+
+export interface ClientPortalRfqListItem {
+  id: string;
+  projectId: string;
+  rfqNumber: string;
+  status: number;
+  currency: string;
+  quotationId: string | null;
+  createdAt: string;
+}
+
+export interface ClientPortalRfqsResult {
+  rfqs: { items: ClientPortalRfqListItem[]; totalCount: number };
+}
+
+export interface ClientPortalRfqDetail extends ClientPortalRfqListItem {
+  lineItems: ClientPortalRfqLineItem[];
+  notes: string | null;
+}
+
+export interface CreateClientPortalRfqLineItem {
+  description: string;
+  quantity: number;
+}
+
+export interface CreateClientPortalRfq {
+  projectId: string;
+  rfqNumber: string;
+  currency: string;
+  lineItems: CreateClientPortalRfqLineItem[];
+  notes?: string | null;
+}
+
+export interface ClientPortalQuotationListItem {
+  id: string;
+  quoteNumber: string;
+  status: number;
+  total: number;
+  currency: string;
+  dueDate: string;
+  rfqId: string | null;
+}
+
+export interface ClientPortalQuotationsResult {
+  quotes: { items: ClientPortalQuotationListItem[]; totalCount: number };
+}
+
+export interface ClientPortalQuotationDetail extends ClientPortalQuotationListItem {
+  lineItems: ClientPortalInvoiceLineItem[];
+  notes: string | null;
+}
+
 export interface ClientPortalDocumentListItem {
   id: string;
   name: string;
@@ -431,6 +519,90 @@ export class ClientPortalApiService {
         request,
       )
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getPaymentProofUploadUrl(
+    invoiceId: string,
+    request: ClientPortalPaymentProofUploadRequest,
+  ): Observable<ClientPortalPaymentProofUpload> {
+    return this.apiClient
+      .post<ApiEnvelope<ClientPortalPaymentProofUpload>, ClientPortalPaymentProofUploadRequest>(
+        `${this.basePath}/invoices/${invoiceId}/payment-proof/upload-url`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  submitInvoicePayment(
+    invoiceId: string,
+    request: SubmitClientPortalInvoicePayment,
+  ): Observable<ClientPortalInvoicePaymentSubmission> {
+    return this.apiClient
+      .post<ApiEnvelope<ClientPortalInvoicePaymentSubmission>, SubmitClientPortalInvoicePayment>(
+        `${this.basePath}/invoices/${invoiceId}/payments`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getRfqs(page = 1, pageSize = 20, status?: number): Observable<ClientPortalRfqsResult> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalRfqsResult>>(`${this.basePath}/rfqs`, { page, pageSize, status })
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  createRfq(request: CreateClientPortalRfq): Observable<ClientPortalRfqDetail> {
+    return this.apiClient
+      .post<ApiEnvelope<ClientPortalRfqDetail>, CreateClientPortalRfq>(
+        `${this.basePath}/rfqs`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getRfq(rfqId: string): Observable<ClientPortalRfqDetail> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalRfqDetail>>(`${this.basePath}/rfqs/${rfqId}`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  submitRfq(rfqId: string): Observable<void> {
+    return this.apiClient
+      .post<ApiEnvelope<null>, Record<string, never>>(`${this.basePath}/rfqs/${rfqId}/submit`, {})
+      .pipe(map(() => undefined));
+  }
+
+  getQuotations(page = 1, pageSize = 20): Observable<ClientPortalQuotationsResult> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalQuotationsResult>>(`${this.basePath}/quotations`, {
+        page,
+        pageSize,
+      })
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getQuotation(quotationId: string): Observable<ClientPortalQuotationDetail> {
+    return this.apiClient
+      .get<ApiEnvelope<ClientPortalQuotationDetail>>(`${this.basePath}/quotations/${quotationId}`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  approveQuotation(quotationId: string): Observable<void> {
+    return this.apiClient
+      .post<ApiEnvelope<null>, Record<string, never>>(
+        `${this.basePath}/quotations/${quotationId}/approve`,
+        {},
+      )
+      .pipe(map(() => undefined));
+  }
+
+  rejectQuotation(quotationId: string): Observable<void> {
+    return this.apiClient
+      .post<ApiEnvelope<null>, Record<string, never>>(
+        `${this.basePath}/quotations/${quotationId}/reject`,
+        {},
+      )
+      .pipe(map(() => undefined));
   }
 
   getDocuments(): Observable<ClientPortalDocumentsResult> {

@@ -17,6 +17,8 @@ public sealed record InvoiceDto(
     DateOnly DueDate,
     DateTime? PaidAt,
     string? Notes,
+    Guid? PurchaseOrderId,
+    Guid? QuotationId,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 

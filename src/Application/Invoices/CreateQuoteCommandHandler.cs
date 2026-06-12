@@ -32,31 +32,6 @@ public sealed class CreateQuoteCommandHandler : IRequestHandler<CreateQuoteComma
 
         _quoteRepository.Add(quote);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return Result<QuoteDto>.Success(Map(quote));
-    }
-
-    internal static QuoteDto Map(Quote quote)
-    {
-        IReadOnlyCollection<InvoiceLineItemDto> lineItems = quote.LineItems
-            .Select(lineItem => new InvoiceLineItemDto(lineItem.Description, lineItem.Quantity, lineItem.UnitPrice, lineItem.TaxRate, lineItem.Amount))
-            .ToList()
-            .AsReadOnly();
-
-        return new QuoteDto(
-            quote.Id,
-            quote.ClientId,
-            quote.ProjectId,
-            quote.QuoteNumber,
-            quote.Status,
-            lineItems,
-            quote.Subtotal,
-            quote.TaxAmount,
-            quote.Total,
-            quote.Currency,
-            quote.DueDate,
-            quote.Notes,
-            quote.ConvertedInvoiceId,
-            quote.CreatedAt,
-            quote.UpdatedAt);
+        return Result<QuoteDto>.Success(QuoteMapping.Map(quote));
     }
 }

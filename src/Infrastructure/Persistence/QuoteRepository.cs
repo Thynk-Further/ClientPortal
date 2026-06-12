@@ -62,6 +62,8 @@ public sealed class QuoteRepository : IQuoteRepository
                 quote.Currency,
                 quote.DueDate,
                 quote.ConvertedInvoiceId,
+                quote.RfqId,
+                quote.Origin,
                 quote.CreatedAt,
                 quote.UpdatedAt))
             .ToListAsync(cancellationToken);

@@ -1,6 +1,9 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
+import { QuoteApiService, QuoteSummary } from '@/app/core/api/services/quote-api.service';
+import { readHttpErrorMessage } from '@/app/core/api/api-envelope.util';
 import { ButtonComponent } from '@/components/ui/button.component';
 import {
   CardComponent,
@@ -18,10 +21,18 @@ import {
 interface QuoteRow extends DataTableRow {
   readonly id: string;
   readonly quoteNumber: string;
-  readonly clientName: string;
-  readonly status: 'Draft' | 'Sent' | 'Accepted' | 'Rejected';
+  readonly clientId: string;
+  readonly status: string;
   readonly totalAmount: string;
 }
+
+const QUOTE_STATUS: Record<number, string> = {
+  1: 'Draft',
+  2: 'Sent',
+  3: 'Accepted',
+  4: 'Rejected',
+  5: 'Expired',
+};
 
 @Component({
   selector: 'app-quote-list',
@@ -51,7 +62,11 @@ interface QuoteRow extends DataTableRow {
           <ui-card-content>
             <div class="mb-4 flex items-center justify-between gap-3">
               <p class="text-sm text-muted-foreground">
-                Quote workflow readiness for business portal sales operations.
+                @if (errorMessage()) {
+                  {{ errorMessage() }}
+                } @else {
+                  {{ quotes().length }} quotes loaded
+                }
               </p>
               <a [routerLink]="['/finance/quotes/create']">
                 <ui-button label="Create Quote" />
@@ -60,61 +75,46 @@ interface QuoteRow extends DataTableRow {
 
             <ui-data-table
               [columns]="columns"
-              [rows]="quotes"
+              [rows]="quotes()"
               rowTrackByKey="id"
               emptyStateMessage="No quotes available."
               [defaultPageSize]="10"
               [pageSizeOptions]="[10, 20, 50]"
             />
-
-            <div class="mt-4 rounded-lg border border-dashed p-3">
-              <p class="text-xs text-muted-foreground">Open quote workflow:</p>
-              <div class="mt-2 flex flex-wrap gap-2">
-                @for (quote of quotes; track quote.id) {
-                  <a
-                    class="rounded-md border px-2 py-1 text-xs hover:bg-muted"
-                    [routerLink]="['/finance/quotes', quote.id]"
-                  >
-                    {{ quote.quoteNumber }}
-                  </a>
-                }
-              </div>
-            </div>
           </ui-card-content>
         </ui-card>
       </section>
     </main>
   `,
 })
-export class QuoteListComponent {
+export class QuoteListComponent implements OnInit {
+  private readonly quoteApi = inject(QuoteApiService);
+
   protected readonly columns: ReadonlyArray<DataTableColumn> = [
     { key: 'quoteNumber', header: 'Quote #', sortable: true },
-    { key: 'clientName', header: 'Client', sortable: true },
+    { key: 'clientId', header: 'Client ID', sortable: true },
     { key: 'status', header: 'Status', sortable: true },
     { key: 'totalAmount', header: 'Total', sortable: true },
   ];
 
-  protected readonly quotes: ReadonlyArray<QuoteRow> = [
-    {
-      id: 'quote-001',
-      quoteNumber: 'Q-2026-011',
-      clientName: 'Contoso Architects',
-      status: 'Draft',
-      totalAmount: '$6,420.00',
-    },
-    {
-      id: 'quote-002',
-      quoteNumber: 'Q-2026-012',
-      clientName: 'Northwind Retail',
-      status: 'Sent',
-      totalAmount: '$3,950.00',
-    },
-    {
-      id: 'quote-003',
-      quoteNumber: 'Q-2026-013',
-      clientName: 'Fabrikam Manufacturing',
-      status: 'Accepted',
-      totalAmount: '$12,100.00',
-    },
-  ];
+  protected readonly quotes = signal<QuoteRow[]>([]);
+  protected readonly errorMessage = signal<string | null>(null);
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const result = await firstValueFrom(this.quoteApi.getQuotes());
+      this.quotes.set(
+        result.items.map((quote: QuoteSummary) => ({
+          id: quote.id,
+          quoteNumber: quote.quoteNumber,
+          clientId: quote.clientId,
+          status: QUOTE_STATUS[quote.status] ?? 'Unknown',
+          totalAmount: `${quote.total} ${quote.currency}`,
+          link: `/finance/quotes/${quote.id}?clientId=${quote.clientId}`,
+        })),
+      );
+    } catch (error) {
+      this.errorMessage.set(readHttpErrorMessage(error, 'Failed to load quotes.'));
+    }
+  }
 }
