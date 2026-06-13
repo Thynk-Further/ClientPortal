@@ -36,23 +36,33 @@ public sealed class PurchaseOrderRepository : IPurchaseOrderRepository
 
         int totalCount = await query.CountAsync(cancellationToken);
 
-        IReadOnlyList<PurchaseOrderListItemDto> items = await query
-            .OrderByDescending(po => po.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(po => new PurchaseOrderListItemDto(
+        IQueryable<Client> clients = _tenantDbContext.Set<Client>().AsNoTracking();
+        IQueryable<Rfq> rfqs = _tenantDbContext.Set<Rfq>().AsNoTracking();
+
+        IReadOnlyList<PurchaseOrderListItemDto> items = await (
+            from po in query
+            join client in clients on po.ClientId equals client.Id
+            join rfq in rfqs on po.RfqId equals rfq.Id into rfqJoin
+            from rfq in rfqJoin.DefaultIfEmpty()
+            orderby po.CreatedAt descending
+            select new PurchaseOrderListItemDto(
                 po.Id,
                 po.ClientId,
+                client.CompanyName,
                 po.ProjectId,
                 po.PoNumber,
                 po.QuotationId,
                 po.RfqId,
+                rfq != null ? rfq.RfqNumber : null,
+                rfq != null ? rfq.Title : null,
                 po.Status,
                 po.Total,
                 po.Currency,
                 po.GeneratedInvoiceId,
                 po.CreatedAt,
                 po.UpdatedAt))
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
 
         return new PagedResult<PurchaseOrderListItemDto>(items, totalCount, page, pageSize);

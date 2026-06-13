@@ -30,7 +30,11 @@ internal static class FinanceMapping
             rfq.UpdatedAt);
     }
 
-    internal static PurchaseOrderDto Map(PurchaseOrder purchaseOrder)
+    internal static PurchaseOrderDto Map(
+        PurchaseOrder purchaseOrder,
+        string clientCompanyName = "",
+        string? rfqNumber = null,
+        string? rfqTitle = null)
     {
         IReadOnlyCollection<Application.Invoices.Dtos.InvoiceLineItemDto> lineItems = purchaseOrder.LineItems
             .Select(lineItem => new Application.Invoices.Dtos.InvoiceLineItemDto(
@@ -45,10 +49,13 @@ internal static class FinanceMapping
         return new PurchaseOrderDto(
             purchaseOrder.Id,
             purchaseOrder.ClientId,
+            clientCompanyName,
             purchaseOrder.ProjectId,
             purchaseOrder.PoNumber,
             purchaseOrder.QuotationId,
             purchaseOrder.RfqId,
+            rfqNumber,
+            rfqTitle,
             purchaseOrder.Status,
             lineItems,
             purchaseOrder.Subtotal,

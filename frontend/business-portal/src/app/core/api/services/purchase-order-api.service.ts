@@ -8,10 +8,13 @@ import { ApiEnvelope, PagedResult } from '../models';
 export interface PurchaseOrderSummary {
   id: string;
   clientId: string;
+  clientCompanyName: string;
   projectId: string;
   poNumber: string;
   quotationId: string;
   rfqId: string;
+  rfqNumber: string | null;
+  rfqTitle: string | null;
   status: number;
   total: number;
   currency: string;

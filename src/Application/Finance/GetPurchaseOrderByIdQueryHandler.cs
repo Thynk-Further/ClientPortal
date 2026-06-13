@@ -1,5 +1,7 @@
+using Application.Clients.Abstractions;
 using Application.Finance.Abstractions;
 using Application.Finance.Dtos;
+using ClientEntity = Domain.Client;
 using Domain;
 using MediatR;
 using Shared;
@@ -15,10 +17,17 @@ public sealed class GetPurchaseOrderByIdQueryHandler
         ErrorType.NotFound);
 
     private readonly IPurchaseOrderRepository _purchaseOrderRepository;
+    private readonly IClientRepository _clientRepository;
+    private readonly IRfqRepository _rfqRepository;
 
-    public GetPurchaseOrderByIdQueryHandler(IPurchaseOrderRepository purchaseOrderRepository)
+    public GetPurchaseOrderByIdQueryHandler(
+        IPurchaseOrderRepository purchaseOrderRepository,
+        IClientRepository clientRepository,
+        IRfqRepository rfqRepository)
     {
         _purchaseOrderRepository = purchaseOrderRepository;
+        _clientRepository = clientRepository;
+        _rfqRepository = rfqRepository;
     }
 
     public async Task<Result<PurchaseOrderDto>> Handle(
@@ -34,6 +43,14 @@ public sealed class GetPurchaseOrderByIdQueryHandler
             return Result<PurchaseOrderDto>.Failure(PurchaseOrderNotFoundError);
         }
 
-        return Result<PurchaseOrderDto>.Success(FinanceMapping.Map(purchaseOrder));
+        ClientEntity? client = await _clientRepository.FindByIdAsync(purchaseOrder.ClientId, cancellationToken);
+        Rfq? rfq = await _rfqRepository.FindByIdAsync(purchaseOrder.RfqId, cancellationToken);
+
+        return Result<PurchaseOrderDto>.Success(
+            FinanceMapping.Map(
+                purchaseOrder,
+                client?.CompanyName ?? string.Empty,
+                rfq?.RfqNumber,
+                rfq?.Title));
     }
 }
