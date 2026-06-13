@@ -11,6 +11,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { RfqApiService, RfqSummary } from '@/app/core/api/services/rfq-api.service';
 import { UserSessionService } from '@/app/core/auth/user-session.service';
+import { RfqListItemComponent } from '@/app/features/finance/rfq-list-item.component';
 
 interface DashboardStat {
   readonly label: string;
@@ -36,7 +37,7 @@ type OverviewMetric = 'revenue' | 'orders' | 'profit';
   selector: 'app-business-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, RfqListItemComponent],
   template: `
     <div class="flex min-w-0 flex-1 flex-col">
         <main class="space-y-6 p-5 sm:p-8">
@@ -44,49 +45,6 @@ type OverviewMetric = 'revenue' | 'orders' | 'profit';
             <h1 class="text-[1.75rem] font-semibold tracking-tight text-foreground">Dashboard</h1>
             <p class="text-sm text-muted-foreground">{{ welcomeMessage() }}</p>
           </header>
-
-          <section class="rounded-2xl border border-border/70 bg-card p-5 shadow-sm sm:p-6" aria-label="Incoming RFQs">
-            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 class="text-base font-semibold">Incoming RFQs</h2>
-                <p class="mt-0.5 text-sm text-muted-foreground">
-                  Client-submitted requests waiting for your quotation.
-                </p>
-              </div>
-              <a
-                routerLink="/finance/rfqs"
-                class="text-sm font-medium text-primary hover:underline"
-              >
-                View all RFQs
-              </a>
-            </div>
-
-            @if (isLoadingRfqs()) {
-              <p class="text-sm text-muted-foreground">Loading submitted RFQs...</p>
-            } @else if (submittedRfqs().length === 0) {
-              <p class="text-sm text-muted-foreground">
-                No submitted RFQs right now. New requests appear here when clients submit them from the client portal.
-              </p>
-            } @else {
-              <div class="space-y-2">
-                @for (rfq of submittedRfqs(); track rfq.id) {
-                  <a
-                    class="flex items-center justify-between gap-4 rounded-lg border border-border/70 p-3 transition-colors hover:bg-muted/50"
-                    [routerLink]="['/finance/rfqs', rfq.id]"
-                    [queryParams]="{ clientId: rfq.clientId }"
-                  >
-                    <div class="min-w-0">
-                      <p class="font-medium text-foreground">{{ rfq.rfqNumber }}</p>
-                      <p class="truncate text-xs text-muted-foreground">
-                        {{ rfq.clientCompanyName || 'Client' }} · Submitted
-                      </p>
-                    </div>
-                    <span class="shrink-0 text-xs text-muted-foreground">{{ rfq.currency }}</span>
-                  </a>
-                }
-              </div>
-            }
-          </section>
 
           <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Summary metrics">
             @for (stat of stats; track stat.label) {
@@ -255,6 +213,39 @@ type OverviewMetric = 'revenue' | 'orders' | 'profit';
                 </div>
               </article>
             </div>
+          </section>
+
+          <section class="rounded-2xl border border-border/70 bg-card p-5 shadow-sm sm:p-6" aria-label="Incoming RFQs">
+            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 class="text-base font-semibold">Incoming RFQs</h2>
+                <p class="mt-0.5 text-sm text-muted-foreground">
+                  Client-submitted requests awaiting your quotation.
+                </p>
+              </div>
+              <a
+                routerLink="/finance/rfqs"
+                class="text-sm font-medium text-primary hover:underline"
+              >
+                View all RFQs
+              </a>
+            </div>
+
+            @if (isLoadingRfqs()) {
+              <p class="text-sm text-muted-foreground">Loading pending RFQs...</p>
+            } @else if (submittedRfqs().length === 0) {
+              <p class="text-sm text-muted-foreground">
+                No pending RFQs right now. New requests appear here when clients submit them from the client portal.
+              </p>
+            } @else {
+              <ul class="space-y-3">
+                @for (rfq of submittedRfqs(); track rfq.id) {
+                  <li>
+                    <app-rfq-list-item [rfq]="rfq" />
+                  </li>
+                }
+              </ul>
+            }
           </section>
         </main>
     </div>

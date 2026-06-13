@@ -25,15 +25,7 @@ import {
 } from '@/components/ui/card.component';
 import { InputComponent } from '@/components/ui/input.component';
 import { TextareaComponent } from '@/components/ui/textarea.component';
-
-const RFQ_STATUS: Record<number, string> = {
-  1: 'Draft',
-  2: 'Submitted',
-  3: 'Quoted',
-  4: 'Accepted',
-  5: 'Rejected',
-  6: 'Cancelled',
-};
+import { clientRfqStatusLabel } from './rfq-display.util';
 
 @Component({
   selector: 'app-client-rfqs-page',
@@ -137,7 +129,7 @@ export class ClientRfqsPageComponent implements OnInit {
   }
 
   protected statusLabel(status: number): string {
-    return RFQ_STATUS[status] ?? 'Unknown';
+    return clientRfqStatusLabel(status);
   }
 
   protected addLineItem(): void {

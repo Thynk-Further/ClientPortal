@@ -30,9 +30,13 @@ const STATUS_VARIANT_MAP: Record<string, BadgeVariant> = {
   planned: 'info',
   pending: 'warning',
   draft: 'muted',
+  submitted: 'warning',
+  quoted: 'info',
+  accepted: 'success',
+  rejected: 'danger',
+  cancelled: 'muted',
   overdue: 'danger',
   failed: 'danger',
-  cancelled: 'muted',
   archived: 'muted',
   inactive: 'muted',
 };
@@ -71,17 +75,17 @@ export class StatusBadgeComponent {
   private variantClasses(variant: BadgeVariant): string {
     switch (variant) {
       case 'success':
-        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300';
       case 'warning':
-        return 'border-amber-200 bg-amber-50 text-amber-700';
+        return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300';
       case 'danger':
-        return 'border-red-200 bg-red-50 text-red-700';
+        return 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300';
       case 'info':
-        return 'border-blue-200 bg-blue-50 text-blue-700';
+        return 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300';
       case 'muted':
-        return 'border-zinc-200 bg-zinc-100 text-zinc-700';
+        return 'border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-500/30 dark:bg-zinc-500/15 dark:text-zinc-300';
       default:
-        return 'border-slate-200 bg-slate-100 text-slate-700';
+        return 'border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-500/30 dark:bg-slate-500/15 dark:text-slate-300';
     }
   }
 
