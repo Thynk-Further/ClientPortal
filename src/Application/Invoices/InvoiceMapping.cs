@@ -5,7 +5,7 @@ namespace Application.Invoices;
 
 internal static class InvoiceMapping
 {
-    internal static InvoiceDto Map(Invoice invoice)
+    internal static InvoiceDto Map(Invoice invoice, string clientCompanyName = "")
     {
         IReadOnlyCollection<InvoiceLineItemDto> lineItems = invoice.LineItems
             .Select(lineItem => new InvoiceLineItemDto(
@@ -20,6 +20,7 @@ internal static class InvoiceMapping
         return new InvoiceDto(
             invoice.Id,
             invoice.ClientId,
+            clientCompanyName,
             invoice.ProjectId,
             invoice.InvoiceNumber,
             invoice.Status,

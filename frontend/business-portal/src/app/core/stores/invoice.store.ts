@@ -46,10 +46,13 @@ export const InvoiceStore = signalStore(
       }
     },
 
-    async loadInvoiceById(invoiceId: string): Promise<void> {
+    async loadInvoiceById(invoiceId: string, clientId?: string): Promise<void> {
       patchState(store, { isLoading: true, error: null });
       try {
-        const result = await firstValueFrom(invoiceApiService.getInvoiceById(invoiceId));
+        const resolvedClientId = clientId ?? '';
+        const result = await firstValueFrom(
+          invoiceApiService.getInvoiceById(invoiceId, resolvedClientId),
+        );
         patchState(store, { selectedInvoice: result });
       } catch (error) {
         patchState(store, { error: readErrorMessage(error) });
@@ -78,6 +81,19 @@ export const InvoiceStore = signalStore(
         await firstValueFrom(invoiceApiService.recordPayment(invoiceId, request));
       } catch (error) {
         patchState(store, { error: readErrorMessage(error) });
+      } finally {
+        patchState(store, { isLoading: false });
+      }
+    },
+
+    async sendInvoice(invoiceId: string, clientId: string): Promise<boolean> {
+      patchState(store, { isLoading: true, error: null });
+      try {
+        await firstValueFrom(invoiceApiService.sendInvoice(invoiceId, clientId));
+        return true;
+      } catch (error) {
+        patchState(store, { error: readErrorMessage(error) });
+        return false;
       } finally {
         patchState(store, { isLoading: false });
       }

@@ -164,7 +164,7 @@ public static class DependencyInjection
         services.AddScoped<ITenantProvisioner, TenantProvisioner>();
         services.AddScoped<IDbInitializer, DbInitializer>();
         services.AddScoped<ITenantRlsPolicyManager, TenantRlsPolicyManager>();
-        services.AddScoped<IInvoicePdfGenerator, SimpleInvoicePdfGenerator>();
+        services.AddScoped<IInvoicePdfGenerator, QuestPdfInvoiceGenerator>();
         services.AddScoped<IOverdueInvoiceReminderReader, NpgsqlOverdueInvoiceReminderReader>();
         services.AddScoped<IRecurringInvoiceGenerator, NpgsqlRecurringInvoiceGenerator>();
         services.AddSingleton<CachedCurrencyConverter>();

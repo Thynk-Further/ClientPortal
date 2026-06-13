@@ -5,6 +5,7 @@ namespace Application.Invoices.Dtos;
 public sealed record InvoiceDto(
     Guid Id,
     Guid ClientId,
+    string ClientCompanyName,
     Guid ProjectId,
     string InvoiceNumber,
     InvoiceStatus Status,

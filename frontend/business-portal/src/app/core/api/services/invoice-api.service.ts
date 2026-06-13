@@ -5,25 +5,43 @@ import { unwrapApiEnvelopeData } from '../api-envelope.util';
 import { ApiClientService } from '../api-client.service';
 import { ApiEnvelope, ApiOperationResult, PagedResult } from '../models';
 
+export interface InvoiceLineItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  amount: number;
+}
+
 export interface InvoiceSummary {
   id: string;
   clientId: string;
-  status: string;
+  projectId: string;
   invoiceNumber: string;
-  currencyCode: string;
-  totalAmount: number;
-  [key: string]: unknown;
+  status: number;
+  total: number;
+  amountPaid: number;
+  outstandingAmount: number;
+  currency: string;
+  dueDate: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface InvoiceDetail extends InvoiceSummary {
-  issueDateUtc: string;
-  dueDateUtc: string;
+  clientCompanyName: string;
+  lineItems: InvoiceLineItem[];
+  subtotal: number;
+  taxAmount: number;
+  notes: string | null;
+  paidAt: string | null;
+  purchaseOrderId: string | null;
+  quotationId: string | null;
 }
 
 export interface InvoiceListQuery {
-  status?: string;
+  status?: number;
   clientId?: string;
-  search?: string;
   page?: number;
   pageSize?: number;
 }
@@ -47,9 +65,13 @@ export interface UpdateInvoiceRequest {
 }
 
 export interface RecordPaymentRequest {
+  clientId: string;
   amount: number;
-  paymentDateUtc: string;
-  reference?: string;
+  currency: string;
+  method: string;
+  reference: string;
+  paidAtUtc: string;
+  notes?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -64,15 +86,16 @@ export class InvoiceApiService {
       .pipe(map((response) => unwrapApiEnvelopeData(response).invoices));
   }
 
-  getInvoiceById(invoiceId: string): Observable<InvoiceDetail> {
-    return this.apiClient.get<InvoiceDetail>(`${this.basePath}/${invoiceId}`);
+  getInvoiceById(invoiceId: string, clientId: string): Observable<InvoiceDetail> {
+    return this.apiClient
+      .get<ApiEnvelope<InvoiceDetail>>(`${this.basePath}/${invoiceId}`, { clientId })
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
   createInvoice(request: CreateInvoiceRequest): Observable<InvoiceDetail> {
-    return this.apiClient.post<InvoiceDetail, CreateInvoiceRequest>(
-      `${this.basePath}/`,
-      request,
-    );
+    return this.apiClient
+      .post<ApiEnvelope<InvoiceDetail>, CreateInvoiceRequest>(`${this.basePath}/`, request)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
   updateInvoice(
@@ -85,15 +108,17 @@ export class InvoiceApiService {
     );
   }
 
-  deleteInvoice(invoiceId: string): Observable<ApiOperationResult> {
-    return this.apiClient.delete<ApiOperationResult>(`${this.basePath}/${invoiceId}`);
+  deleteInvoice(invoiceId: string, clientId: string): Observable<ApiOperationResult> {
+    return this.apiClient.delete<ApiOperationResult>(`${this.basePath}/${invoiceId}`, {
+      clientId,
+    });
   }
 
-  sendInvoice(invoiceId: string): Observable<ApiOperationResult> {
-    return this.apiClient.post<ApiOperationResult, Record<string, never>>(
+  sendInvoice(invoiceId: string, clientId: string): Observable<ApiOperationResult> {
+    return this.apiClient.post<ApiEnvelope<unknown>, { clientId: string }>(
       `${this.basePath}/${invoiceId}/send`,
-      {},
-    );
+      { clientId },
+    ).pipe(map(() => ({ success: true })));
   }
 
   recordPayment(
@@ -106,7 +131,7 @@ export class InvoiceApiService {
     );
   }
 
-  getInvoicePdf(invoiceId: string): Observable<Blob> {
-    return this.apiClient.getBlob(`${this.basePath}/${invoiceId}/pdf`);
+  getInvoicePdf(invoiceId: string, clientId: string): Observable<Blob> {
+    return this.apiClient.getBlob(`${this.basePath}/${invoiceId}/pdf`, { clientId });
   }
 }
