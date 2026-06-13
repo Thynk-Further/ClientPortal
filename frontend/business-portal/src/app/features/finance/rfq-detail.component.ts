@@ -3,7 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
-import { RfqApiService, RfqDetail } from '@/app/core/api/services/rfq-api.service';
+import { RfqApiService, RfqDetail, RfqLineItem } from '@/app/core/api/services/rfq-api.service';
 import { readHttpErrorMessage } from '@/app/core/api/api-envelope.util';
 import { ToastNotificationService } from '@/app/core/notifications/toast-notification.service';
 import { ButtonComponent } from '@/components/ui/button.component';
@@ -14,6 +14,7 @@ import {
   CardHeaderComponent,
   CardTitleComponent,
 } from '@/components/ui/card.component';
+import { DatePickerComponent } from '@/components/ui/date-picker.component';
 import { InputComponent } from '@/components/ui/input.component';
 
 @Component({
@@ -29,6 +30,7 @@ import { InputComponent } from '@/components/ui/input.component';
     CardTitleComponent,
     CardDescriptionComponent,
     CardContentComponent,
+    DatePickerComponent,
     InputComponent,
   ],
   template: `
@@ -36,7 +38,9 @@ import { InputComponent } from '@/components/ui/input.component';
       <section class="mx-auto max-w-4xl space-y-6">
         <a routerLink="/finance/rfqs" class="text-sm text-primary hover:underline">← Back to RFQs</a>
 
-        @if (rfq(); as detail) {
+        @if (loadError()) {
+          <p class="text-sm text-destructive">{{ loadError() }}</p>
+        } @else if (rfq(); as detail) {
           <ui-card>
             <ui-card-header>
               <ui-card-title>{{ detail.rfqNumber }}</ui-card-title>
@@ -61,11 +65,11 @@ import { InputComponent } from '@/components/ui/input.component';
               <ui-card-content>
                 <form [formGroup]="quoteForm" class="space-y-3" (ngSubmit)="createQuotation()">
                   <ui-input formControlName="quoteNumber" placeholder="Quote number" />
-                  <ui-input formControlName="dueDate" type="date" />
-                  @for (ctrl of lineItemControls; track $index) {
+                  <ui-date-picker formControlName="dueDate" />
+                  @for (item of lineItems.controls; track $index) {
                     <div class="grid grid-cols-2 gap-2">
-                      <ui-input [formControl]="ctrl.controls.unitPrice" type="number" placeholder="Unit price" />
-                      <ui-input [formControl]="ctrl.controls.taxRate" type="number" placeholder="Tax rate (0-1)" />
+                      <ui-input type="number" [formControl]="item.controls.unitPrice" placeholder="Unit price" />
+                      <ui-input type="number" [formControl]="item.controls.taxRate" placeholder="Tax rate (0-1)" />
                     </div>
                   }
                   <ui-button type="submit" [disabled]="isSaving()">Create quotation</ui-button>
@@ -85,14 +89,16 @@ export class RfqDetailComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   protected readonly rfq = signal<RfqDetail | null>(null);
+  protected readonly loadError = signal<string | null>(null);
   protected readonly isSaving = signal(false);
-  protected lineItemControls: Array<ReturnType<FormBuilder['group']>> = [];
 
-  protected readonly quoteForm = this.fb.group({
+  protected readonly quoteForm = this.fb.nonNullable.group({
     quoteNumber: ['', Validators.required],
     dueDate: ['', Validators.required],
-    lineItems: this.fb.array([]),
+    lineItems: this.fb.array<ReturnType<RfqDetailComponent['createLineItemGroup']>>([]),
   });
+
+  protected readonly lineItems = this.quoteForm.controls.lineItems;
 
   private rfqId = '';
   private clientId = '';
@@ -101,40 +107,43 @@ export class RfqDetailComponent implements OnInit {
     this.rfqId = this.route.snapshot.paramMap.get('rfqId') ?? '';
     this.clientId = this.route.snapshot.queryParamMap.get('clientId') ?? '';
     if (!this.rfqId || !this.clientId) {
+      this.loadError.set('RFQ details could not be loaded. Open the RFQ from the Client RFQs list.');
       return;
     }
 
-    const detail = await firstValueFrom(this.rfqApi.getRfqById(this.rfqId, this.clientId));
-    this.rfq.set(detail);
-    this.lineItemControls = detail.lineItems.map((item) =>
-      this.fb.group({
-        description: [item.description],
-        quantity: [item.quantity],
-        unitPrice: [0, Validators.required],
-        taxRate: [0],
-      }),
-    );
+    try {
+      const detail = await firstValueFrom(this.rfqApi.getRfqById(this.rfqId, this.clientId));
+      this.rfq.set(detail);
+      this.resetLineItems(detail.lineItems);
+    } catch (error) {
+      this.loadError.set(readHttpErrorMessage(error, 'Failed to load RFQ.'));
+    }
   }
 
   protected async createQuotation(): Promise<void> {
     const detail = this.rfq();
     if (!detail || this.quoteForm.invalid) {
+      this.quoteForm.markAllAsTouched();
       return;
     }
 
     this.isSaving.set(true);
     try {
+      const formValue = this.quoteForm.getRawValue();
       await firstValueFrom(
         this.rfqApi.createQuotationFromRfq(this.rfqId, {
           clientId: this.clientId,
-          quoteNumber: this.quoteForm.value.quoteNumber ?? '',
-          dueDate: this.quoteForm.value.dueDate ?? '',
-          lineItems: this.lineItemControls.map((ctrl) => ({
-            description: ctrl.value.description ?? '',
-            quantity: Number(ctrl.value.quantity ?? 0),
-            unitPrice: Number(ctrl.value.unitPrice ?? 0),
-            taxRate: Number(ctrl.value.taxRate ?? 0),
-          })),
+          quoteNumber: formValue.quoteNumber,
+          dueDate: formValue.dueDate,
+          lineItems: detail.lineItems.map((item, index) => {
+            const priced = formValue.lineItems[index];
+            return {
+              description: item.description,
+              quantity: item.quantity,
+              unitPrice: Number(priced?.unitPrice ?? 0),
+              taxRate: Number(priced?.taxRate ?? 0),
+            };
+          }),
         }),
       );
       this.toast.success('Quotation created. Send it from the Quotes workflow.');
@@ -143,5 +152,21 @@ export class RfqDetailComponent implements OnInit {
     } finally {
       this.isSaving.set(false);
     }
+  }
+
+  private resetLineItems(items: RfqLineItem[]): void {
+    this.lineItems.clear();
+    for (const item of items) {
+      this.lineItems.push(this.createLineItemGroup(item));
+    }
+  }
+
+  private createLineItemGroup(item: RfqLineItem) {
+    return this.fb.nonNullable.group({
+      description: [item.description],
+      quantity: [item.quantity],
+      unitPrice: [0, Validators.required],
+      taxRate: [0],
+    });
   }
 }

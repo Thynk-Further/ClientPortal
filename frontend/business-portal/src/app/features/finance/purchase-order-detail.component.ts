@@ -17,6 +17,7 @@ import {
   CardHeaderComponent,
   CardTitleComponent,
 } from '@/components/ui/card.component';
+import { DatePickerComponent } from '@/components/ui/date-picker.component';
 import { InputComponent } from '@/components/ui/input.component';
 
 @Component({
@@ -32,6 +33,7 @@ import { InputComponent } from '@/components/ui/input.component';
     CardTitleComponent,
     CardDescriptionComponent,
     CardContentComponent,
+    DatePickerComponent,
     InputComponent,
   ],
   template: `
@@ -58,7 +60,7 @@ import { InputComponent } from '@/components/ui/input.component';
               } @else if (po.status === 1) {
                 <form [formGroup]="approveForm" class="space-y-3" (ngSubmit)="approve()">
                   <ui-input formControlName="invoiceNumber" placeholder="Invoice number" />
-                  <ui-input formControlName="dueDate" type="date" />
+                  <ui-date-picker formControlName="dueDate" />
                   <div class="flex gap-2">
                     <ui-button type="submit" [disabled]="isSaving()">Approve & generate invoice</ui-button>
                     <ui-button type="button" variant="outline" [disabled]="isSaving()" (click)="reject()">

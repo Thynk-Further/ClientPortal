@@ -36,20 +36,27 @@ public sealed class RfqRepository : IRfqRepository
 
         int totalCount = await query.CountAsync(cancellationToken);
 
+        IQueryable<Client> clients = _tenantDbContext.Set<Client>().AsNoTracking();
+
         IReadOnlyList<RfqListItemDto> items = await query
-            .OrderByDescending(rfq => rfq.CreatedAt)
+            .OrderByDescending(rfq => rfq.UpdatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(rfq => new RfqListItemDto(
-                rfq.Id,
-                rfq.ClientId,
-                rfq.ProjectId,
-                rfq.RfqNumber,
-                rfq.Status,
-                rfq.Currency,
-                rfq.QuotationId,
-                rfq.CreatedAt,
-                rfq.UpdatedAt))
+            .Join(
+                clients,
+                rfq => rfq.ClientId,
+                client => client.Id,
+                (rfq, client) => new RfqListItemDto(
+                    rfq.Id,
+                    rfq.ClientId,
+                    client.CompanyName,
+                    rfq.ProjectId,
+                    rfq.RfqNumber,
+                    rfq.Status,
+                    rfq.Currency,
+                    rfq.QuotationId,
+                    rfq.CreatedAt,
+                    rfq.UpdatedAt))
             .ToListAsync(cancellationToken);
 
         return new PagedResult<RfqListItemDto>(items, totalCount, page, pageSize);

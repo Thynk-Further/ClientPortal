@@ -36,6 +36,12 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
         exact: true,
         iconPath: 'M5 20V10m7 10V4m7 16v-7',
       },
+      {
+        id: 'rfq-inbox',
+        label: 'Client RFQs',
+        route: '/finance/rfqs',
+        iconPath: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2',
+      },
     ],
   },
   {
@@ -94,6 +100,12 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
         iconPath: 'M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1v5h5',
       },
       {
+        id: 'rfq-list',
+        label: 'Client RFQs',
+        route: '/finance/rfqs',
+        iconPath: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2',
+      },
+      {
         id: 'invoice-wizard',
         label: 'Invoice Wizard',
         route: '/finance/create',
@@ -104,12 +116,6 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
         label: 'Quotes',
         route: '/finance/quotes',
         iconPath: 'M4 4h16v16H4V4Zm4 4h8M8 12h8M8 16h5',
-      },
-      {
-        id: 'rfq-list',
-        label: 'Client RFQs',
-        route: '/finance/rfqs',
-        iconPath: 'M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2',
       },
       {
         id: 'purchase-orders',

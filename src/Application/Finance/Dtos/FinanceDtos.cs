@@ -22,6 +22,7 @@ public sealed record RfqDto(
 public sealed record RfqListItemDto(
     Guid Id,
     Guid ClientId,
+    string ClientCompanyName,
     Guid ProjectId,
     string RfqNumber,
     RfqStatus Status,

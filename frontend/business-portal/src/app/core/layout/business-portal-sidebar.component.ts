@@ -7,8 +7,9 @@ import {
   signal,
 } from '@angular/core';
 import { NavigationEnd, Router, RouterLink } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter, firstValueFrom } from 'rxjs';
 
+import { RfqApiService } from '@/app/core/api/services/rfq-api.service';
 import { ClientStore } from '@/app/core/stores/client.store';
 import {
   BUSINESS_PORTAL_NAV_SECTIONS,
@@ -166,7 +167,9 @@ import { UserAccountMenuComponent } from './user-account-menu.component';
 export class BusinessPortalSidebarComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly clientStore = inject(ClientStore);
+  private readonly rfqApi = inject(RfqApiService);
 
+  protected readonly submittedRfqCount = signal(0);
   protected readonly sidebarCollapsed = signal(false);
   protected readonly expandedSidebarSections = signal<ReadonlySet<string>>(
     new Set(BUSINESS_PORTAL_NAV_SECTIONS.map((section) => section.id)),
@@ -175,28 +178,46 @@ export class BusinessPortalSidebarComponent implements OnInit {
 
   protected readonly sidebarSections = computed<ReadonlyArray<BusinessPortalNavSection>>(() => {
     const clientCount = this.clientStore.totalCount();
+    const submittedRfqs = this.submittedRfqCount();
+
+    const applyRfqBadge = (item: BusinessPortalNavItem): BusinessPortalNavItem =>
+      (item.id === 'rfq-list' || item.id === 'rfq-inbox') && submittedRfqs > 0
+        ? { ...item, badgeCount: submittedRfqs }
+        : item;
 
     return BUSINESS_PORTAL_NAV_SECTIONS.map((section) => {
-      if (section.id !== 'clients') {
-        return section;
+      if (section.id === 'clients') {
+        return {
+          ...section,
+          items: section.items.map((item) =>
+            item.id === 'client-list' ? { ...item, badgeCount: clientCount } : item,
+          ),
+        };
       }
 
-      return {
-        ...section,
-        items: section.items.map((item) =>
-          item.id === 'client-list' ? { ...item, badgeCount: clientCount } : item,
-        ),
-      };
+      if (section.id === 'overview' || section.id === 'finance') {
+        return {
+          ...section,
+          items: section.items.map(applyRfqBadge),
+        };
+      }
+
+      return section;
     });
   });
 
   ngOnInit(): void {
     void this.clientStore.loadClients({ page: 1, pageSize: 1 });
+    void this.loadSubmittedRfqCount();
+
+    this.syncExpandedSectionsForUrl(this.router.url);
 
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe(() => {
-        this.currentUrl.set(this.router.url);
+      .subscribe((event) => {
+        const url = event.urlAfterRedirects ?? event.url;
+        this.currentUrl.set(url);
+        this.syncExpandedSectionsForUrl(url);
       });
   }
 
@@ -220,6 +241,45 @@ export class BusinessPortalSidebarComponent implements OnInit {
 
   protected isSidebarSectionExpanded(sectionId: string): boolean {
     return this.expandedSidebarSections().has(sectionId);
+  }
+
+  private async loadSubmittedRfqCount(): Promise<void> {
+    try {
+      const result = await firstValueFrom(this.rfqApi.getRfqs(undefined, 2, 1, 1));
+      this.submittedRfqCount.set(result.totalCount);
+      if (result.totalCount > 0) {
+        this.ensureSectionExpanded('overview');
+        this.ensureSectionExpanded('finance');
+      }
+    } catch {
+      this.submittedRfqCount.set(0);
+    }
+  }
+
+  private syncExpandedSectionsForUrl(url: string): void {
+    const path = url.split('?')[0].split('#')[0];
+
+    for (const section of BUSINESS_PORTAL_NAV_SECTIONS) {
+      const matchesSection = section.items.some((item) =>
+        item.exact ? path === item.route : path === item.route || path.startsWith(`${item.route}/`),
+      );
+
+      if (matchesSection) {
+        this.ensureSectionExpanded(section.id);
+      }
+    }
+  }
+
+  private ensureSectionExpanded(sectionId: string): void {
+    this.expandedSidebarSections.update((current) => {
+      if (current.has(sectionId)) {
+        return current;
+      }
+
+      const next = new Set(current);
+      next.add(sectionId);
+      return next;
+    });
   }
 
   protected isItemActive(item: BusinessPortalNavItem): boolean {

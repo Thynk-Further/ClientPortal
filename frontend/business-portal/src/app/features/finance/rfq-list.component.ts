@@ -4,7 +4,6 @@ import { firstValueFrom } from 'rxjs';
 
 import { RfqApiService, RfqSummary } from '@/app/core/api/services/rfq-api.service';
 import { readHttpErrorMessage } from '@/app/core/api/api-envelope.util';
-import { ButtonComponent } from '@/components/ui/button.component';
 import {
   CardComponent,
   CardContentComponent,
@@ -22,13 +21,14 @@ const RFQ_STATUS: Record<number, string> = {
   6: 'Cancelled',
 };
 
+type RfqListFilter = 'submitted' | 'open' | 'all';
+
 @Component({
   selector: 'app-rfq-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
-    ButtonComponent,
     CardComponent,
     CardHeaderComponent,
     CardTitleComponent,
@@ -42,30 +42,57 @@ const RFQ_STATUS: Record<number, string> = {
           <ui-card-header>
             <ui-card-title>Client RFQs</ui-card-title>
             <ui-card-description>
-              Review incoming requests for quotation and create priced responses.
+              Review requests for quotation submitted by clients and create priced responses.
             </ui-card-description>
           </ui-card-header>
           <ui-card-content>
+            <div class="mb-4 inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
+              @for (tab of filterTabs; track tab.id) {
+                <button
+                  type="button"
+                  class="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                  [class.bg-background]="activeFilter() === tab.id"
+                  [class.text-foreground]="activeFilter() === tab.id"
+                  [class.shadow-sm]="activeFilter() === tab.id"
+                  [class.text-muted-foreground]="activeFilter() !== tab.id"
+                  (click)="setFilter(tab.id)"
+                >
+                  {{ tab.label }}
+                </button>
+              }
+            </div>
+
             @if (errorMessage()) {
               <p class="mb-3 text-sm text-destructive">{{ errorMessage() }}</p>
             }
             @if (isLoading()) {
               <p class="text-sm text-muted-foreground">Loading RFQs...</p>
             } @else if (rfqs().length === 0) {
-              <p class="text-sm text-muted-foreground">No RFQs found.</p>
+              <p class="text-sm text-muted-foreground">
+                @if (activeFilter() === 'submitted') {
+                  No submitted RFQs yet. They appear here after a client submits a request from the client portal.
+                } @else {
+                  No RFQs match this filter.
+                }
+              </p>
             } @else {
               <div class="space-y-2">
                 @for (rfq of rfqs(); track rfq.id) {
                   <a
-                    class="flex items-center justify-between rounded-lg border p-3 hover:bg-muted"
+                    class="flex items-center justify-between gap-4 rounded-lg border p-3 hover:bg-muted"
                     [routerLink]="['/finance/rfqs', rfq.id]"
                     [queryParams]="{ clientId: rfq.clientId }"
                   >
-                    <div>
+                    <div class="min-w-0">
                       <p class="font-medium">{{ rfq.rfqNumber }}</p>
-                      <p class="text-xs text-muted-foreground">{{ statusLabel(rfq.status) }}</p>
+                      <p class="truncate text-xs text-muted-foreground">
+                        {{ rfq.clientCompanyName || 'Client' }} · {{ statusLabel(rfq.status) }}
+                      </p>
                     </div>
-                    <span class="text-xs text-muted-foreground">{{ rfq.currency }}</span>
+                    <div class="shrink-0 text-right text-xs text-muted-foreground">
+                      <p>{{ rfq.currency }}</p>
+                      <p>{{ formatDate(rfq.updatedAt) }}</p>
+                    </div>
                   </a>
                 }
               </div>
@@ -82,19 +109,66 @@ export class RfqListComponent implements OnInit {
   protected readonly rfqs = signal<RfqSummary[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly activeFilter = signal<RfqListFilter>('submitted');
+
+  protected readonly filterTabs: ReadonlyArray<{ id: RfqListFilter; label: string }> = [
+    { id: 'submitted', label: 'Awaiting quote' },
+    { id: 'open', label: 'In progress' },
+    { id: 'all', label: 'All' },
+  ];
 
   async ngOnInit(): Promise<void> {
-    try {
-      const result = await firstValueFrom(this.rfqApi.getRfqs(undefined, 2));
-      this.rfqs.set(result.items);
-    } catch (error) {
-      this.errorMessage.set(readHttpErrorMessage(error, 'Failed to load RFQs.'));
-    } finally {
-      this.isLoading.set(false);
-    }
+    await this.loadRfqs();
+  }
+
+  protected async setFilter(filter: RfqListFilter): Promise<void> {
+    this.activeFilter.set(filter);
+    await this.loadRfqs();
   }
 
   protected statusLabel(status: number): string {
     return RFQ_STATUS[status] ?? 'Unknown';
+  }
+
+  protected formatDate(value: string): string {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return '—';
+    }
+
+    return parsed.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  private async loadRfqs(): Promise<void> {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    try {
+      const filter = this.activeFilter();
+      if (filter === 'open') {
+        const [submitted, quoted] = await Promise.all([
+          firstValueFrom(this.rfqApi.getRfqs(undefined, 2)),
+          firstValueFrom(this.rfqApi.getRfqs(undefined, 3)),
+        ]);
+        const merged = [...submitted.items, ...quoted.items].sort(
+          (left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt),
+        );
+        this.rfqs.set(merged);
+        return;
+      }
+
+      const status = filter === 'submitted' ? 2 : undefined;
+      const result = await firstValueFrom(this.rfqApi.getRfqs(undefined, status));
+      this.rfqs.set(result.items);
+    } catch (error) {
+      this.errorMessage.set(readHttpErrorMessage(error, 'Failed to load RFQs.'));
+      this.rfqs.set([]);
+    } finally {
+      this.isLoading.set(false);
+    }
   }
 }

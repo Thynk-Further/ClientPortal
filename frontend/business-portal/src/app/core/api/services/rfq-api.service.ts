@@ -14,6 +14,7 @@ export interface RfqLineItem {
 export interface RfqSummary {
   id: string;
   clientId: string;
+  clientCompanyName: string;
   projectId: string;
   rfqNumber: string;
   status: number;
