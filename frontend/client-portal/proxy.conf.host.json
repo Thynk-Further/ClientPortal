@@ -4,5 +4,12 @@
     "secure": false,
     "changeOrigin": true,
     "logLevel": "silent"
+  },
+  "/hubs": {
+    "target": "http://localhost:5000",
+    "secure": false,
+    "changeOrigin": true,
+    "ws": true,
+    "logLevel": "silent"
   }
 }

@@ -1,3 +1,4 @@
+using Application.Messaging.Dtos;
 using Domain;
 
 namespace Application.Clients.Dtos;
@@ -22,7 +23,9 @@ public sealed record ClientPortalMessageDto(
     string SenderRole,
     string Content,
     MessageStatus Status,
-    DateTime SentAt);
+    DateTime SentAt,
+    MessageAttachmentMetadataDto? Attachment,
+    DateTime? AttachmentExpiresAt);
 
 public sealed record ClientPortalThreadMessagesResultDto(
     IReadOnlyList<ClientPortalMessageDto> Messages,

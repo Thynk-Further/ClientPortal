@@ -435,6 +435,21 @@ export interface ClientPortalMessage {
   content: string;
   status: number;
   sentAt: string;
+  attachment: MessageAttachmentMetadata | null;
+  attachmentExpiresAt: string | null;
+}
+
+export interface MessageAttachmentMetadata {
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  url: string;
+}
+
+export interface ClientPortalMessageAttachmentUpload {
+  uploadUrl: string;
+  fileUrl: string;
+  expiresAtUtc: string;
 }
 
 export interface ClientPortalThreadMessagesResult {
@@ -447,6 +462,7 @@ export interface ClientPortalThreadMessagesResult {
 export interface SendClientPortalMessage {
   clientMessageId: string;
   content: string;
+  attachment?: MessageAttachmentMetadata | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -669,6 +685,18 @@ export class ClientPortalApiService {
     return this.apiClient
       .post<ApiEnvelope<string>, SendClientPortalMessage>(
         `${this.basePath}/messages/threads/${threadId}/messages`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getMessageAttachmentUploadUrl(
+    threadId: string,
+    request: { fileName: string; contentType: string; sizeBytes: number },
+  ): Observable<ClientPortalMessageAttachmentUpload> {
+    return this.apiClient
+      .post<ApiEnvelope<ClientPortalMessageAttachmentUpload>, typeof request>(
+        `${this.basePath}/messages/threads/${threadId}/attachments/upload-url`,
         request,
       )
       .pipe(map((response) => unwrapApiEnvelopeData(response)));

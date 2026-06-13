@@ -3,6 +3,8 @@ using Application.Clients.Dtos;
 using Application.Finance;
 using Application.Finance.Dtos;
 using Application.Auth.Abstractions;
+using Application.Messaging;
+using Application.Messaging.Dtos;
 using Application.Notifications.Dtos;
 using Api.Auth;
 using Api.Contracts;
@@ -152,6 +154,9 @@ public static class ClientsEndpoints
 
         portalGroup.MapPost("/messages/threads/{id:guid}/messages", SendClientPortalMessageAsync)
             .WithName("ClientPortalSendMessage");
+
+        portalGroup.MapPost("/messages/threads/{id:guid}/attachments/upload-url", GetClientPortalMessageAttachmentUploadUrlAsync)
+            .WithName("ClientPortalMessageAttachmentUploadUrl");
 
         portalGroup.MapPut("/messages/threads/{id:guid}/read", MarkClientPortalThreadReadAsync)
             .WithName("ClientPortalMarkThreadRead");
@@ -556,7 +561,11 @@ public static class ClientsEndpoints
         CancellationToken cancellationToken)
     {
         Result<Guid> result = await sender.Send(
-            new SendClientPortalMessageCommand(id, request.ClientMessageId, request.Content),
+            new SendClientPortalMessageCommand(
+                id,
+                request.ClientMessageId,
+                request.Content,
+                request.Attachment),
             cancellationToken);
 
         if (result.IsSuccess && result.Value != Guid.Empty)
@@ -564,6 +573,23 @@ public static class ClientsEndpoints
             string location = $"/api/v1/client-portal/messages/threads/{id}/messages/{result.Value}";
             return Results.Created(location, ApiResponse<Guid>.Ok(result.Value));
         }
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalMessageAttachmentUploadUrlAsync(
+        Guid id,
+        ClientPortalMessageAttachmentUploadUrlRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<MessageAttachmentUploadUrlResultDto> result = await sender.Send(
+            new GetClientPortalMessageAttachmentUploadUrlCommand(
+                id,
+                request.FileName,
+                request.ContentType,
+                request.SizeBytes),
+            cancellationToken);
 
         return ToResponse(result);
     }
@@ -918,7 +944,13 @@ public sealed record SignClientPortalContractRequest(string SignerName);
 
 public sealed record SendClientPortalMessageRequest(
     string ClientMessageId,
-    string Content);
+    string Content,
+    MessageAttachmentMetadataDto? Attachment = null);
+
+public sealed record ClientPortalMessageAttachmentUploadUrlRequest(
+    string FileName,
+    string ContentType,
+    long SizeBytes);
 
 public sealed record UpdateClientPortalProfileRequest(
     string ContactName,

@@ -40,7 +40,7 @@ public sealed class SendClientPortalMessageCommandHandler
                 request.Content,
                 ReplyToMessageId: null,
                 EmojiReaction: null,
-                Attachment: null),
+                Attachment: request.Attachment),
             cancellationToken);
     }
 }

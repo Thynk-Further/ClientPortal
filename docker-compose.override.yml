@@ -58,11 +58,11 @@ services:
     working_dir: /workspace/client-portal
     command: >
       sh -c "cd /workspace/shared-ui &&
-             npm install &&
+             npm ci &&
              npm run build &&
              cd /workspace/client-portal &&
-             npm install &&
-             npm run start -- --host 0.0.0.0 --port 4200 --poll 2000"
+             npm ci &&
+             npm run start -- --host 0.0.0.0 --port 4200 --poll 2000 --proxy-config proxy.conf.docker.json"
     volumes:
       - ./frontend:/workspace
       - /workspace/client-portal/node_modules
@@ -77,11 +77,11 @@ services:
     working_dir: /workspace/business-portal
     command: >
       sh -c "cd /workspace/shared-ui &&
-             npm install &&
+             npm ci &&
              npm run build &&
              cd /workspace/business-portal &&
-             npm install &&
-             npm run start -- --host 0.0.0.0 --port 4200 --poll 2000"
+             npm ci &&
+             npm run start -- --host 0.0.0.0 --port 4200 --poll 2000 --proxy-config proxy.conf.docker.json"
     volumes:
       - ./frontend:/workspace
       - /workspace/business-portal/node_modules

@@ -55,7 +55,9 @@ public sealed class GetClientPortalThreadMessagesQueryHandler
                 message.SenderRole,
                 message.Content,
                 message.Status,
-                message.SentAt))
+                message.SentAt,
+                message.Attachment,
+                message.AttachmentExpiresAt))
             .ToList();
 
         ClientPortalThreadMessagesResultDto result = new(

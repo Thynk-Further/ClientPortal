@@ -13,12 +13,11 @@ public sealed class CreateThreadCommandValidator : AbstractValidator<CreateThrea
             .NotEmpty();
 
         RuleFor(command => command.ParticipantIds)
-            .NotNull()
-            .Must(participants => participants.Count > 0)
-            .WithMessage("At least one participant is required.");
+            .NotNull();
 
         RuleForEach(command => command.ParticipantIds)
-            .NotEmpty();
+            .NotEmpty()
+            .When(command => command.ParticipantIds.Count > 0);
 
         RuleFor(command => command.Subject)
             .NotEmpty()
