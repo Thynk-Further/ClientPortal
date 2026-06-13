@@ -112,21 +112,9 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
         iconPath: 'M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm8 1v5h5',
       },
       {
-        id: 'invoice-wizard',
-        label: 'Invoice Wizard',
-        route: '/finance/create',
-        iconPath: 'M9 11 12 14 22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
-      },
-      {
-        id: 'overdue-reminders',
-        label: 'Overdue & Reminders',
-        route: '/finance',
-        iconPath: 'M12 8v5l3 3M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z',
-      },
-      {
         id: 'financial-summary',
         label: 'Financial Summary',
-        route: '/finance',
+        route: '/finance/summary',
         iconPath: 'M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Zm0 3h18',
       },
     ],

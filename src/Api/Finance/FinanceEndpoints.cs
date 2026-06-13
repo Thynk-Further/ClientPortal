@@ -54,6 +54,13 @@ public static class FinanceEndpoints
         submissionActionsGroup.MapPost("/{submissionId:guid}/reject", RejectInvoicePaymentSubmissionAsync)
             .WithName("InvoicePaymentSubmissionsReject");
 
+        RouteGroupBuilder financeAnalyticsGroup = endpoints.MapGroup("/api/v1/finance")
+            .WithTags("Finance Analytics")
+            .RequireTenant()
+            .RequireAuthorization(AuthorizationPolicies.RequireAnyStaff);
+
+        financeAnalyticsGroup.MapGet("/analytics", GetFinanceAnalyticsAsync).WithName("FinanceAnalyticsGet");
+
         return endpoints;
     }
 
@@ -167,6 +174,15 @@ public static class FinanceEndpoints
         return ToResponse(await sender.Send(
             new RejectInvoicePaymentSubmissionCommand(submissionId, request.ReviewNotes),
             cancellationToken));
+    }
+
+    private static async Task<IResult> GetFinanceAnalyticsAsync(
+        Guid? clientId,
+        DateOnly? asOfDate,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(new GetFinanceAnalyticsQuery(clientId, asOfDate), cancellationToken));
     }
 
     private static IResult ToResponse(Result result)

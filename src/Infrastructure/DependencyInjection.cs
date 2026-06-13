@@ -120,6 +120,7 @@ public static class DependencyInjection
         services.AddScoped<IRfqRepository, RfqRepository>();
         services.AddScoped<IRfqNumberGenerator, RfqNumberGenerator>();
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+        services.AddScoped<IFinanceAnalyticsRepository, FinanceAnalyticsRepository>();
         services.AddScoped<IInvoicePaymentSubmissionRepository, InvoicePaymentSubmissionRepository>();
         services.AddScoped<IOverdueInvoiceMarker, OverdueInvoiceMarker>();
         services.AddSingleton<IDocumentUploadUrlService, DocumentUploadUrlService>();

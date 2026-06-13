@@ -67,6 +67,16 @@ export const FINANCE_ROUTES: Routes = [
     },
   },
   {
+    path: 'summary',
+    loadComponent: () =>
+      import('./financial-summary.component').then((m) => m.FinancialSummaryComponent),
+    data: {
+      breadcrumb: 'Financial Summary',
+      title: 'Financial Summary',
+      description: 'Finance pipeline metrics, collections, and aging analytics.',
+    },
+  },
+  {
     path: 'create',
     loadComponent: () =>
       import('./create-invoice-wizard.component').then(

@@ -284,7 +284,38 @@ export class BusinessPortalSidebarComponent implements OnInit {
 
   protected isItemActive(item: BusinessPortalNavItem): boolean {
     const path = this.currentUrl().split('?')[0].split('#')[0];
+    const section = BUSINESS_PORTAL_NAV_SECTIONS.find((candidate) =>
+      candidate.items.some((candidateItem) => candidateItem.id === item.id),
+    );
 
+    if (section === undefined) {
+      return false;
+    }
+
+    const bestMatch = this.findBestMatchingItem(path, section.items);
+    return bestMatch?.id === item.id;
+  }
+
+  private findBestMatchingItem(
+    path: string,
+    items: ReadonlyArray<BusinessPortalNavItem>,
+  ): BusinessPortalNavItem | null {
+    let bestMatch: BusinessPortalNavItem | null = null;
+
+    for (const navItem of items) {
+      if (!this.pathMatchesNavItem(path, navItem)) {
+        continue;
+      }
+
+      if (bestMatch === null || navItem.route.length > bestMatch.route.length) {
+        bestMatch = navItem;
+      }
+    }
+
+    return bestMatch;
+  }
+
+  private pathMatchesNavItem(path: string, item: BusinessPortalNavItem): boolean {
     if (item.exact) {
       return path === item.route;
     }
