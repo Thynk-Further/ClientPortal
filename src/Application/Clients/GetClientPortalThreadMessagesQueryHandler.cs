@@ -1,7 +1,9 @@
 using Application.Abstractions;
+using Application.Clients.Abstractions;
 using Application.Clients.Dtos;
 using Application.Messaging;
 using Application.Messaging.Dtos;
+using Domain;
 using MediatR;
 using Shared;
 
@@ -11,11 +13,16 @@ public sealed class GetClientPortalThreadMessagesQueryHandler
     : IRequestHandler<GetClientPortalThreadMessagesQuery, Result<ClientPortalThreadMessagesResultDto>>
 {
     private readonly ICurrentUser _currentUser;
+    private readonly IClientPortalThreadAccessService _threadAccessService;
     private readonly ISender _sender;
 
-    public GetClientPortalThreadMessagesQueryHandler(ICurrentUser currentUser, ISender sender)
+    public GetClientPortalThreadMessagesQueryHandler(
+        ICurrentUser currentUser,
+        IClientPortalThreadAccessService threadAccessService,
+        ISender sender)
     {
         _currentUser = currentUser;
+        _threadAccessService = threadAccessService;
         _sender = sender;
     }
 
@@ -29,6 +36,16 @@ public sealed class GetClientPortalThreadMessagesQueryHandler
                 "Auth.InvalidUserContext",
                 "Authenticated user context is invalid.",
                 ErrorType.Forbidden));
+        }
+
+        Result<MessageThread> accessResult = await _threadAccessService.EnsureThreadAccessAsync(
+            request.ThreadId,
+            _currentUser.UserId.Value,
+            addParticipantIfMissing: true,
+            cancellationToken);
+        if (accessResult.IsFailed)
+        {
+            return Result<ClientPortalThreadMessagesResultDto>.Failure(accessResult.Errors);
         }
 
         Result<PagedResult<MessageHistoryItemDto>> messagesResult = await _sender.Send(

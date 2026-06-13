@@ -110,11 +110,11 @@ public static class CommunicationEndpoints
     private static async Task<IResult> GetThreadMessagesAsync(
         Guid id,
         ClaimsPrincipal principal,
-        int page,
-        int pageSize,
-        bool includeSoftDeleted,
         ISender sender,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int page = 1,
+        int pageSize = 50,
+        bool includeSoftDeleted = false)
     {
         Result<Guid> userIdResult = ResolveUserId(principal);
         if (userIdResult.IsFailed)

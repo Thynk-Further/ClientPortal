@@ -79,11 +79,12 @@ export class MessageApiService {
     threadId: string,
     page = 1,
     pageSize = 50,
+    includeSoftDeleted = false,
   ): Observable<PagedMessagesResult> {
     return this.apiClient
       .get<ApiEnvelope<PagedMessagesResult>>(
         `${this.basePath}/threads/${threadId}/messages`,
-        { page, pageSize },
+        { page, pageSize, includeSoftDeleted },
       )
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }

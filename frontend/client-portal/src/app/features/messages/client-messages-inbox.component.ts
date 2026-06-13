@@ -506,6 +506,9 @@ export class ClientMessagesInboxComponent implements OnInit, OnDestroy {
       this.composerForm.reset({ content: '' });
       this.clearPendingAttachment();
       void this.hub.broadcastTyping(threadId, false);
+      await this.loadMessages(threadId, false);
+      void this.loadThreads();
+      void this.messagesSummary.refresh();
     } catch (error) {
       this.errorMessage.set(readHttpErrorMessage(error, 'Failed to send message.'));
     } finally {

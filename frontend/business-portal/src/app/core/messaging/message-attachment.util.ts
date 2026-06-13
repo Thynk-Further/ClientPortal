@@ -9,6 +9,17 @@ const ALLOWED_ATTACHMENT_TYPES = new Set([
 ]);
 
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+const STUB_UPLOAD_HOSTS = new Set(['localhost', '127.0.0.1']);
+const STUB_UPLOAD_HOST_SUFFIX = '.clientportal.local';
+
+function isStubUploadUrl(uploadUrl: string): boolean {
+  try {
+    const hostname = new URL(uploadUrl).hostname.toLowerCase();
+    return STUB_UPLOAD_HOSTS.has(hostname) || hostname.endsWith(STUB_UPLOAD_HOST_SUFFIX);
+  } catch {
+    return false;
+  }
+}
 
 export function validateMessageAttachmentFile(file: File): string | null {
   const contentType = file.type || 'application/octet-stream';
@@ -35,14 +46,16 @@ export async function uploadMessageAttachment(
   const contentType = file.type || 'application/octet-stream';
   const { uploadUrl, fileUrl } = await getUploadUrl(file);
 
-  const response = await fetch(uploadUrl, {
-    method: 'PUT',
-    body: file,
-    headers: { 'Content-Type': contentType },
-  });
+  if (!isStubUploadUrl(uploadUrl)) {
+    const response = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': contentType },
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to upload attachment.');
+    if (!response.ok) {
+      throw new Error('Failed to upload attachment.');
+    }
   }
 
   return {
