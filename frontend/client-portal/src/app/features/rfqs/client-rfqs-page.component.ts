@@ -25,7 +25,12 @@ import {
 } from '@/components/ui/card.component';
 import { InputComponent } from '@/components/ui/input.component';
 import { TextareaComponent } from '@/components/ui/textarea.component';
-import { clientRfqStatusLabel } from './rfq-display.util';
+import {
+  clientRfqStatusLabel,
+  datetimeLocalToIsoUtc,
+  defaultQuotationDueLocalValue,
+  formatClientRfqDateTime,
+} from './rfq-display.util';
 
 @Component({
   selector: 'app-client-rfqs-page',
@@ -53,12 +58,35 @@ import { clientRfqStatusLabel } from './rfq-display.util';
       <ui-card>
         <ui-card-header>
           <ui-card-title>Create RFQ</ui-card-title>
+          <ui-card-description>
+            Give your request a title, list the items you need, and set when you expect to receive a quotation.
+          </ui-card-description>
         </ui-card-header>
         <ui-card-content>
           <form [formGroup]="form" class="space-y-3" (ngSubmit)="createRfq()">
             <p class="text-sm text-muted-foreground">
               RFQ numbers are assigned automatically from your provider and company initials plus today&apos;s date.
             </p>
+            <div class="space-y-1">
+              <label class="text-sm font-medium" for="rfq-title">Title</label>
+              <ui-input
+                id="rfq-title"
+                formControlName="title"
+                placeholder="e.g. Lab Consumables"
+              />
+            </div>
+            <div class="space-y-1">
+              <label class="text-sm font-medium" for="quotation-due">Quotation due</label>
+              <input
+                id="quotation-due"
+                type="datetime-local"
+                formControlName="quotationDueAtLocal"
+                class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+              <p class="text-xs text-muted-foreground">
+                When you expect to receive the quotation from your provider.
+              </p>
+            </div>
             <ui-input formControlName="currency" placeholder="Currency (e.g. ZAR)" />
             <select formControlName="projectId" class="w-full rounded-md border px-3 py-2 text-sm">
               <option value="">Select project</option>
@@ -91,8 +119,11 @@ import { clientRfqStatusLabel } from './rfq-display.util';
               class="block rounded-lg border p-3 hover:bg-muted"
               [routerLink]="['/rfqs', rfq.id]"
             >
-              <p class="font-medium">{{ rfq.rfqNumber }}</p>
-              <p class="text-xs text-muted-foreground">{{ statusLabel(rfq.status) }}</p>
+              <p class="font-medium">{{ rfq.title }}</p>
+              <p class="text-xs text-muted-foreground">{{ rfq.rfqNumber }}</p>
+              <p class="mt-1 text-xs text-muted-foreground">
+                Quotation due {{ formatDateTime(rfq.quotationDueAtUtc) }} · {{ statusLabel(rfq.status) }}
+              </p>
             </a>
           }
         </ui-card-content>
@@ -109,6 +140,8 @@ export class ClientRfqsPageComponent implements OnInit {
   protected readonly isSaving = signal(false);
 
   protected readonly form = this.fb.group({
+    title: ['', [Validators.required, Validators.maxLength(256)]],
+    quotationDueAtLocal: [defaultQuotationDueLocalValue(), Validators.required],
     currency: ['ZAR', Validators.required],
     projectId: ['', Validators.required],
     notes: [''],
@@ -132,6 +165,10 @@ export class ClientRfqsPageComponent implements OnInit {
     return clientRfqStatusLabel(status);
   }
 
+  protected formatDateTime(value: string): string {
+    return formatClientRfqDateTime(value);
+  }
+
   protected addLineItem(): void {
     this.lineItems.push(this.createLineItemGroup());
   }
@@ -147,6 +184,8 @@ export class ClientRfqsPageComponent implements OnInit {
       await firstValueFrom(
         this.api.createRfq({
           projectId: value.projectId ?? '',
+          title: value.title ?? '',
+          quotationDueAtUtc: datetimeLocalToIsoUtc(value.quotationDueAtLocal ?? ''),
           currency: value.currency ?? 'ZAR',
           notes: value.notes,
           lineItems: this.lineItems.controls.map((ctrl) => ({
@@ -157,7 +196,15 @@ export class ClientRfqsPageComponent implements OnInit {
       );
       const result = await firstValueFrom(this.api.getRfqs());
       this.rfqs.set(result.rfqs.items);
-      this.form.reset({ currency: 'ZAR' });
+      this.form.reset({
+        title: '',
+        quotationDueAtLocal: defaultQuotationDueLocalValue(),
+        currency: 'ZAR',
+        projectId: '',
+        notes: '',
+      });
+      this.lineItems.clear();
+      this.lineItems.push(this.createLineItemGroup());
     } catch (error) {
       console.error(readHttpErrorMessage(error, 'Failed to create RFQ.'));
     } finally {

@@ -28,6 +28,20 @@ public sealed class RfqTests
     }
 
     [Fact]
+    public void Create_WithPastDueDate_ThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentException>(() => Rfq.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "RFQ-002",
+            "Lab Consumables",
+            DateTime.UtcNow.AddDays(-1),
+            [new RfqLineItem("Laptop", 2m)],
+            "ZAR"));
+    }
+
+    [Fact]
     public void MarkQuoted_FromDraft_ThrowsInvalidOperationException()
     {
         Rfq rfq = CreateRfq();
@@ -42,6 +56,8 @@ public sealed class RfqTests
             Guid.NewGuid(),
             Guid.NewGuid(),
             "RFQ-001",
+            "Lab Consumables",
+            DateTime.UtcNow.AddDays(7),
             [new RfqLineItem("Laptop", 2m)],
             "ZAR");
     }

@@ -16,6 +16,10 @@ import {
 } from '@/components/ui/card.component';
 import { DatePickerComponent } from '@/components/ui/date-picker.component';
 import { InputComponent } from '@/components/ui/input.component';
+import {
+  formatRfqDateTime,
+  rfqStatusLabel,
+} from './rfq-display.util';
 
 @Component({
   selector: 'app-rfq-detail',
@@ -43,8 +47,17 @@ import { InputComponent } from '@/components/ui/input.component';
         } @else if (rfq(); as detail) {
           <ui-card>
             <ui-card-header>
-              <ui-card-title>{{ detail.rfqNumber }}</ui-card-title>
-              <ui-card-description>Client RFQ line items</ui-card-description>
+              <ui-card-title>{{ displayTitle(detail) }}</ui-card-title>
+              <ui-card-description class="space-y-1">
+                <span class="block">
+                  <span class="text-foreground/70">RFQ no.</span> {{ detail.rfqNumber }}
+                </span>
+                <span class="block">
+                  <span class="text-foreground/70">Quotation due</span>
+                  {{ formatDateTime(detail.quotationDueAtUtc) }}
+                </span>
+                <span class="block">{{ statusLabel(detail.status) }}</span>
+              </ui-card-description>
             </ui-card-header>
             <ui-card-content class="space-y-2 text-sm">
               @for (item of detail.lineItems; track item.description) {
@@ -99,6 +112,14 @@ export class RfqDetailComponent implements OnInit {
   });
 
   protected readonly lineItems = this.quoteForm.controls.lineItems;
+
+  protected readonly statusLabel = rfqStatusLabel;
+  protected readonly formatDateTime = formatRfqDateTime;
+
+  protected displayTitle(detail: RfqDetail): string {
+    const title = detail.title?.trim();
+    return title === '' || title === undefined ? 'Untitled' : title;
+  }
 
   private rfqId = '';
   private clientId = '';

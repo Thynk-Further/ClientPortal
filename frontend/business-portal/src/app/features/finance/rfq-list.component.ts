@@ -153,6 +153,7 @@ export class RfqListComponent implements OnInit {
     return items.filter(
       (rfq) =>
         rfq.rfqNumber.toLowerCase().includes(search) ||
+        rfq.title.toLowerCase().includes(search) ||
         rfq.clientCompanyName.toLowerCase().includes(search),
     );
   });

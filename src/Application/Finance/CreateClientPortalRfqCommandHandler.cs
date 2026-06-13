@@ -52,6 +52,8 @@ public sealed class CreateClientPortalRfqCommandHandler
             clientIdResult.Value,
             request.ProjectId,
             rfqNumber,
+            request.Title,
+            request.QuotationDueAtUtc,
             request.LineItems.Select(item => new RfqLineItem(item.Description, item.Quantity)),
             request.Currency,
             request.Notes);

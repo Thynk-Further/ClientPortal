@@ -13,6 +13,10 @@ public sealed class Rfq : AggregateRoot<Guid>
 
     public string RfqNumber { get; private set; } = string.Empty;
 
+    public string Title { get; private set; } = string.Empty;
+
+    public DateTime QuotationDueAtUtc { get; private set; }
+
     public RfqStatus Status { get; private set; } = RfqStatus.Draft;
 
     public string Currency { get; private set; } = string.Empty;
@@ -32,6 +36,8 @@ public sealed class Rfq : AggregateRoot<Guid>
         Guid clientId,
         Guid projectId,
         string rfqNumber,
+        string title,
+        DateTime quotationDueAtUtc,
         RfqStatus status,
         IEnumerable<RfqLineItem> lineItems,
         string currency,
@@ -41,6 +47,8 @@ public sealed class Rfq : AggregateRoot<Guid>
         ClientId = NormalizeRequiredId(clientId, nameof(clientId));
         ProjectId = NormalizeRequiredId(projectId, nameof(projectId));
         RfqNumber = NormalizeRequiredText(rfqNumber, nameof(rfqNumber));
+        Title = NormalizeTitle(title);
+        QuotationDueAtUtc = NormalizeQuotationDueAtUtc(quotationDueAtUtc);
         Status = status;
         Currency = NormalizeCurrency(currency);
         Notes = NormalizeOptionalText(notes);
@@ -54,11 +62,37 @@ public sealed class Rfq : AggregateRoot<Guid>
         Guid clientId,
         Guid projectId,
         string rfqNumber,
+        string title,
+        DateTime quotationDueAtUtc,
         IEnumerable<RfqLineItem> lineItems,
         string currency,
         string? notes = null)
     {
-        return new Rfq(id, clientId, projectId, rfqNumber, RfqStatus.Draft, lineItems, currency, notes);
+        return new Rfq(
+            id,
+            clientId,
+            projectId,
+            rfqNumber,
+            title,
+            quotationDueAtUtc,
+            RfqStatus.Draft,
+            lineItems,
+            currency,
+            notes);
+    }
+
+    public void UpdateTitle(string title)
+    {
+        EnsureEditable();
+        Title = NormalizeTitle(title);
+        MarkUpdated();
+    }
+
+    public void UpdateQuotationDueAtUtc(DateTime quotationDueAtUtc)
+    {
+        EnsureEditable();
+        QuotationDueAtUtc = NormalizeQuotationDueAtUtc(quotationDueAtUtc);
+        MarkUpdated();
     }
 
     public void ReplaceLineItems(IEnumerable<RfqLineItem> lineItems)
@@ -94,6 +128,11 @@ public sealed class Rfq : AggregateRoot<Guid>
         if (Status != RfqStatus.Draft)
         {
             throw new InvalidOperationException("Only draft RFQs can be submitted.");
+        }
+
+        if (QuotationDueAtUtc <= DateTime.UtcNow)
+        {
+            throw new InvalidOperationException("Quotation due date must be in the future.");
         }
 
         Status = RfqStatus.Submitted;
@@ -198,6 +237,28 @@ public sealed class Rfq : AggregateRoot<Guid>
         }
 
         return value.Trim();
+    }
+
+    private static string NormalizeTitle(string title)
+    {
+        return Guard.NotEmpty(title, nameof(title)).Trim();
+    }
+
+    private static DateTime NormalizeQuotationDueAtUtc(DateTime quotationDueAtUtc)
+    {
+        DateTime utc = quotationDueAtUtc.Kind switch
+        {
+            DateTimeKind.Utc => quotationDueAtUtc,
+            DateTimeKind.Local => quotationDueAtUtc.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(quotationDueAtUtc, DateTimeKind.Utc),
+        };
+
+        if (utc <= DateTime.UtcNow)
+        {
+            throw new ArgumentException("Quotation due date must be in the future.", nameof(quotationDueAtUtc));
+        }
+
+        return utc;
     }
 
     private static string NormalizeCurrency(string currency)

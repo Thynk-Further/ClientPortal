@@ -321,6 +321,8 @@ export interface ClientPortalRfqListItem {
   id: string;
   projectId: string;
   rfqNumber: string;
+  title: string;
+  quotationDueAtUtc: string;
   status: number;
   currency: string;
   quotationId: string | null;
@@ -343,6 +345,8 @@ export interface CreateClientPortalRfqLineItem {
 
 export interface CreateClientPortalRfq {
   projectId: string;
+  title: string;
+  quotationDueAtUtc: string;
   currency: string;
   lineItems: CreateClientPortalRfqLineItem[];
   notes?: string | null;

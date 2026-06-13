@@ -776,6 +776,8 @@ public static class ClientsEndpoints
         Result<RfqDto> result = await sender.Send(
             new CreateClientPortalRfqCommand(
                 request.ProjectId,
+                request.Title,
+                request.QuotationDueAtUtc,
                 request.Currency,
                 request.LineItems.Select(item => new CreateClientPortalRfqLineItemInput(item.Description, item.Quantity)).ToList(),
                 request.Notes),
@@ -948,6 +950,8 @@ public sealed record CreateClientPortalRfqLineItemRequest(string Description, de
 
 public sealed record CreateClientPortalRfqRequest(
     Guid ProjectId,
+    string Title,
+    DateTime QuotationDueAtUtc,
     string Currency,
     IReadOnlyCollection<CreateClientPortalRfqLineItemRequest> LineItems,
     string? Notes = null);

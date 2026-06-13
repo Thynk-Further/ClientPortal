@@ -17,6 +17,8 @@ internal static class FinanceMapping
             rfq.ClientId,
             rfq.ProjectId,
             rfq.RfqNumber,
+            rfq.Title,
+            rfq.QuotationDueAtUtc,
             rfq.Status,
             lineItems,
             rfq.Currency,

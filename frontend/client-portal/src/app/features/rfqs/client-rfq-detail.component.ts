@@ -11,22 +11,36 @@ import { ButtonComponent } from '@/components/ui/button.component';
 import {
   CardComponent,
   CardContentComponent,
+  CardDescriptionComponent,
   CardHeaderComponent,
   CardTitleComponent,
 } from '@/components/ui/card.component';
+import { clientRfqStatusLabel, formatClientRfqDateTime } from './rfq-display.util';
 
 @Component({
   selector: 'app-client-rfq-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonComponent, CardComponent, CardHeaderComponent, CardTitleComponent, CardContentComponent],
+  imports: [
+    RouterLink,
+    ButtonComponent,
+    CardComponent,
+    CardHeaderComponent,
+    CardTitleComponent,
+    CardDescriptionComponent,
+    CardContentComponent,
+  ],
   template: `
     <div class="space-y-4">
       <a routerLink="/rfqs" class="text-sm text-primary hover:underline">← Back</a>
       @if (rfq(); as detail) {
         <ui-card>
           <ui-card-header>
-            <ui-card-title>{{ detail.rfqNumber }}</ui-card-title>
+            <ui-card-title>{{ detail.title }}</ui-card-title>
+            <ui-card-description>
+              {{ detail.rfqNumber }} · {{ statusLabel(detail.status) }} · Quotation due
+              {{ formatDateTime(detail.quotationDueAtUtc) }}
+            </ui-card-description>
           </ui-card-header>
           <ui-card-content class="space-y-2 text-sm">
             @for (item of detail.lineItems; track item.description) {
@@ -71,6 +85,14 @@ export class ClientRfqDetailComponent implements OnInit {
 
     const detail = await firstValueFrom(this.api.getRfq(this.rfqId));
     this.rfq.set(detail);
+  }
+
+  protected statusLabel(status: number): string {
+    return clientRfqStatusLabel(status);
+  }
+
+  protected formatDateTime(value: string): string {
+    return formatClientRfqDateTime(value);
   }
 
   protected async submit(): Promise<void> {

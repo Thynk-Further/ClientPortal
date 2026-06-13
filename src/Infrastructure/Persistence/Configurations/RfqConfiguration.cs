@@ -13,6 +13,8 @@ internal sealed class RfqConfiguration : IEntityTypeConfiguration<Rfq>
         builder.Property(rfq => rfq.ClientId).IsRequired();
         builder.Property(rfq => rfq.ProjectId).IsRequired();
         builder.Property(rfq => rfq.RfqNumber).HasMaxLength(64).IsRequired();
+        builder.Property(rfq => rfq.Title).HasMaxLength(256).IsRequired();
+        builder.Property(rfq => rfq.QuotationDueAtUtc).IsRequired();
         builder.Property(rfq => rfq.Status).HasConversion<int>().IsRequired();
         builder.Property(rfq => rfq.Currency).HasMaxLength(3).IsRequired();
         builder.Property(rfq => rfq.Notes).HasMaxLength(4000);

@@ -17,6 +17,8 @@ export interface RfqSummary {
   clientCompanyName: string;
   projectId: string;
   rfqNumber: string;
+  title: string;
+  quotationDueAtUtc: string;
   status: number;
   currency: string;
   quotationId: string | null;

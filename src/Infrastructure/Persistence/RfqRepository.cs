@@ -52,6 +52,8 @@ public sealed class RfqRepository : IRfqRepository
                     client.CompanyName,
                     rfq.ProjectId,
                     rfq.RfqNumber,
+                    rfq.Title,
+                    rfq.QuotationDueAtUtc,
                     rfq.Status,
                     rfq.Currency,
                     rfq.QuotationId,
