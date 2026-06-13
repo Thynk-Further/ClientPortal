@@ -16,7 +16,7 @@ public sealed class CreateQuotationFromRfqCommandValidator : AbstractValidator<C
         {
             item.RuleFor(line => line.Description).NotEmpty().MaximumLength(512);
             item.RuleFor(line => line.Quantity).GreaterThan(0m);
-            item.RuleFor(line => line.UnitPrice).GreaterThanOrEqualTo(0m);
+            item.RuleFor(line => line.UnitPrice).GreaterThan(0m);
             item.RuleFor(line => line.TaxRate).InclusiveBetween(0m, 1m);
         });
     }

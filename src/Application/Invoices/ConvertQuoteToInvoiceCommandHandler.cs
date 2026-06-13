@@ -41,7 +41,7 @@ public sealed class ConvertQuoteToInvoiceCommandHandler : IRequestHandler<Conver
     public async Task<Result<InvoiceDto>> Handle(ConvertQuoteToInvoiceCommand request, CancellationToken cancellationToken)
     {
         Quote? quote = await _quoteRepository.FindByIdAsync(request.QuoteId, cancellationToken);
-        if (quote is null || quote.ClientId != request.ClientId)
+        if (quote is null || !QuoteStaffAccess.MatchesClientScope(quote, request.ClientId))
         {
             return Result<InvoiceDto>.Failure(QuoteNotFoundError);
         }
@@ -56,10 +56,18 @@ public sealed class ConvertQuoteToInvoiceCommandHandler : IRequestHandler<Conver
             return Result<InvoiceDto>.Failure(QuoteAlreadyConvertedError);
         }
 
+        if (!quote.ClientId.HasValue || !quote.ProjectId.HasValue)
+        {
+            return Result<InvoiceDto>.Failure(new Error(
+                "Quotes.ExternalNotConvertible",
+                "External quotations must be assigned to a portal client before invoicing.",
+                ErrorType.Conflict));
+        }
+
         Invoice invoice = Invoice.Create(
             id: Guid.CreateVersion7(),
-            clientId: quote.ClientId,
-            projectId: quote.ProjectId,
+            clientId: quote.ClientId.Value,
+            projectId: quote.ProjectId.Value,
             invoiceNumber: request.InvoiceNumber,
             lineItems: quote.LineItems,
             currency: quote.Currency,

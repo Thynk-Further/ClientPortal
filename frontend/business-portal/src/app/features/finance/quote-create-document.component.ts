@@ -9,18 +9,24 @@ import {
   output,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormArray, FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { RfqDetail, RfqLineItem } from '@/app/core/api/services/rfq-api.service';
-import { ClientDetail } from '@/app/core/api/services/client-api.service';
 import { UserSessionService } from '@/app/core/auth/user-session.service';
 import { ButtonComponent } from '@/components/ui/button.component';
 import { InputComponent } from '@/components/ui/input.component';
 import { TextareaComponent } from '@/components/ui/textarea.component';
 
-export interface QuotationDocumentSubmitPayload {
+import { formatQuoteMoney } from './quote-display.util';
+import { buildQuoteNotes } from './quote-notes.util';
+
+export interface QuoteCreateDocumentPayload {
   quoteNumber: string;
   dueDate: string;
+  currency: string;
+  recipientCompanyName: string;
+  recipientContactName: string;
+  recipientEmail: string;
+  recipientPhone: string;
   lineItems: Array<{
     description: string;
     quantity: number;
@@ -31,7 +37,7 @@ export interface QuotationDocumentSubmitPayload {
 }
 
 @Component({
-  selector: 'app-rfq-quotation-document',
+  selector: 'app-quote-create-document',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, ButtonComponent, InputComponent, TextareaComponent],
@@ -113,20 +119,34 @@ export interface QuotationDocumentSubmitPayload {
         </div>
 
         <div class="grid gap-4 lg:grid-cols-2">
-          <div class="space-y-1 text-sm">
-            <p class="font-semibold text-foreground">{{ client()?.companyName ?? rfq().clientCompanyName }}</p>
-            @if (client()?.contactName) {
-              <p class="text-muted-foreground">{{ client()?.contactName }}</p>
-            }
-            @if (client()?.email) {
-              <p class="text-muted-foreground">{{ client()?.email }}</p>
-            }
+          <div class="space-y-2 text-sm">
+            <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recipient</p>
+            <ui-input formControlName="recipientCompanyName" placeholder="Company name *" />
+            <ui-input formControlName="recipientContactName" placeholder="Contact name" />
+            <ui-input formControlName="recipientEmail" placeholder="Email" />
+            <ui-input formControlName="recipientPhone" placeholder="Phone" />
           </div>
-          <div class="flex items-end lg:justify-end">
-            <p class="text-sm font-bold underline decoration-foreground/30 underline-offset-4">
-              RE: {{ rfq().title }}
-            </p>
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <label class="text-xs font-medium text-muted-foreground">Subject (RE:)</label>
+              <ui-input formControlName="subject" placeholder="e.g. Laboratory equipment supply" />
+            </div>
+            <div class="space-y-1">
+              <label class="text-xs font-medium text-muted-foreground">Currency</label>
+              <input
+                type="text"
+                formControlName="currency"
+                maxlength="3"
+                class="h-9 w-full max-w-[8rem] rounded-md border border-input bg-background px-3 text-sm uppercase outline-none focus-visible:border-neutral-400"
+                placeholder="USD"
+              />
+            </div>
           </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <h3 class="text-sm font-semibold text-foreground">Pricing</h3>
+          <ui-button type="button" variant="outline" label="Add line item" (clicked)="addLineItem()" />
         </div>
 
         <div class="overflow-x-auto rounded-lg border border-border/70">
@@ -137,32 +157,40 @@ export interface QuotationDocumentSubmitPayload {
                 <th class="px-3 py-2.5 font-semibold">Description</th>
                 <th class="px-3 py-2.5 font-semibold text-right">Qty</th>
                 <th class="px-3 py-2.5 font-semibold text-right">
-                  Unit price {{ rfq().currency }} incl. VAT
+                  Unit price {{ form.controls.currency.value }} incl. VAT
                 </th>
                 <th class="px-3 py-2.5 font-semibold text-right">
-                  Total {{ rfq().currency }} incl. VAT
+                  Total {{ form.controls.currency.value }} incl. VAT
                 </th>
+                <th class="w-10 px-2 py-2.5" aria-label="Remove"></th>
               </tr>
             </thead>
             <tbody formArrayName="lineItems">
-              @for (item of rfq().lineItems; track $index) {
+              @for (_ of lineItems.controls; track $index) {
                 <tr class="border-b border-border/50 last:border-b-0" [formGroupName]="$index">
                   <td class="px-3 py-3 align-top text-muted-foreground">{{ $index + 1 }}</td>
-                  <td class="px-3 py-3 align-top font-medium text-foreground">
-                    {{ item.description }}
-                  </td>
-                  <td class="px-3 py-3 align-top text-right tabular-nums text-muted-foreground">
-                    {{ item.quantity }}
+                  <td class="px-3 py-3 align-top">
+                    <ui-input formControlName="description" placeholder="Description" />
                   </td>
                   <td class="px-3 py-3 align-top">
-                    <ui-input
-                      type="number"
-                      [formControl]="unitPriceControl($index)"
-                      placeholder="0.00"
-                    />
+                    <ui-input type="number" formControlName="quantity" />
+                  </td>
+                  <td class="px-3 py-3 align-top">
+                    <ui-input type="number" formControlName="unitPrice" placeholder="0.00" />
                   </td>
                   <td class="px-3 py-3 align-top text-right font-medium tabular-nums">
                     {{ formatMoney(lineTotal($index)) }}
+                  </td>
+                  <td class="px-3 py-3 align-top">
+                    <button
+                      type="button"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"
+                      [disabled]="lineItems.length <= 1"
+                      (click)="removeLineItem($index)"
+                      aria-label="Remove line item"
+                    >
+                      ×
+                    </button>
                   </td>
                 </tr>
               }
@@ -173,6 +201,7 @@ export interface QuotationDocumentSubmitPayload {
                 <td class="px-3 py-3 text-right text-base font-bold tabular-nums text-foreground">
                   {{ formatMoney(grandTotal()) }}
                 </td>
+                <td></td>
               </tr>
             </tfoot>
           </table>
@@ -214,22 +243,30 @@ export interface QuotationDocumentSubmitPayload {
         <p class="text-xs text-muted-foreground">
           Prices are VAT-inclusive. Quotation valid until {{ computedDueDateLabel() }}.
         </p>
-        <ui-button type="submit" [disabled]="isSaving() || grandTotal() <= 0">Create quotation</ui-button>
+        <ui-button
+          type="submit"
+          label="Create quote"
+          [disabled]="isSaving() || !canSubmit() || form.invalid || grandTotal() <= 0"
+        />
       </div>
     </form>
   `,
 })
-export class RfqQuotationDocumentComponent implements OnInit {
+export class QuoteCreateDocumentComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly userSession = inject(UserSessionService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly rfq = input.required<RfqDetail>();
-  readonly client = input<ClientDetail | null>(null);
+  readonly canSubmit = input(true);
   readonly isSaving = input(false);
 
-  readonly submitQuotation = output<QuotationDocumentSubmitPayload>();
+  readonly createQuote = output<QuoteCreateDocumentPayload>();
+  readonly previewChange = output<{
+    items: Array<{ description: string; quantity: number }>;
+    total: number;
+    currency: string;
+  }>();
 
   protected readonly form = this.fb.group({
     companyName: ['Your Company', Validators.required],
@@ -240,8 +277,14 @@ export class RfqQuotationDocumentComponent implements OnInit {
     companyWebsite: [''],
     companyRegistration: [''],
     bankingDetails: [''],
+    recipientCompanyName: ['', Validators.required],
+    recipientContactName: [''],
+    recipientEmail: [''],
+    recipientPhone: [''],
+    currency: ['USD', [Validators.required, Validators.minLength(3), Validators.maxLength(3)]],
     quoteNumber: ['', Validators.required],
     quoteDate: [todayIsoDate(), Validators.required],
+    subject: ['', Validators.required],
     paymentTerms: ['COD', Validators.required],
     deliveryTerms: [
       'Ex-stock, subject to priority sale otherwise 5-7 working days.',
@@ -250,23 +293,38 @@ export class RfqQuotationDocumentComponent implements OnInit {
     validityDays: [60, [Validators.required, Validators.min(1)]],
     signatoryName: ['', Validators.required],
     signatoryTitle: ['Sales representative', Validators.required],
-    lineItems: this.fb.array<ReturnType<RfqQuotationDocumentComponent['createLineItemGroup']>>([]),
+    lineItems: this.fb.array([this.createLineItemGroup()]),
   });
 
   ngOnInit(): void {
-    this.initializeFromRfq();
+    this.form.patchValue({
+      signatoryName: this.userSession.getUser()?.fullName ?? '',
+    });
 
     this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.emitPreview();
       this.cdr.markForCheck();
     });
+
+    this.emitPreview();
   }
 
   protected get lineItems(): FormArray {
     return this.form.controls.lineItems;
   }
 
-  protected unitPriceControl(index: number): FormControl<number> {
-    return this.lineItems.at(index).get('unitPrice') as FormControl<number>;
+  protected addLineItem(): void {
+    this.lineItems.push(this.createLineItemGroup());
+    this.emitPreview();
+  }
+
+  protected removeLineItem(index: number): void {
+    if (this.lineItems.length <= 1) {
+      return;
+    }
+
+    this.lineItems.removeAt(index);
+    this.emitPreview();
   }
 
   protected lineTotal(index: number): number {
@@ -275,8 +333,8 @@ export class RfqQuotationDocumentComponent implements OnInit {
       return 0;
     }
 
-    const quantity = Number(group.get('quantity')?.value ?? 0);
-    const unitPrice = parseUnitPrice(group.get('unitPrice')?.value);
+    const quantity = parseNumber(group.get('quantity')?.value);
+    const unitPrice = parseNumber(group.get('unitPrice')?.value);
     return quantity * unitPrice;
   }
 
@@ -285,11 +343,7 @@ export class RfqQuotationDocumentComponent implements OnInit {
   }
 
   protected formatMoney(value: number): string {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: this.rfq().currency || 'USD',
-      minimumFractionDigits: 2,
-    }).format(value);
+    return formatQuoteMoney(value, this.form.controls.currency.value ?? 'USD');
   }
 
   protected computedDueDateLabel(): string {
@@ -308,12 +362,7 @@ export class RfqQuotationDocumentComponent implements OnInit {
   }
 
   protected onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
-
-    if (this.grandTotal() <= 0) {
+    if (this.form.invalid || !this.canSubmit() || this.grandTotal() <= 0) {
       this.form.markAllAsTouched();
       return;
     }
@@ -322,56 +371,55 @@ export class RfqQuotationDocumentComponent implements OnInit {
     const validityDays = Number(raw.validityDays ?? 60);
     const dueDate = addDaysToIsoDate(raw.quoteDate ?? todayIsoDate(), validityDays);
 
-    const notes = [
-      `PAYMENT TERMS: ${raw.paymentTerms ?? ''}`,
-      `DELIVERY: ${raw.deliveryTerms ?? ''}`,
-      `VALIDITY: ${validityDays} days from date of quotation.`,
-      raw.signatoryName
-        ? `Prepared by: ${raw.signatoryName}${raw.signatoryTitle ? ` (${raw.signatoryTitle})` : ''}`
-        : null,
-    ]
-      .filter((line): line is string => line !== null && line.trim() !== '')
-      .join('\n');
-
-    this.submitQuotation.emit({
+    this.createQuote.emit({
       quoteNumber: raw.quoteNumber ?? '',
       dueDate,
-      lineItems: this.lineItems.controls.map((group, index) => {
-        const rfqItem = this.rfq().lineItems[index];
-        return {
-          description: rfqItem.description,
-          quantity: rfqItem.quantity,
-          unitPrice: parseUnitPrice(group.get('unitPrice')?.value),
-          taxRate: 0,
-        };
+      currency: (raw.currency ?? 'USD').toUpperCase(),
+      recipientCompanyName: String(raw.recipientCompanyName ?? '').trim(),
+      recipientContactName: String(raw.recipientContactName ?? '').trim(),
+      recipientEmail: String(raw.recipientEmail ?? '').trim(),
+      recipientPhone: String(raw.recipientPhone ?? '').trim(),
+      lineItems: this.lineItems.controls.map((group) => ({
+        description: String(group.get('description')?.value ?? '').trim(),
+        quantity: parseNumber(group.get('quantity')?.value),
+        unitPrice: parseNumber(group.get('unitPrice')?.value),
+        taxRate: 0,
+      })),
+      notes: buildQuoteNotes({
+        paymentTerms: raw.paymentTerms ?? '',
+        deliveryTerms: raw.deliveryTerms ?? '',
+        validityDays,
+        signatoryName: raw.signatoryName ?? '',
+        signatoryTitle: raw.signatoryTitle ?? '',
       }),
-      notes,
     });
   }
 
-  private initializeFromRfq(): void {
-    const rfq = this.rfq();
-    this.form.patchValue({
-      quoteNumber: `Q/${rfq.rfqNumber}`,
-      signatoryName: this.userSession.getUser()?.fullName ?? '',
-    });
+  private emitPreview(): void {
+    const items = this.lineItems.controls
+      .map((group) => ({
+        description: String(group.get('description')?.value ?? '').trim(),
+        quantity: parseNumber(group.get('quantity')?.value),
+      }))
+      .filter((item) => item.description !== '');
 
-    this.lineItems.clear();
-    for (const item of rfq.lineItems) {
-      this.lineItems.push(this.createLineItemGroup(item));
-    }
+    this.previewChange.emit({
+      items,
+      total: this.grandTotal(),
+      currency: (this.form.controls.currency.value ?? 'USD').toUpperCase(),
+    });
   }
 
-  private createLineItemGroup(item: RfqLineItem) {
+  private createLineItemGroup() {
     return this.fb.nonNullable.group({
-      description: [item.description],
-      quantity: [item.quantity],
+      description: ['', Validators.required],
+      quantity: [1, [Validators.required, Validators.min(0.01)]],
       unitPrice: ['', [Validators.required, Validators.min(0.01)]],
     });
   }
 }
 
-function parseUnitPrice(value: unknown): number {
+function parseNumber(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }

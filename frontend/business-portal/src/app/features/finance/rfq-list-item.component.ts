@@ -12,6 +12,7 @@ import {
   rfqStatusAccentClass,
   rfqStatusLabel,
 } from './rfq-display.util';
+import { formatQuoteMoney } from './quote-display.util';
 
 @Component({
   selector: 'app-rfq-list-item',
@@ -59,7 +60,9 @@ import {
           </div>
 
           <dl
-            class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3"
+            class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3"
+            [class.lg:grid-cols-4]="rfq().quotationTotal != null"
+            [class.lg:grid-cols-3]="rfq().quotationTotal == null"
           >
             @if (rfq().clientCompanyName) {
               <div class="rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
@@ -113,6 +116,17 @@ import {
                 }
               </dd>
             </div>
+
+            @if (rfq().quotationTotal != null) {
+              <div class="rounded-lg border border-emerald-200/80 bg-emerald-50/50 px-3 py-2.5 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+                <dt class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Quoted total
+                </dt>
+                <dd class="mt-1 text-sm font-semibold tabular-nums text-foreground">
+                  {{ formatQuotedTotal() }}
+                </dd>
+              </div>
+            }
           </dl>
         </div>
       </div>
@@ -158,5 +172,14 @@ export class RfqListItemComponent {
     }
 
     return '';
+  }
+
+  protected formatQuotedTotal(): string {
+    const total = this.rfq().quotationTotal;
+    if (total == null) {
+      return '—';
+    }
+
+    return formatQuoteMoney(total, this.rfq().currency);
   }
 }

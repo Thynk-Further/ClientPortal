@@ -51,9 +51,9 @@ export const FINANCE_ROUTES: Routes = [
     loadComponent: () =>
       import('./quote-builder.component').then((m) => m.QuoteBuilderComponent),
     data: {
-      breadcrumb: 'Quote Builder',
-      title: 'Quote Builder',
-      description: 'Create quote with line item composition.',
+      breadcrumb: 'Create Quote',
+      title: 'Create Quote',
+      description: 'Prepare a formal client quotation.',
     },
   },
   {
@@ -61,9 +61,9 @@ export const FINANCE_ROUTES: Routes = [
     loadComponent: () =>
       import('./quote-workflow.component').then((m) => m.QuoteWorkflowComponent),
     data: {
-      breadcrumb: 'Quote Workflow',
-      title: 'Quote Workflow',
-      description: 'Send, accept, and reject quote workflow state.',
+      breadcrumb: 'Quote',
+      title: 'Quote',
+      description: 'Review, edit, and send client quotations.',
     },
   },
   {

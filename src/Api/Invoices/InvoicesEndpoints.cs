@@ -38,6 +38,7 @@ public static class InvoicesEndpoints
         quotesGroup.MapGet("/", GetQuotesAsync).WithName("QuotesGet");
         quotesGroup.MapGet("/{id:guid}", GetQuoteByIdAsync).WithName("QuotesGetById");
         quotesGroup.MapPost("/", CreateQuoteAsync).WithName("QuotesCreate");
+        quotesGroup.MapPost("/external", CreateExternalQuoteAsync).WithName("QuotesCreateExternal");
         quotesGroup.MapPut("/{id:guid}", UpdateQuoteAsync).WithName("QuotesUpdate");
         quotesGroup.MapDelete("/{id:guid}", DeleteQuoteAsync).WithName("QuotesDelete");
         quotesGroup.MapPost("/{id:guid}/convert", ConvertQuoteAsync).WithName("QuotesConvert");
@@ -141,7 +142,7 @@ public static class InvoicesEndpoints
             cancellationToken));
     }
 
-    private static async Task<IResult> GetQuoteByIdAsync(Guid id, Guid clientId, ISender sender, CancellationToken cancellationToken)
+    private static async Task<IResult> GetQuoteByIdAsync(Guid id, Guid? clientId, ISender sender, CancellationToken cancellationToken)
     {
         return ToResponse(await sender.Send(new GetQuoteByIdQuery(id, clientId), cancellationToken));
     }
@@ -160,14 +161,48 @@ public static class InvoicesEndpoints
         return ToResponse(result);
     }
 
+    private static async Task<IResult> CreateExternalQuoteAsync(CreateExternalQuoteApiRequest request, ISender sender, CancellationToken cancellationToken)
+    {
+        Result<QuoteDto> result = await sender.Send(
+            new CreateExternalQuoteCommand(
+                request.QuoteNumber,
+                request.Currency,
+                request.DueDate,
+                request.RecipientCompanyName,
+                request.RecipientContactName,
+                request.RecipientEmail,
+                request.RecipientPhone,
+                request.LineItems,
+                request.Notes),
+            cancellationToken);
+
+        if (result.IsSuccess && result.Value is not null)
+        {
+            return Results.Created($"/api/v1/quotes/{result.Value.Id}", ApiResponse<QuoteDto>.Ok(result.Value));
+        }
+
+        return ToResponse(result);
+    }
+
     private static async Task<IResult> UpdateQuoteAsync(Guid id, UpdateQuoteApiRequest request, ISender sender, CancellationToken cancellationToken)
     {
         return ToResponse(await sender.Send(
-            new UpdateQuoteCommand(id, request.ClientId, request.QuoteNumber, request.Currency, request.DueDate, request.LineItems, request.Notes),
+            new UpdateQuoteCommand(
+                id,
+                request.ClientId,
+                request.QuoteNumber,
+                request.Currency,
+                request.DueDate,
+                request.LineItems,
+                request.Notes,
+                request.RecipientCompanyName,
+                request.RecipientContactName,
+                request.RecipientEmail,
+                request.RecipientPhone),
             cancellationToken));
     }
 
-    private static async Task<IResult> DeleteQuoteAsync(Guid id, Guid clientId, ISender sender, CancellationToken cancellationToken)
+    private static async Task<IResult> DeleteQuoteAsync(Guid id, Guid? clientId, ISender sender, CancellationToken cancellationToken)
     {
         return ToResponse(await sender.Send(new DeleteQuoteCommand(id, clientId), cancellationToken));
     }
@@ -177,7 +212,7 @@ public static class InvoicesEndpoints
         return ToResponse(await sender.Send(new ConvertQuoteToInvoiceCommand(id, request.ClientId, request.InvoiceNumber, request.DueDate), cancellationToken));
     }
 
-    private static async Task<IResult> SendQuoteAsync(Guid id, InvoiceClientRequest request, ISender sender, CancellationToken cancellationToken)
+    private static async Task<IResult> SendQuoteAsync(Guid id, QuoteScopeRequest request, ISender sender, CancellationToken cancellationToken)
     {
         return ToResponse(await sender.Send(new SendQuoteCommand(id, request.ClientId), cancellationToken));
     }
@@ -260,6 +295,8 @@ public sealed record RecordInvoicePaymentApiRequest(
 
 public sealed record InvoiceClientRequest(Guid ClientId);
 
+public sealed record QuoteScopeRequest(Guid? ClientId);
+
 public sealed record CreateQuoteApiRequest(
     Guid ClientId,
     Guid ProjectId,
@@ -269,15 +306,30 @@ public sealed record CreateQuoteApiRequest(
     IReadOnlyCollection<CreateInvoiceLineItemInput> LineItems,
     string? Notes = null);
 
+public sealed record CreateExternalQuoteApiRequest(
+    string QuoteNumber,
+    string Currency,
+    DateOnly DueDate,
+    string RecipientCompanyName,
+    string? RecipientContactName,
+    string? RecipientEmail,
+    string? RecipientPhone,
+    IReadOnlyCollection<CreateInvoiceLineItemInput> LineItems,
+    string? Notes = null);
+
 public sealed record UpdateQuoteApiRequest(
-    Guid ClientId,
+    Guid? ClientId,
     string QuoteNumber,
     string Currency,
     DateOnly DueDate,
     IReadOnlyCollection<CreateInvoiceLineItemInput> LineItems,
-    string? Notes = null);
+    string? Notes = null,
+    string? RecipientCompanyName = null,
+    string? RecipientContactName = null,
+    string? RecipientEmail = null,
+    string? RecipientPhone = null);
 
 public sealed record ConvertQuoteApiRequest(
-    Guid ClientId,
+    Guid? ClientId,
     string InvoiceNumber,
     DateOnly DueDate);

@@ -25,7 +25,15 @@ public sealed class QuotationSentEventHandler : INotificationHandler<QuotationSe
 
     public async Task Handle(QuotationSentEvent notification, CancellationToken cancellationToken)
     {
-        ClientEntity? client = await _clientRepository.FindByIdAsync(notification.ClientId, cancellationToken);
+        if (!notification.ClientId.HasValue)
+        {
+            _logger.LogInformation(
+                "Skipping quotation sent notification for quote {QuoteId} because it is not linked to a portal client.",
+                notification.QuoteId);
+            return;
+        }
+
+        ClientEntity? client = await _clientRepository.FindByIdAsync(notification.ClientId.Value, cancellationToken);
         if (client is null || string.IsNullOrWhiteSpace(client.Email.Value))
         {
             _logger.LogWarning(

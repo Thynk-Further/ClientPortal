@@ -1,6 +1,7 @@
 using Application.Clients.Abstractions;
 using Application.Finance.Abstractions;
 using Application.Finance.Dtos;
+using Application.Invoices.Abstractions;
 using Domain;
 using MediatR;
 using Shared;
@@ -15,15 +16,18 @@ public sealed class GetClientPortalRfqByIdQueryHandler
     private readonly ICurrentClientResolver _currentClientResolver;
     private readonly IRfqRepository _rfqRepository;
     private readonly IClientRepository _clientRepository;
+    private readonly IQuoteRepository _quoteRepository;
 
     public GetClientPortalRfqByIdQueryHandler(
         ICurrentClientResolver currentClientResolver,
         IRfqRepository rfqRepository,
-        IClientRepository clientRepository)
+        IClientRepository clientRepository,
+        IQuoteRepository quoteRepository)
     {
         _currentClientResolver = currentClientResolver;
         _rfqRepository = rfqRepository;
         _clientRepository = clientRepository;
+        _quoteRepository = quoteRepository;
     }
 
     public async Task<Result<RfqDto>> Handle(GetClientPortalRfqByIdQuery request, CancellationToken cancellationToken)
@@ -42,7 +46,19 @@ public sealed class GetClientPortalRfqByIdQueryHandler
 
         Client? client = await _clientRepository.FindByIdAsync(clientIdResult.Value, cancellationToken);
         string clientCompanyName = client?.CompanyName ?? string.Empty;
+        decimal? quotationTotal = await ResolveQuotationTotalAsync(rfq, cancellationToken);
 
-        return Result<RfqDto>.Success(FinanceMapping.Map(rfq, clientCompanyName));
+        return Result<RfqDto>.Success(FinanceMapping.Map(rfq, clientCompanyName, quotationTotal));
+    }
+
+    private async Task<decimal?> ResolveQuotationTotalAsync(Rfq rfq, CancellationToken cancellationToken)
+    {
+        if (!rfq.QuotationId.HasValue)
+        {
+            return null;
+        }
+
+        Quote? quote = await _quoteRepository.FindByIdAsync(rfq.QuotationId.Value, cancellationToken);
+        return quote?.Total;
     }
 }

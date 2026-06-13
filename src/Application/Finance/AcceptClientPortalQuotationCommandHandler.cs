@@ -71,8 +71,8 @@ public sealed class AcceptClientPortalQuotationCommandHandler
 
         PurchaseOrder purchaseOrder = PurchaseOrder.CreateFromQuotation(
             Guid.CreateVersion7(),
-            quote.ClientId,
-            quote.ProjectId,
+            quote.ClientId!.Value,
+            quote.ProjectId!.Value,
             $"PO-{quote.QuoteNumber}",
             quote.Id,
             quote.RfqId.Value,

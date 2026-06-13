@@ -2,5 +2,5 @@ namespace Domain;
 
 public sealed record QuoteAcceptedEvent(
     Guid QuoteId,
-    Guid ClientId,
+    Guid? ClientId,
     DateTime AcceptedAt) : IDomainEvent;

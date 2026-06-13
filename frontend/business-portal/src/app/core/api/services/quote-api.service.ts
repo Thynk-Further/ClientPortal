@@ -15,8 +15,8 @@ export interface QuoteLineItem {
 
 export interface QuoteSummary {
   id: string;
-  clientId: string;
-  projectId: string;
+  clientId: string | null;
+  projectId: string | null;
   quoteNumber: string;
   status: number;
   total: number;
@@ -24,7 +24,9 @@ export interface QuoteSummary {
   dueDate: string;
   convertedInvoiceId: string | null;
   rfqId: string | null;
+  rfqTitle: string | null;
   origin: number;
+  recipientCompanyName: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,6 +37,9 @@ export interface QuoteDetail extends QuoteSummary {
   taxAmount: number;
   notes: string | null;
   purchaseOrderId: string | null;
+  recipientContactName: string | null;
+  recipientEmail: string | null;
+  recipientPhone: string | null;
 }
 
 export interface GetQuotesResult {
@@ -70,17 +75,72 @@ export class QuoteApiService {
       .pipe(map((response) => unwrapApiEnvelopeData(response).quotes));
   }
 
-  getQuoteById(quoteId: string, clientId: string): Observable<QuoteDetail> {
+  getQuoteById(quoteId: string, clientId?: string | null): Observable<QuoteDetail> {
     return this.apiClient
-      .get<ApiEnvelope<QuoteDetail>>(`${this.basePath}/${quoteId}`, { clientId })
+      .get<ApiEnvelope<QuoteDetail>>(`${this.basePath}/${quoteId}`, {
+        clientId: clientId ?? undefined,
+      })
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
-  sendQuote(quoteId: string, clientId: string): Observable<ApiOperationResult> {
+  sendQuote(quoteId: string, clientId?: string | null): Observable<ApiOperationResult> {
     return this.apiClient
-      .post<ApiEnvelope<unknown>, { clientId: string }>(`${this.basePath}/${quoteId}/send`, {
-        clientId,
+      .post<ApiEnvelope<unknown>, { clientId?: string | null }>(`${this.basePath}/${quoteId}/send`, {
+        clientId: clientId ?? null,
       })
       .pipe(map(() => ({ success: true })));
   }
+
+  updateQuote(quoteId: string, payload: UpdateQuoteInput): Observable<void> {
+    return this.apiClient
+      .put<ApiEnvelope<unknown>, UpdateQuoteInput>(`${this.basePath}/${quoteId}`, payload)
+      .pipe(map(() => undefined));
+  }
+
+  createQuote(payload: CreateQuoteInput): Observable<QuoteDetail> {
+    return this.apiClient
+      .post<ApiEnvelope<QuoteDetail>, CreateQuoteInput>(`${this.basePath}/`, payload)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  createExternalQuote(payload: CreateExternalQuoteInput): Observable<QuoteDetail> {
+    return this.apiClient
+      .post<ApiEnvelope<QuoteDetail>, CreateExternalQuoteInput>(`${this.basePath}/external`, payload)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+}
+
+export interface CreateQuoteInput {
+  clientId: string;
+  projectId: string;
+  quoteNumber: string;
+  currency: string;
+  dueDate: string;
+  lineItems: CreateQuoteLineItemInput[];
+  notes?: string | null;
+}
+
+export interface CreateExternalQuoteInput {
+  quoteNumber: string;
+  currency: string;
+  dueDate: string;
+  recipientCompanyName: string;
+  recipientContactName?: string | null;
+  recipientEmail?: string | null;
+  recipientPhone?: string | null;
+  lineItems: CreateQuoteLineItemInput[];
+  notes?: string | null;
+}
+
+export interface UpdateQuoteInput {
+  clientId?: string | null;
+  quoteNumber: string;
+  currency: string;
+  dueDate: string;
+  lineItems: CreateQuoteLineItemInput[];
+  notes?: string | null;
+  recipientCompanyName?: string | null;
+  recipientContactName?: string | null;
+  recipientEmail?: string | null;
+  recipientPhone?: string | null;
 }

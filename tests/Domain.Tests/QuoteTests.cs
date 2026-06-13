@@ -30,6 +30,28 @@ public sealed class QuoteTests
     }
 
     [Fact]
+    public void CreateForExternalRecipient_ComputesTotals_AndStartsAsDraft()
+    {
+        Quote quote = Quote.CreateForExternalRecipient(
+            Guid.NewGuid(),
+            "Q-EXT-001",
+            [new LineItem("Supply", 2m, 150m, 0m)],
+            "USD",
+            new DateOnly(2026, 06, 01),
+            "Acme Labs",
+            "Jane Doe",
+            "jane@acme.test",
+            "+123456789");
+
+        Assert.Equal(QuoteOrigin.ExternalOffPlatform, quote.Origin);
+        Assert.Null(quote.ClientId);
+        Assert.Null(quote.ProjectId);
+        Assert.Equal("Acme Labs", quote.RecipientCompanyName);
+        Assert.Equal(300m, quote.Total);
+        Assert.Equal(QuoteStatus.Draft, quote.Status);
+    }
+
+    [Fact]
     public void MarkAccepted_WhenNotSent_ThrowsInvalidOperationException()
     {
         Quote quote = Quote.Create(

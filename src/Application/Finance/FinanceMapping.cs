@@ -5,7 +5,7 @@ namespace Application.Finance;
 
 internal static class FinanceMapping
 {
-    internal static RfqDto Map(Rfq rfq, string clientCompanyName = "")
+    internal static RfqDto Map(Rfq rfq, string clientCompanyName = "", decimal? quotationTotal = null)
     {
         IReadOnlyCollection<RfqLineItemDto> lineItems = rfq.LineItems
             .Select(item => new RfqLineItemDto(item.Description, item.Quantity))
@@ -25,6 +25,7 @@ internal static class FinanceMapping
             rfq.Currency,
             rfq.Notes,
             rfq.QuotationId,
+            quotationTotal,
             rfq.CreatedAt,
             rfq.UpdatedAt);
     }

@@ -7,6 +7,5 @@ public sealed class SendQuoteCommandValidator : AbstractValidator<SendQuoteComma
     public SendQuoteCommandValidator()
     {
         RuleFor(command => command.QuoteId).NotEmpty();
-        RuleFor(command => command.ClientId).NotEmpty();
     }
 }

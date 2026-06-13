@@ -21,6 +21,7 @@ import {
   rfqStatusAccentClass,
   rfqStatusLabel,
 } from './rfq-display.util';
+import { formatQuoteMoney } from './quote-display.util';
 
 @Component({
   selector: 'app-rfq-detail',
@@ -140,8 +141,21 @@ import {
             } @else if (detail.quotationId) {
               <section class="rounded-xl border border-border/70 bg-card p-6 text-sm shadow-sm dark:border-white/10">
                 <p class="font-medium text-foreground">Quotation already created for this RFQ.</p>
+                @if (detail.quotationTotal != null) {
+                  <p class="mt-2 text-lg font-semibold tabular-nums text-foreground">
+                    {{ formatQuoteMoney(detail.quotationTotal, detail.currency) }}
+                  </p>
+                }
                 <p class="mt-1 text-muted-foreground">
-                  Status: {{ statusLabel(detail.status) }}. Continue from the quotes workflow to send or revise.
+                  Status: {{ statusLabel(detail.status) }}.
+                  <a
+                    class="font-medium text-primary hover:underline"
+                    [routerLink]="['/finance/quotes', detail.quotationId]"
+                    [queryParams]="{ clientId: detail.clientId }"
+                  >
+                    Open quotation
+                  </a>
+                  to review or send.
                 </p>
               </section>
             } @else {
@@ -173,6 +187,7 @@ export class RfqDetailComponent implements OnInit {
   protected readonly formatRfqDueDate = formatRfqDueDate;
   protected readonly formatRfqDueTime = formatRfqDueTime;
   protected readonly formatDateTime = formatRfqDateTime;
+  protected readonly formatQuoteMoney = formatQuoteMoney;
 
   private rfqId = '';
   private clientId = '';

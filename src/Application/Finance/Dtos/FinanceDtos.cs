@@ -19,6 +19,7 @@ public sealed record RfqDto(
     string Currency,
     string? Notes,
     Guid? QuotationId,
+    decimal? QuotationTotal,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 
@@ -33,6 +34,7 @@ public sealed record RfqListItemDto(
     RfqStatus Status,
     string Currency,
     Guid? QuotationId,
+    decimal? QuotationTotal,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 

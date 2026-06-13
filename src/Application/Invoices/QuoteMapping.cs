@@ -5,7 +5,7 @@ namespace Application.Invoices;
 
 internal static class QuoteMapping
 {
-    internal static QuoteDto Map(Quote quote)
+    internal static QuoteDto Map(Quote quote, string? rfqTitle = null)
     {
         IReadOnlyCollection<InvoiceLineItemDto> lineItems = quote.LineItems
             .Select(lineItem => new InvoiceLineItemDto(
@@ -32,8 +32,13 @@ internal static class QuoteMapping
             quote.Notes,
             quote.ConvertedInvoiceId,
             quote.RfqId,
+            rfqTitle,
             quote.PurchaseOrderId,
             quote.Origin,
+            quote.RecipientCompanyName,
+            quote.RecipientContactName,
+            quote.RecipientEmail,
+            quote.RecipientPhone,
             quote.CreatedAt,
             quote.UpdatedAt);
     }

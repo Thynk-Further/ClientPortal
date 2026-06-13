@@ -22,6 +22,7 @@ export interface RfqSummary {
   status: number;
   currency: string;
   quotationId: string | null;
+  quotationTotal: number | null;
   createdAt: string;
   updatedAt: string;
 }

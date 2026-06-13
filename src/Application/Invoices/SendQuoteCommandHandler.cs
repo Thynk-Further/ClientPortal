@@ -29,7 +29,7 @@ public sealed class SendQuoteCommandHandler : IRequestHandler<SendQuoteCommand, 
     public async Task<Result> Handle(SendQuoteCommand request, CancellationToken cancellationToken)
     {
         Quote? quote = await _quoteRepository.FindByIdAsync(request.QuoteId, cancellationToken);
-        if (quote is null || quote.ClientId != request.ClientId)
+        if (quote is null || !QuoteStaffAccess.MatchesClientScope(quote, request.ClientId))
         {
             return Result.Failure(QuoteNotFoundError);
         }
