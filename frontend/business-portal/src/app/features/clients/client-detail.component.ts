@@ -17,6 +17,7 @@ import {
 } from '@/app/core/api/services/client-api.service';
 import { DocumentApiService, DocumentSummary } from '@/app/core/api/services/document-api.service';
 import { InvoiceApiService, InvoiceSummary } from '@/app/core/api/services/invoice-api.service';
+import { invoiceStatusLabel } from '@/app/features/finance/invoice-display.util';
 import { BusinessPortalBreadcrumbService } from '@/app/core/layout/business-portal-breadcrumb.service';
 import { ClientStore } from '@/app/core/stores/client.store';
 import {
@@ -340,11 +341,7 @@ export class ClientDetailComponent implements OnInit {
   }
 
   protected formatInvoiceStatus(status: InvoiceSummary['status']): string {
-    if (typeof status === 'string' && status.trim() !== '') {
-      return status;
-    }
-
-    return String(status);
+    return invoiceStatusLabel(status);
   }
 
   protected readInvoiceNumber(invoice: InvoiceSummary): string {
@@ -353,12 +350,11 @@ export class ClientDetailComponent implements OnInit {
   }
 
   protected readInvoiceTotal(invoice: InvoiceSummary): number {
-    if (typeof invoice.totalAmount === 'number') {
-      return invoice.totalAmount;
+    if (typeof invoice.total === 'number') {
+      return invoice.total;
     }
 
-    const total = invoice['total'];
-    return typeof total === 'number' ? total : 0;
+    return 0;
   }
 
   protected formatDateTime(value: string): string {

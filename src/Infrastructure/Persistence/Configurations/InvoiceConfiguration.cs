@@ -22,6 +22,8 @@ internal sealed class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         builder.Property(invoice => invoice.DueDate).IsRequired();
         builder.Property(invoice => invoice.PaidAt);
         builder.Property(invoice => invoice.Notes).HasMaxLength(4000);
+        builder.Property(invoice => invoice.PurchaseOrderId);
+        builder.Property(invoice => invoice.QuotationId);
         builder.Property(invoice => invoice.CreatedAt).IsRequired();
         builder.Property(invoice => invoice.UpdatedAt).IsRequired();
         builder.HasIndex(invoice => invoice.ClientId);

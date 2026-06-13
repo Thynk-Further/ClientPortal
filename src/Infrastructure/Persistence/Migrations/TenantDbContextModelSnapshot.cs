@@ -307,6 +307,14 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("project_id");
 
+                    b.Property<Guid?>("PurchaseOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_order_id");
+
+                    b.Property<Guid?>("QuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_id");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
@@ -343,6 +351,102 @@ namespace Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_invoices_status");
 
                     b.ToTable("invoices", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.InvoicePaymentSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("GatewayProvider")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("gateway_provider");
+
+                    b.Property<string>("GatewayReference")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("gateway_reference");
+
+                    b.Property<Guid>("InvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invoice_id");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("method");
+
+                    b.Property<Guid>("ProofDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("proof_document_id");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("ReviewNotes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("review_notes");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewed_by_user_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubmittedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submitted_by_user_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_invoice_payment_submissions");
+
+                    b.HasIndex("ClientId")
+                        .HasDatabaseName("ix_invoice_payment_submissions_client_id");
+
+                    b.HasIndex("InvoiceId")
+                        .HasDatabaseName("ix_invoice_payment_submissions_invoice_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_invoice_payment_submissions_status");
+
+                    b.ToTable("invoice_payment_submissions", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Meeting", b =>
@@ -769,6 +873,74 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("onboarding_checklists", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Payment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid>("InvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("invoice_id");
+
+                    b.Property<string>("Method")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("method");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("notes");
+
+                    b.Property<DateTime>("PaidAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("reference");
+
+                    b.Property<Guid?>("SubmissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("submission_id");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payments");
+
+                    b.HasIndex("InvoiceId")
+                        .HasDatabaseName("ix_payments_invoice_id");
+
+                    b.HasIndex("InvoiceId", "Reference")
+                        .IsUnique()
+                        .HasDatabaseName("ix_payments_invoice_id_reference");
+
+                    b.ToTable("payments", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Project", b =>
                 {
                     b.Property<Guid>("Id")
@@ -948,6 +1120,99 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("project_tasks", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.PurchaseOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid?>("GeneratedInvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("generated_invoice_id");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("PoNumber")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("po_number");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid>("QuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_id");
+
+                    b.Property<Guid>("RfqId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rfq_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("subtotal");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_purchase_orders");
+
+                    b.HasIndex("ClientId")
+                        .HasDatabaseName("ix_purchase_orders_client_id");
+
+                    b.HasIndex("QuotationId")
+                        .HasDatabaseName("ix_purchase_orders_quotation_id");
+
+                    b.HasIndex("RfqId")
+                        .HasDatabaseName("ix_purchase_orders_rfq_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_purchase_orders_status");
+
+                    b.ToTable("purchase_orders", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Quote", b =>
                 {
                     b.Property<Guid>("Id")
@@ -955,7 +1220,7 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid>("ClientId")
+                    b.Property<Guid?>("ClientId")
                         .HasColumnType("uuid")
                         .HasColumnName("client_id");
 
@@ -982,15 +1247,47 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(4000)")
                         .HasColumnName("notes");
 
-                    b.Property<Guid>("ProjectId")
+                    b.Property<int>("Origin")
+                        .HasColumnType("integer")
+                        .HasColumnName("origin");
+
+                    b.Property<Guid?>("ProjectId")
                         .HasColumnType("uuid")
                         .HasColumnName("project_id");
+
+                    b.Property<Guid?>("PurchaseOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_order_id");
 
                     b.Property<string>("QuoteNumber")
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)")
                         .HasColumnName("quote_number");
+
+                    b.Property<string>("RecipientCompanyName")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("recipient_company_name");
+
+                    b.Property<string>("RecipientContactName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("recipient_contact_name");
+
+                    b.Property<string>("RecipientEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("recipient_email");
+
+                    b.Property<string>("RecipientPhone")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("recipient_phone");
+
+                    b.Property<Guid?>("RfqId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rfq_id");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer")
@@ -1025,6 +1322,79 @@ namespace Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_quotes_project_id");
 
                     b.ToTable("quotes", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Rfq", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<DateTime>("QuotationDueAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("quotation_due_at_utc");
+
+                    b.Property<Guid?>("QuotationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("quotation_id");
+
+                    b.Property<string>("RfqNumber")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("rfq_number");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rfqs");
+
+                    b.HasIndex("ClientId")
+                        .HasDatabaseName("ix_rfqs_client_id");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("ix_rfqs_project_id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_rfqs_status");
+
+                    b.ToTable("rfqs", (string)null);
                 });
 
             modelBuilder.Entity("Domain.User", b =>
@@ -1238,6 +1608,57 @@ namespace Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_messages_message_threads_thread_id");
                 });
 
+            modelBuilder.Entity("Domain.PurchaseOrder", b =>
+                {
+                    b.OwnsMany("Domain.LineItem", "LineItems", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<decimal>("Amount")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("amount");
+
+                            b1.Property<string>("Description")
+                                .IsRequired()
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)")
+                                .HasColumnName("description");
+
+                            b1.Property<decimal>("Quantity")
+                                .HasPrecision(18, 4)
+                                .HasColumnType("numeric(18,4)")
+                                .HasColumnName("quantity");
+
+                            b1.Property<decimal>("TaxRate")
+                                .HasPrecision(18, 4)
+                                .HasColumnType("numeric(18,4)")
+                                .HasColumnName("tax_rate");
+
+                            b1.Property<decimal>("UnitPrice")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("numeric(18,2)")
+                                .HasColumnName("unit_price");
+
+                            b1.Property<Guid>("purchase_order_id")
+                                .HasColumnType("uuid");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("purchase_order_id");
+
+                            b1.ToTable("purchase_order_line_items", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("purchase_order_id");
+                        });
+
+                    b.Navigation("LineItems");
+                });
+
             modelBuilder.Entity("Domain.Quote", b =>
                 {
                     b.OwnsMany("Domain.LineItem", "LineItems", b1 =>
@@ -1284,6 +1705,42 @@ namespace Infrastructure.Persistence.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("quote_id");
+                        });
+
+                    b.Navigation("LineItems");
+                });
+
+            modelBuilder.Entity("Domain.Rfq", b =>
+                {
+                    b.OwnsMany("Domain.RfqLineItem", "LineItems", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("Description")
+                                .IsRequired()
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)")
+                                .HasColumnName("description");
+
+                            b1.Property<decimal>("Quantity")
+                                .HasPrecision(18, 4)
+                                .HasColumnType("numeric(18,4)")
+                                .HasColumnName("quantity");
+
+                            b1.Property<Guid>("rfq_id")
+                                .HasColumnType("uuid");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("rfq_id");
+
+                            b1.ToTable("rfq_line_items", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("rfq_id");
                         });
 
                     b.Navigation("LineItems");

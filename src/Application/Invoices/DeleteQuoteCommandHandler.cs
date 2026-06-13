@@ -22,7 +22,7 @@ public sealed class DeleteQuoteCommandHandler : IRequestHandler<DeleteQuoteComma
     public async Task<Result> Handle(DeleteQuoteCommand request, CancellationToken cancellationToken)
     {
         Quote? quote = await _quoteRepository.FindByIdAsync(request.QuoteId, cancellationToken);
-        if (quote is null || quote.ClientId != request.ClientId)
+        if (quote is null || !QuoteStaffAccess.MatchesClientScope(quote, request.ClientId))
         {
             return Result.Failure(QuoteNotFoundError);
         }

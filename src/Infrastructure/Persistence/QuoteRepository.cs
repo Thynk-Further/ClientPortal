@@ -48,11 +48,14 @@ public sealed class QuoteRepository : IQuoteRepository
 
         int totalCount = await query.CountAsync(cancellationToken);
 
-        IReadOnlyList<QuoteListItemDto> items = await query
-            .OrderByDescending(quote => quote.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(quote => new QuoteListItemDto(
+        IQueryable<Rfq> rfqs = _tenantDbContext.Set<Rfq>().AsNoTracking();
+
+        IReadOnlyList<QuoteListItemDto> items = await (
+            from quote in query
+            join rfq in rfqs on quote.RfqId equals rfq.Id into rfqJoin
+            from rfq in rfqJoin.DefaultIfEmpty()
+            orderby quote.CreatedAt descending
+            select new QuoteListItemDto(
                 quote.Id,
                 quote.ClientId,
                 quote.ProjectId,
@@ -62,8 +65,14 @@ public sealed class QuoteRepository : IQuoteRepository
                 quote.Currency,
                 quote.DueDate,
                 quote.ConvertedInvoiceId,
+                quote.RfqId,
+                rfq != null ? rfq.Title : null,
+                quote.Origin,
+                quote.RecipientCompanyName,
                 quote.CreatedAt,
                 quote.UpdatedAt))
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
 
         return new PagedResult<QuoteListItemDto>(items, totalCount, page, pageSize);

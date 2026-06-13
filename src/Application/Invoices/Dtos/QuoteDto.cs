@@ -5,8 +5,8 @@ namespace Application.Invoices.Dtos;
 
 public sealed record QuoteDto(
     Guid Id,
-    Guid ClientId,
-    Guid ProjectId,
+    Guid? ClientId,
+    Guid? ProjectId,
     string QuoteNumber,
     QuoteStatus Status,
     IReadOnlyCollection<InvoiceLineItemDto> LineItems,
@@ -17,19 +17,31 @@ public sealed record QuoteDto(
     DateOnly DueDate,
     string? Notes,
     Guid? ConvertedInvoiceId,
+    Guid? RfqId,
+    string? RfqTitle,
+    Guid? PurchaseOrderId,
+    QuoteOrigin Origin,
+    string? RecipientCompanyName,
+    string? RecipientContactName,
+    string? RecipientEmail,
+    string? RecipientPhone,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 
 public sealed record QuoteListItemDto(
     Guid Id,
-    Guid ClientId,
-    Guid ProjectId,
+    Guid? ClientId,
+    Guid? ProjectId,
     string QuoteNumber,
     QuoteStatus Status,
     decimal Total,
     string Currency,
     DateOnly DueDate,
     Guid? ConvertedInvoiceId,
+    Guid? RfqId,
+    string? RfqTitle,
+    QuoteOrigin Origin,
+    string? RecipientCompanyName,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 

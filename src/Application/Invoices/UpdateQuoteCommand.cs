@@ -5,9 +5,13 @@ namespace Application.Invoices;
 
 public sealed record UpdateQuoteCommand(
     Guid QuoteId,
-    Guid ClientId,
+    Guid? ClientId,
     string QuoteNumber,
     string Currency,
     DateOnly DueDate,
     IReadOnlyCollection<CreateInvoiceLineItemInput> LineItems,
-    string? Notes = null) : IRequest<Result>;
+    string? Notes = null,
+    string? RecipientCompanyName = null,
+    string? RecipientContactName = null,
+    string? RecipientEmail = null,
+    string? RecipientPhone = null) : IRequest<Result>;

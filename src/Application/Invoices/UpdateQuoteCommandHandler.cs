@@ -23,7 +23,7 @@ public sealed class UpdateQuoteCommandHandler : IRequestHandler<UpdateQuoteComma
     public async Task<Result> Handle(UpdateQuoteCommand request, CancellationToken cancellationToken)
     {
         Quote? quote = await _quoteRepository.FindByIdAsync(request.QuoteId, cancellationToken);
-        if (quote is null || quote.ClientId != request.ClientId)
+        if (quote is null || !QuoteStaffAccess.MatchesClientScope(quote, request.ClientId))
         {
             return Result.Failure(QuoteNotFoundError);
         }
@@ -38,6 +38,23 @@ public sealed class UpdateQuoteCommandHandler : IRequestHandler<UpdateQuoteComma
         quote.UpdateCurrency(request.Currency);
         quote.SetDueDate(request.DueDate);
         quote.UpdateNotes(request.Notes);
+
+        if (quote.Origin == QuoteOrigin.ExternalOffPlatform)
+        {
+            if (string.IsNullOrWhiteSpace(request.RecipientCompanyName))
+            {
+                return Result.Failure(new Error(
+                    "Quotes.RecipientRequired",
+                    "Recipient company name is required.",
+                    ErrorType.Validation));
+            }
+
+            quote.UpdateExternalRecipient(
+                request.RecipientCompanyName,
+                request.RecipientContactName,
+                request.RecipientEmail,
+                request.RecipientPhone);
+        }
 
         _quoteRepository.Update(quote);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

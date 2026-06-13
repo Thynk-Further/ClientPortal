@@ -6,6 +6,6 @@ namespace Application.Invoices;
 
 public sealed record ConvertQuoteToInvoiceCommand(
     Guid QuoteId,
-    Guid ClientId,
+    Guid? ClientId,
     string InvoiceNumber,
     DateOnly DueDate) : IRequest<Result<InvoiceDto>>;

@@ -13,6 +13,30 @@ export const FINANCE_ROUTES: Routes = [
     },
   },
   {
+    path: 'rfqs',
+    loadComponent: () =>
+      import('./rfq-list.component').then((m) => m.RfqListComponent),
+    data: { breadcrumb: 'RFQs', title: 'Client RFQs' },
+  },
+  {
+    path: 'rfqs/:rfqId',
+    loadComponent: () =>
+      import('./rfq-detail.component').then((m) => m.RfqDetailComponent),
+    data: { breadcrumb: 'RFQ Detail', title: 'RFQ Detail' },
+  },
+  {
+    path: 'purchase-orders',
+    loadComponent: () =>
+      import('./purchase-order-list.component').then((m) => m.PurchaseOrderListComponent),
+    data: { breadcrumb: 'Purchase Orders', title: 'Purchase Orders' },
+  },
+  {
+    path: 'purchase-orders/:poId',
+    loadComponent: () =>
+      import('./purchase-order-detail.component').then((m) => m.PurchaseOrderDetailComponent),
+    data: { breadcrumb: 'Purchase Order', title: 'Purchase Order' },
+  },
+  {
     path: 'quotes',
     loadComponent: () =>
       import('./quote-list.component').then((m) => m.QuoteListComponent),
@@ -27,9 +51,9 @@ export const FINANCE_ROUTES: Routes = [
     loadComponent: () =>
       import('./quote-builder.component').then((m) => m.QuoteBuilderComponent),
     data: {
-      breadcrumb: 'Quote Builder',
-      title: 'Quote Builder',
-      description: 'Create quote with line item composition.',
+      breadcrumb: 'Create Quote',
+      title: 'Create Quote',
+      description: 'Prepare a formal client quotation.',
     },
   },
   {
@@ -37,9 +61,19 @@ export const FINANCE_ROUTES: Routes = [
     loadComponent: () =>
       import('./quote-workflow.component').then((m) => m.QuoteWorkflowComponent),
     data: {
-      breadcrumb: 'Quote Workflow',
-      title: 'Quote Workflow',
-      description: 'Send, accept, and reject quote workflow state.',
+      breadcrumb: 'Quote',
+      title: 'Quote',
+      description: 'Review, edit, and send client quotations.',
+    },
+  },
+  {
+    path: 'summary',
+    loadComponent: () =>
+      import('./financial-summary.component').then((m) => m.FinancialSummaryComponent),
+    data: {
+      breadcrumb: 'Financial Summary',
+      title: 'Financial Summary',
+      description: 'Finance pipeline metrics, collections, and aging analytics.',
     },
   },
   {

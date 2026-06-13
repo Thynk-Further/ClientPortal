@@ -5,6 +5,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
@@ -14,6 +15,7 @@ import {
 } from '@/app/core/api/client-portal-api.service';
 import { readHttpErrorMessage } from '@/app/core/api/api-envelope.util';
 import { ButtonComponent } from '@/components/ui/button.component';
+import { InputComponent } from '@/components/ui/input.component';
 import {
   CardComponent,
   CardContentComponent,
@@ -55,8 +57,10 @@ interface StoredPaymentSession {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ReactiveFormsModule,
     RouterLink,
     ButtonComponent,
+    InputComponent,
     CardComponent,
     CardHeaderComponent,
     CardTitleComponent,
@@ -187,6 +191,28 @@ interface StoredPaymentSession {
             </ui-card-content>
           </ui-card>
         }
+
+        @if (canPay(detail)) {
+          <ui-card>
+            <ui-card-header>
+              <ui-card-title>Submit payment with proof</ui-card-title>
+              <ui-card-description>
+                Upload proof of payment. Your provider will review and confirm before the invoice status updates.
+              </ui-card-description>
+            </ui-card-header>
+            <ui-card-content>
+              <form [formGroup]="paymentForm" class="space-y-3" (ngSubmit)="submitPaymentWithProof(detail)">
+                <ui-input formControlName="amount" type="number" placeholder="Amount" />
+                <ui-input formControlName="method" placeholder="Payment method (e.g. EFT)" />
+                <ui-input formControlName="reference" placeholder="Payment reference" />
+                <input type="file" accept="image/*,application/pdf" (change)="onProofSelected($event)" />
+                <ui-button type="submit" [disabled]="isSubmittingPayment()">
+                  {{ isSubmittingPayment() ? 'Submitting...' : 'Submit for review' }}
+                </ui-button>
+              </form>
+            </ui-card-content>
+          </ui-card>
+        }
       }
     </div>
   `,
@@ -194,14 +220,23 @@ interface StoredPaymentSession {
 export class ClientInvoiceDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly clientPortalApi = inject(ClientPortalApiService);
+  private readonly formBuilder = inject(FormBuilder);
 
   protected readonly isLoading = signal(true);
   protected readonly isPaying = signal(false);
+  protected readonly isSubmittingPayment = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly successMessage = signal<string | null>(null);
   protected readonly invoice = signal<ClientPortalInvoiceDetail | null>(null);
 
+  protected readonly paymentForm = this.formBuilder.nonNullable.group({
+    amount: [0, [Validators.required, Validators.min(0.01)]],
+    method: ['', Validators.required],
+    reference: ['', Validators.required],
+  });
+
   private invoiceId = '';
+  private proofFile: File | null = null;
 
   async ngOnInit(): Promise<void> {
     this.invoiceId = this.route.snapshot.paramMap.get('invoiceId') ?? '';
@@ -265,6 +300,55 @@ export class ClientInvoiceDetailComponent implements OnInit {
       style: 'currency',
       currency: currency || 'ZAR',
     }).format(amount);
+  }
+
+  protected onProofSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.proofFile = input.files?.[0] ?? null;
+  }
+
+  protected async submitPaymentWithProof(detail: ClientPortalInvoiceDetail): Promise<void> {
+    if (this.paymentForm.invalid || !this.proofFile) {
+      this.errorMessage.set('Complete the payment form and attach proof of payment.');
+      return;
+    }
+
+    this.isSubmittingPayment.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    try {
+      const upload = await firstValueFrom(
+        this.clientPortalApi.getPaymentProofUploadUrl(this.invoiceId, {
+          fileName: this.proofFile.name,
+          contentType: this.proofFile.type || 'application/octet-stream',
+        }),
+      );
+
+      await fetch(upload.uploadUrl, {
+        method: 'PUT',
+        body: this.proofFile,
+        headers: { 'Content-Type': this.proofFile.type || 'application/octet-stream' },
+      });
+
+      const form = this.paymentForm.getRawValue();
+      await firstValueFrom(
+        this.clientPortalApi.submitInvoicePayment(this.invoiceId, {
+          amount: form.amount,
+          currency: detail.currency,
+          method: form.method,
+          reference: form.reference,
+          proofDocumentId: upload.documentId,
+        }),
+      );
+
+      this.successMessage.set('Payment submitted for review. You will be notified once confirmed.');
+      await this.loadInvoice();
+    } catch (error) {
+      this.errorMessage.set(readHttpErrorMessage(error, 'Failed to submit payment.'));
+    } finally {
+      this.isSubmittingPayment.set(false);
+    }
   }
 
   protected async payOnline(invoiceId: string): Promise<void> {

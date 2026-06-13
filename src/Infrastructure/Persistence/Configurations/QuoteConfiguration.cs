@@ -10,8 +10,12 @@ internal sealed class QuoteConfiguration : IEntityTypeConfiguration<Quote>
     {
         builder.ToTable("quotes");
         builder.HasKey(quote => quote.Id);
-        builder.Property(quote => quote.ClientId).IsRequired();
-        builder.Property(quote => quote.ProjectId).IsRequired();
+        builder.Property(quote => quote.ClientId);
+        builder.Property(quote => quote.ProjectId);
+        builder.Property(quote => quote.RecipientCompanyName).HasMaxLength(512);
+        builder.Property(quote => quote.RecipientContactName).HasMaxLength(256);
+        builder.Property(quote => quote.RecipientEmail).HasMaxLength(320);
+        builder.Property(quote => quote.RecipientPhone).HasMaxLength(64);
         builder.Property(quote => quote.QuoteNumber).HasMaxLength(64).IsRequired();
         builder.Property(quote => quote.Status).HasConversion<int>().IsRequired();
         builder.Property(quote => quote.Subtotal).HasPrecision(18, 2).IsRequired();
@@ -21,6 +25,9 @@ internal sealed class QuoteConfiguration : IEntityTypeConfiguration<Quote>
         builder.Property(quote => quote.DueDate).IsRequired();
         builder.Property(quote => quote.Notes).HasMaxLength(4000);
         builder.Property(quote => quote.ConvertedInvoiceId);
+        builder.Property(quote => quote.RfqId);
+        builder.Property(quote => quote.PurchaseOrderId);
+        builder.Property(quote => quote.Origin).HasConversion<int>().IsRequired();
         builder.Property(quote => quote.CreatedAt).IsRequired();
         builder.Property(quote => quote.UpdatedAt).IsRequired();
         builder.HasIndex(quote => quote.ClientId);

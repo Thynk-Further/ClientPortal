@@ -1,4 +1,4 @@
-using Application.Abstractions;
+using Application.Finance.Abstractions;
 using Application.Invoices.Abstractions;
 using Domain;
 using MediatR;
@@ -34,20 +34,17 @@ public sealed class ProcessGatewayPaymentCommandHandler : IRequestHandler<Proces
         ErrorType.Conflict);
 
     private readonly IInvoiceRepository _invoiceRepository;
-    private readonly IPaymentRepository _paymentRepository;
+    private readonly IInvoicePaymentSubmissionRepository _submissionRepository;
     private readonly IPaymentGatewayWebhookVerifier _paymentGatewayWebhookVerifier;
-    private readonly IUnitOfWork _unitOfWork;
 
     public ProcessGatewayPaymentCommandHandler(
         IInvoiceRepository invoiceRepository,
-        IPaymentRepository paymentRepository,
-        IPaymentGatewayWebhookVerifier paymentGatewayWebhookVerifier,
-        IUnitOfWork unitOfWork)
+        IInvoicePaymentSubmissionRepository submissionRepository,
+        IPaymentGatewayWebhookVerifier paymentGatewayWebhookVerifier)
     {
         _invoiceRepository = invoiceRepository;
-        _paymentRepository = paymentRepository;
+        _submissionRepository = submissionRepository;
         _paymentGatewayWebhookVerifier = paymentGatewayWebhookVerifier;
-        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result> Handle(ProcessGatewayPaymentCommand request, CancellationToken cancellationToken)
@@ -75,33 +72,21 @@ public sealed class ProcessGatewayPaymentCommandHandler : IRequestHandler<Proces
             return Result.Failure(CurrencyMismatchError);
         }
 
-        bool exists = await _paymentRepository.ExistsByReferenceAsync(invoice.Id, verification.Reference, cancellationToken);
-        if (exists)
-        {
-            return Result.Failure(DuplicateGatewayPaymentError);
-        }
+        IReadOnlyList<Application.Finance.Dtos.InvoicePaymentSubmissionDto> submissions =
+            await _submissionRepository.GetByInvoiceIdAsync(invoice.Id, cancellationToken);
 
-        Payment payment;
-        try
-        {
-            invoice.RecordPayment(verification.Amount, verification.PaidAtUtc);
-            payment = Payment.Create(
-                id: Guid.CreateVersion7(),
-                invoiceId: invoice.Id,
-                amount: verification.Amount,
-                currency: normalizedCurrency,
-                method: verification.Method,
-                reference: verification.Reference,
-                paidAtUtc: verification.PaidAtUtc);
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
-        {
-            return Result.Failure(InvalidPaymentError);
-        }
+        Application.Finance.Dtos.InvoicePaymentSubmissionDto? matchingSubmission = submissions
+            .FirstOrDefault(submission =>
+                submission.Status == InvoicePaymentSubmissionStatus.Submitted
+                && string.Equals(submission.Reference, verification.Reference, StringComparison.Ordinal));
 
-        _paymentRepository.Add(payment);
-        _invoiceRepository.Update(invoice);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (matchingSubmission is null)
+        {
+            return Result.Failure(new Error(
+                "Finance.SubmissionRequired",
+                "Gateway payment received but no matching payment submission with proof exists.",
+                ErrorType.Conflict));
+        }
 
         return Result.Success();
     }

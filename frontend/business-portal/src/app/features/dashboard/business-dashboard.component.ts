@@ -1,12 +1,17 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
+import { RfqApiService, RfqSummary } from '@/app/core/api/services/rfq-api.service';
 import { UserSessionService } from '@/app/core/auth/user-session.service';
+import { RfqListItemComponent } from '@/app/features/finance/rfq-list-item.component';
 
 interface DashboardStat {
   readonly label: string;
@@ -32,6 +37,7 @@ type OverviewMetric = 'revenue' | 'orders' | 'profit';
   selector: 'app-business-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterLink, RfqListItemComponent],
   template: `
     <div class="flex min-w-0 flex-1 flex-col">
         <main class="space-y-6 p-5 sm:p-8">
@@ -208,12 +214,49 @@ type OverviewMetric = 'revenue' | 'orders' | 'profit';
               </article>
             </div>
           </section>
+
+          <section class="rounded-2xl border border-border/70 bg-card p-5 shadow-sm sm:p-6" aria-label="Incoming RFQs">
+            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 class="text-base font-semibold">Incoming RFQs</h2>
+                <p class="mt-0.5 text-sm text-muted-foreground">
+                  Client-submitted requests awaiting your quotation.
+                </p>
+              </div>
+              <a
+                routerLink="/finance/rfqs"
+                class="text-sm font-medium text-primary hover:underline"
+              >
+                View all RFQs
+              </a>
+            </div>
+
+            @if (isLoadingRfqs()) {
+              <p class="text-sm text-muted-foreground">Loading pending RFQs...</p>
+            } @else if (submittedRfqs().length === 0) {
+              <p class="text-sm text-muted-foreground">
+                No pending RFQs right now. New requests appear here when clients submit them from the client portal.
+              </p>
+            } @else {
+              <ul class="space-y-3">
+                @for (rfq of submittedRfqs(); track rfq.id) {
+                  <li>
+                    <app-rfq-list-item [rfq]="rfq" />
+                  </li>
+                }
+              </ul>
+            }
+          </section>
         </main>
     </div>
   `,
 })
-export class BusinessDashboardComponent {
+export class BusinessDashboardComponent implements OnInit {
   private readonly userSession = inject(UserSessionService);
+  private readonly rfqApi = inject(RfqApiService);
+
+  protected readonly submittedRfqs = signal<RfqSummary[]>([]);
+  protected readonly isLoadingRfqs = signal(true);
 
   protected readonly overviewMetric = signal<OverviewMetric>('revenue');
   protected readonly monthlyGoalProgress = 88;
@@ -241,6 +284,17 @@ export class BusinessDashboardComponent {
     const firstName = fullName?.split(/\s+/)[0] ?? 'there';
     return `Welcome back, ${firstName}. Here's what's happening with your business today.`;
   });
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const result = await firstValueFrom(this.rfqApi.getRfqs(undefined, 2, 1, 5));
+      this.submittedRfqs.set(result.items);
+    } catch {
+      this.submittedRfqs.set([]);
+    } finally {
+      this.isLoadingRfqs.set(false);
+    }
+  }
 
   protected readonly overviewChart = computed(() => {
     const data = this.overviewDatasets[this.overviewMetric()];

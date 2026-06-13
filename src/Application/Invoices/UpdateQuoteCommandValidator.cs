@@ -7,7 +7,6 @@ public sealed class UpdateQuoteCommandValidator : AbstractValidator<UpdateQuoteC
     public UpdateQuoteCommandValidator()
     {
         RuleFor(command => command.QuoteId).NotEmpty();
-        RuleFor(command => command.ClientId).NotEmpty();
         RuleFor(command => command.QuoteNumber).NotEmpty().MaximumLength(128);
         RuleFor(command => command.Currency).NotEmpty().Length(3).Matches("^[A-Za-z]{3}$");
         RuleFor(command => command.DueDate).NotEqual(default(DateOnly));

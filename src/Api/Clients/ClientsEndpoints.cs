@@ -1,5 +1,7 @@
 using Application.Clients;
 using Application.Clients.Dtos;
+using Application.Finance;
+using Application.Finance.Dtos;
 using Application.Auth.Abstractions;
 using Application.Notifications.Dtos;
 using Api.Auth;
@@ -81,6 +83,39 @@ public static class ClientsEndpoints
 
         portalGroup.MapPost("/invoices/{id:guid}/payments/verify", VerifyClientPortalInvoicePaymentAsync)
             .WithName("ClientPortalInvoicePaymentVerify");
+
+        portalGroup.MapPost("/invoices/{id:guid}/payment-proof/upload-url", GetClientPortalPaymentProofUploadUrlAsync)
+            .WithName("ClientPortalInvoicePaymentProofUploadUrl");
+
+        portalGroup.MapPost("/invoices/{id:guid}/payments", SubmitClientPortalInvoicePaymentAsync)
+            .WithName("ClientPortalInvoicePaymentSubmit");
+
+        portalGroup.MapGet("/rfqs", GetClientPortalRfqsAsync)
+            .WithName("ClientPortalRfqs");
+
+        portalGroup.MapPost("/rfqs", CreateClientPortalRfqAsync)
+            .WithName("ClientPortalRfqsCreate");
+
+        portalGroup.MapGet("/rfqs/{id:guid}", GetClientPortalRfqByIdAsync)
+            .WithName("ClientPortalRfqById");
+
+        portalGroup.MapPost("/rfqs/{id:guid}/submit", SubmitClientPortalRfqAsync)
+            .WithName("ClientPortalRfqSubmit");
+
+        portalGroup.MapGet("/quotations", GetClientPortalQuotationsAsync)
+            .WithName("ClientPortalQuotations");
+
+        portalGroup.MapGet("/quotations/{id:guid}", GetClientPortalQuotationByIdAsync)
+            .WithName("ClientPortalQuotationById");
+
+        portalGroup.MapPost("/quotations/{id:guid}/approve", ApproveClientPortalQuotationAsync)
+            .WithName("ClientPortalQuotationApprove");
+
+        portalGroup.MapPost("/quotations/{id:guid}/reject", RejectClientPortalQuotationAsync)
+            .WithName("ClientPortalQuotationReject");
+
+        portalGroup.MapGet("/purchase-orders", GetClientPortalPurchaseOrdersAsync)
+            .WithName("ClientPortalPurchaseOrders");
 
         portalGroup.MapGet("/documents", GetClientPortalDocumentsAsync)
             .WithName("ClientPortalDocuments");
@@ -691,6 +726,120 @@ public static class ClientsEndpoints
         return Result<Guid>.Success(client.Id);
     }
 
+    private static async Task<IResult> GetClientPortalPaymentProofUploadUrlAsync(
+        Guid id,
+        ClientPortalPaymentProofUploadUrlRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(
+            new GetClientPortalPaymentProofUploadUrlCommand(id, request.FileName, request.ContentType),
+            cancellationToken));
+    }
+
+    private static async Task<IResult> SubmitClientPortalInvoicePaymentAsync(
+        Guid id,
+        SubmitClientPortalInvoicePaymentRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(
+            new SubmitClientPortalInvoicePaymentCommand(
+                id,
+                request.Amount,
+                request.Currency,
+                request.Method,
+                request.Reference,
+                request.ProofDocumentId,
+                request.GatewayProvider,
+                request.GatewayReference),
+            cancellationToken));
+    }
+
+    private static async Task<IResult> GetClientPortalRfqsAsync(
+        int page,
+        int pageSize,
+        RfqStatus? status,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(
+            new GetClientPortalRfqsQuery(page <= 0 ? 1 : page, pageSize <= 0 ? 20 : pageSize, status),
+            cancellationToken));
+    }
+
+    private static async Task<IResult> CreateClientPortalRfqAsync(
+        CreateClientPortalRfqRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<RfqDto> result = await sender.Send(
+            new CreateClientPortalRfqCommand(
+                request.ProjectId,
+                request.Title,
+                request.QuotationDueAtUtc,
+                request.Currency,
+                request.LineItems.Select(item => new CreateClientPortalRfqLineItemInput(item.Description, item.Quantity)).ToList(),
+                request.Notes),
+            cancellationToken);
+
+        if (result.IsSuccess && result.Value is not null)
+        {
+            return Results.Created($"/api/v1/client-portal/rfqs/{result.Value.Id}", ApiResponse<RfqDto>.Ok(result.Value));
+        }
+
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetClientPortalRfqByIdAsync(Guid id, ISender sender, CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(new GetClientPortalRfqByIdQuery(id), cancellationToken));
+    }
+
+    private static async Task<IResult> SubmitClientPortalRfqAsync(Guid id, ISender sender, CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(new SubmitClientPortalRfqCommand(id), cancellationToken));
+    }
+
+    private static async Task<IResult> GetClientPortalQuotationsAsync(
+        int page,
+        int pageSize,
+        QuoteStatus? status,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(
+            new GetClientPortalQuotationsQuery(page <= 0 ? 1 : page, pageSize <= 0 ? 20 : pageSize, status),
+            cancellationToken));
+    }
+
+    private static async Task<IResult> GetClientPortalQuotationByIdAsync(Guid id, ISender sender, CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(new GetClientPortalQuotationByIdQuery(id), cancellationToken));
+    }
+
+    private static async Task<IResult> ApproveClientPortalQuotationAsync(Guid id, ISender sender, CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(new AcceptClientPortalQuotationCommand(id), cancellationToken));
+    }
+
+    private static async Task<IResult> RejectClientPortalQuotationAsync(Guid id, ISender sender, CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(new RejectClientPortalQuotationCommand(id), cancellationToken));
+    }
+
+    private static async Task<IResult> GetClientPortalPurchaseOrdersAsync(
+        int page,
+        int pageSize,
+        PurchaseOrderStatus? status,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(
+            new GetClientPortalPurchaseOrdersQuery(page <= 0 ? 1 : page, pageSize <= 0 ? 20 : pageSize, status),
+            cancellationToken));
+    }
+
     private static IResult ToResponse(Result result)
     {
         if (result.IsSuccess)
@@ -706,6 +855,11 @@ public static class ClientsEndpoints
         if (result.IsSuccess && result.Value is not null)
         {
             return Results.Ok(ApiResponse<T>.Ok(result.Value));
+        }
+
+        if (result.IsSuccess)
+        {
+            return Results.Ok(ApiResponse<object?>.Ok(null));
         }
 
         return Failure(result.Errors);
@@ -780,3 +934,24 @@ public sealed record UpdateClientPortalNotificationPreferencesRequest(
     bool SmsEnabled,
     bool InAppEnabled,
     NotificationPreferenceFrequency Frequency);
+
+public sealed record ClientPortalPaymentProofUploadUrlRequest(string FileName, string ContentType);
+
+public sealed record SubmitClientPortalInvoicePaymentRequest(
+    decimal Amount,
+    string Currency,
+    string Method,
+    string Reference,
+    Guid ProofDocumentId,
+    string? GatewayProvider = null,
+    string? GatewayReference = null);
+
+public sealed record CreateClientPortalRfqLineItemRequest(string Description, decimal Quantity);
+
+public sealed record CreateClientPortalRfqRequest(
+    Guid ProjectId,
+    string Title,
+    DateTime QuotationDueAtUtc,
+    string Currency,
+    IReadOnlyCollection<CreateClientPortalRfqLineItemRequest> LineItems,
+    string? Notes = null);

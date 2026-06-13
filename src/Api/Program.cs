@@ -13,6 +13,7 @@ using Api.Communication;
 using Api.Contracts;
 using Api.Documents;
 using Api.HealthChecks;
+using Api.Finance;
 using Api.Invoices;
 using Api.Middleware;
 using Api.Notifications;
@@ -339,6 +340,7 @@ app.MapClientsEndpoints();
 app.MapProjectsEndpoints();
 app.MapDocumentsEndpoints();
 app.MapInvoicesEndpoints();
+app.MapFinanceEndpoints();
 app.MapPaymentsWebhookEndpoints();
 app.MapCommunicationEndpoints();
 app.MapNotificationsEndpoints();
@@ -351,6 +353,14 @@ try
         "invoice-reminder-job",
         job => job.RunAsync(CancellationToken.None),
         "0 8 * * *",
+        new RecurringJobOptions
+        {
+            TimeZone = TimeZoneInfo.Local
+        });
+    RecurringJob.AddOrUpdate<MarkOverdueInvoicesJob>(
+        "mark-overdue-invoices-job",
+        job => job.RunAsync(CancellationToken.None),
+        "30 0 * * *",
         new RecurringJobOptions
         {
             TimeZone = TimeZoneInfo.Local

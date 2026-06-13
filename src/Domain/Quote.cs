@@ -7,9 +7,17 @@ public sealed class Quote : AggregateRoot<Guid>
 {
     private List<LineItem> _lineItems = [];
 
-    public Guid ClientId { get; private set; }
+    public Guid? ClientId { get; private set; }
 
-    public Guid ProjectId { get; private set; }
+    public Guid? ProjectId { get; private set; }
+
+    public string? RecipientCompanyName { get; private set; }
+
+    public string? RecipientContactName { get; private set; }
+
+    public string? RecipientEmail { get; private set; }
+
+    public string? RecipientPhone { get; private set; }
 
     public string QuoteNumber { get; private set; } = string.Empty;
 
@@ -31,30 +39,52 @@ public sealed class Quote : AggregateRoot<Guid>
 
     public Guid? ConvertedInvoiceId { get; private set; }
 
+    public Guid? RfqId { get; private set; }
+
+    public Guid? PurchaseOrderId { get; private set; }
+
+    public QuoteOrigin Origin { get; private set; } = QuoteOrigin.BusinessInitiated;
+
     private Quote()
     {
     }
 
     private Quote(
         Guid id,
-        Guid clientId,
-        Guid projectId,
+        Guid? clientId,
+        Guid? projectId,
         string quoteNumber,
         QuoteStatus status,
         IEnumerable<LineItem> lineItems,
         string currency,
         DateOnly dueDate,
-        string? notes)
+        string? notes,
+        QuoteOrigin origin,
+        Guid? rfqId,
+        string? recipientCompanyName,
+        string? recipientContactName,
+        string? recipientEmail,
+        string? recipientPhone)
         : base(id)
     {
-        ClientId = NormalizeRequiredId(clientId, nameof(clientId));
-        ProjectId = NormalizeRequiredId(projectId, nameof(projectId));
+        ValidateClientProjectPair(clientId, projectId, origin);
+        ValidateRecipientForOrigin(origin, recipientCompanyName);
+
+        ClientId = NormalizeOptionalId(clientId);
+        ProjectId = NormalizeOptionalId(projectId);
+        RecipientCompanyName = NormalizeOptionalText(recipientCompanyName);
+        RecipientContactName = NormalizeOptionalText(recipientContactName);
+        RecipientEmail = NormalizeOptionalText(recipientEmail);
+        RecipientPhone = NormalizeOptionalText(recipientPhone);
         QuoteNumber = NormalizeRequiredText(quoteNumber, nameof(quoteNumber));
         Status = status;
         Currency = NormalizeCurrency(currency);
         DueDate = dueDate;
         Notes = NormalizeOptionalText(notes);
         ConvertedInvoiceId = null;
+        Origin = origin;
+        RfqId = NormalizeOptionalId(rfqId);
+        PurchaseOrderId = null;
 
         ReplaceLineItemsInternal(lineItems);
     }
@@ -69,7 +99,107 @@ public sealed class Quote : AggregateRoot<Guid>
         DateOnly dueDate,
         string? notes = null)
     {
-        return new Quote(id, clientId, projectId, quoteNumber, QuoteStatus.Draft, lineItems, currency, dueDate, notes);
+        return new Quote(
+            id,
+            clientId,
+            projectId,
+            quoteNumber,
+            QuoteStatus.Draft,
+            lineItems,
+            currency,
+            dueDate,
+            notes,
+            QuoteOrigin.BusinessInitiated,
+            rfqId: null,
+            recipientCompanyName: null,
+            recipientContactName: null,
+            recipientEmail: null,
+            recipientPhone: null);
+    }
+
+    public static Quote CreateForExternalRecipient(
+        Guid id,
+        string quoteNumber,
+        IEnumerable<LineItem> lineItems,
+        string currency,
+        DateOnly dueDate,
+        string recipientCompanyName,
+        string? recipientContactName = null,
+        string? recipientEmail = null,
+        string? recipientPhone = null,
+        string? notes = null)
+    {
+        return new Quote(
+            id,
+            clientId: null,
+            projectId: null,
+            quoteNumber,
+            QuoteStatus.Draft,
+            lineItems,
+            currency,
+            dueDate,
+            notes,
+            QuoteOrigin.ExternalOffPlatform,
+            rfqId: null,
+            recipientCompanyName,
+            recipientContactName,
+            recipientEmail,
+            recipientPhone);
+    }
+
+    public static Quote CreateFromRfq(
+        Guid id,
+        Guid clientId,
+        Guid projectId,
+        Guid rfqId,
+        string quoteNumber,
+        IEnumerable<LineItem> lineItems,
+        string currency,
+        DateOnly dueDate,
+        string? notes = null)
+    {
+        if (rfqId == Guid.Empty)
+        {
+            throw new ArgumentException("RFQ identifier cannot be empty.", nameof(rfqId));
+        }
+
+        return new Quote(
+            id,
+            clientId,
+            projectId,
+            quoteNumber,
+            QuoteStatus.Draft,
+            lineItems,
+            currency,
+            dueDate,
+            notes,
+            QuoteOrigin.RfqResponse,
+            rfqId,
+            recipientCompanyName: null,
+            recipientContactName: null,
+            recipientEmail: null,
+            recipientPhone: null);
+    }
+
+    public void LinkPurchaseOrder(Guid purchaseOrderId)
+    {
+        if (Origin != QuoteOrigin.RfqResponse)
+        {
+            throw new InvalidOperationException("Only RFQ response quotations can be linked to purchase orders.");
+        }
+
+        if (Status != QuoteStatus.Accepted)
+        {
+            throw new InvalidOperationException("Only accepted quotations can be linked to purchase orders.");
+        }
+
+        if (purchaseOrderId == Guid.Empty)
+        {
+            throw new ArgumentException("Purchase order identifier cannot be empty.", nameof(purchaseOrderId));
+        }
+
+        PurchaseOrderId = purchaseOrderId;
+        MarkUpdated();
     }
 
     public void ReplaceLineItems(IEnumerable<LineItem> lineItems)
@@ -106,6 +236,25 @@ public sealed class Quote : AggregateRoot<Guid>
         MarkUpdated();
     }
 
+    public void UpdateExternalRecipient(
+        string recipientCompanyName,
+        string? recipientContactName,
+        string? recipientEmail,
+        string? recipientPhone)
+    {
+        if (Origin != QuoteOrigin.ExternalOffPlatform)
+        {
+            throw new InvalidOperationException("Only external quotations can update recipient details.");
+        }
+
+        EnsureEditable();
+        RecipientCompanyName = NormalizeRequiredText(recipientCompanyName, nameof(recipientCompanyName));
+        RecipientContactName = NormalizeOptionalText(recipientContactName);
+        RecipientEmail = NormalizeOptionalText(recipientEmail);
+        RecipientPhone = NormalizeOptionalText(recipientPhone);
+        MarkUpdated();
+    }
+
     public void MarkSent()
     {
         if (Status != QuoteStatus.Draft)
@@ -114,6 +263,7 @@ public sealed class Quote : AggregateRoot<Guid>
         }
 
         Status = QuoteStatus.Sent;
+        AddDomainEvent(new QuotationSentEvent(Id, ClientId, DateTime.UtcNow));
         MarkUpdated();
     }
 
@@ -131,6 +281,16 @@ public sealed class Quote : AggregateRoot<Guid>
 
     public void MarkConvertedToInvoice(Guid invoiceId)
     {
+        if (Origin == QuoteOrigin.RfqResponse)
+        {
+            throw new InvalidOperationException("RFQ response quotations must be invoiced through purchase order approval.");
+        }
+
+        if (!ClientId.HasValue || !ProjectId.HasValue)
+        {
+            throw new InvalidOperationException("External quotations must be assigned to a portal client before invoicing.");
+        }
+
         if (Status != QuoteStatus.Accepted)
         {
             throw new InvalidOperationException("Only accepted quotes can be converted to invoices.");
@@ -214,14 +374,48 @@ public sealed class Quote : AggregateRoot<Guid>
         Total = decimal.Round(Subtotal + TaxAmount, 2, MidpointRounding.ToEven);
     }
 
-    private static Guid NormalizeRequiredId(Guid value, string paramName)
+    private static void ValidateClientProjectPair(Guid? clientId, Guid? projectId, QuoteOrigin origin)
     {
-        if (value == Guid.Empty)
+        bool hasClient = clientId.HasValue && clientId.Value != Guid.Empty;
+        bool hasProject = projectId.HasValue && projectId.Value != Guid.Empty;
+
+        if (origin == QuoteOrigin.ExternalOffPlatform)
         {
-            throw new ArgumentException("Identifier cannot be empty.", paramName);
+            if (hasClient || hasProject)
+            {
+                throw new ArgumentException("External quotations cannot be linked to portal clients or projects.");
+            }
+
+            return;
         }
 
-        return value;
+        if (!hasClient || !hasProject)
+        {
+            throw new ArgumentException("Portal quotations require both client and project identifiers.");
+        }
+    }
+
+    private static void ValidateRecipientForOrigin(QuoteOrigin origin, string? recipientCompanyName)
+    {
+        if (origin != QuoteOrigin.ExternalOffPlatform)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(recipientCompanyName))
+        {
+            throw new ArgumentException("Recipient company name is required for external quotations.", nameof(recipientCompanyName));
+        }
+    }
+
+    private static Guid? NormalizeOptionalId(Guid? value)
+    {
+        if (!value.HasValue || value.Value == Guid.Empty)
+        {
+            return null;
+        }
+
+        return value.Value;
     }
 
     private static string NormalizeRequiredText(string value, string paramName)
