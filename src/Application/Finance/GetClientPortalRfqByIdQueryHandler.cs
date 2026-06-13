@@ -14,13 +14,16 @@ public sealed class GetClientPortalRfqByIdQueryHandler
 
     private readonly ICurrentClientResolver _currentClientResolver;
     private readonly IRfqRepository _rfqRepository;
+    private readonly IClientRepository _clientRepository;
 
     public GetClientPortalRfqByIdQueryHandler(
         ICurrentClientResolver currentClientResolver,
-        IRfqRepository rfqRepository)
+        IRfqRepository rfqRepository,
+        IClientRepository clientRepository)
     {
         _currentClientResolver = currentClientResolver;
         _rfqRepository = rfqRepository;
+        _clientRepository = clientRepository;
     }
 
     public async Task<Result<RfqDto>> Handle(GetClientPortalRfqByIdQuery request, CancellationToken cancellationToken)
@@ -37,6 +40,9 @@ public sealed class GetClientPortalRfqByIdQueryHandler
             return Result<RfqDto>.Failure(RfqNotFoundError);
         }
 
-        return Result<RfqDto>.Success(FinanceMapping.Map(rfq));
+        Client? client = await _clientRepository.FindByIdAsync(clientIdResult.Value, cancellationToken);
+        string clientCompanyName = client?.CompanyName ?? string.Empty;
+
+        return Result<RfqDto>.Success(FinanceMapping.Map(rfq, clientCompanyName));
     }
 }

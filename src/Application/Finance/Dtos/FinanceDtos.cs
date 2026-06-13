@@ -9,6 +9,7 @@ public sealed record RfqLineItemDto(string Description, decimal Quantity);
 public sealed record RfqDto(
     Guid Id,
     Guid ClientId,
+    string ClientCompanyName,
     Guid ProjectId,
     string RfqNumber,
     string Title,

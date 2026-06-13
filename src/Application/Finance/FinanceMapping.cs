@@ -5,7 +5,7 @@ namespace Application.Finance;
 
 internal static class FinanceMapping
 {
-    internal static RfqDto Map(Rfq rfq)
+    internal static RfqDto Map(Rfq rfq, string clientCompanyName = "")
     {
         IReadOnlyCollection<RfqLineItemDto> lineItems = rfq.LineItems
             .Select(item => new RfqLineItemDto(item.Description, item.Quantity))
@@ -15,6 +15,7 @@ internal static class FinanceMapping
         return new RfqDto(
             rfq.Id,
             rfq.ClientId,
+            clientCompanyName,
             rfq.ProjectId,
             rfq.RfqNumber,
             rfq.Title,

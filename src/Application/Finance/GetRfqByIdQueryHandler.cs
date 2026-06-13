@@ -1,3 +1,4 @@
+using Application.Clients.Abstractions;
 using Application.Finance.Abstractions;
 using Application.Finance.Dtos;
 using Domain;
@@ -11,10 +12,14 @@ public sealed class GetRfqByIdQueryHandler : IRequestHandler<GetRfqByIdQuery, Re
     private static readonly Error RfqNotFoundError = new("Rfqs.NotFound", "RFQ was not found.", ErrorType.NotFound);
 
     private readonly IRfqRepository _rfqRepository;
+    private readonly IClientRepository _clientRepository;
 
-    public GetRfqByIdQueryHandler(IRfqRepository rfqRepository)
+    public GetRfqByIdQueryHandler(
+        IRfqRepository rfqRepository,
+        IClientRepository clientRepository)
     {
         _rfqRepository = rfqRepository;
+        _clientRepository = clientRepository;
     }
 
     public async Task<Result<RfqDto>> Handle(GetRfqByIdQuery request, CancellationToken cancellationToken)
@@ -25,6 +30,9 @@ public sealed class GetRfqByIdQueryHandler : IRequestHandler<GetRfqByIdQuery, Re
             return Result<RfqDto>.Failure(RfqNotFoundError);
         }
 
-        return Result<RfqDto>.Success(FinanceMapping.Map(rfq));
+        Client? client = await _clientRepository.FindByIdAsync(request.ClientId, cancellationToken);
+        string clientCompanyName = client?.CompanyName ?? string.Empty;
+
+        return Result<RfqDto>.Success(FinanceMapping.Map(rfq, clientCompanyName));
     }
 }
