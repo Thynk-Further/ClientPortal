@@ -40,6 +40,7 @@ public static class CommunicationEndpoints
 
         noticesGroup.MapGet("/", GetNoticesAsync).WithName("NoticesGet");
         noticesGroup.MapGet("/{id:guid}", GetNoticeByIdAsync).WithName("NoticesGetById");
+        noticesGroup.MapPost("/attachments/upload-url", GetNoticeAttachmentUploadUrlAsync).WithName("NoticesGetAttachmentUploadUrl");
         noticesGroup.MapPost("/", PublishNoticeAsync).WithName("NoticesCreate");
         noticesGroup.MapPut("/{id:guid}", UpdateNoticeAsync).WithName("NoticesUpdate");
         noticesGroup.MapDelete("/{id:guid}", DeleteNoticeAsync).WithName("NoticesDelete");
@@ -262,7 +263,12 @@ public static class CommunicationEndpoints
         CancellationToken cancellationToken)
     {
         Result<Guid> result = await sender.Send(
-            new PublishNoticeCommand(request.Title, request.Content, request.ExpiresAt, request.TargetClientIds),
+            new PublishNoticeCommand(
+                request.Title,
+                request.Content,
+                request.ExpiresAt,
+                request.TargetClientIds,
+                request.Attachments),
             cancellationToken);
 
         if (result.IsSuccess && result.Value != Guid.Empty)
@@ -288,6 +294,31 @@ public static class CommunicationEndpoints
     private static async Task<IResult> DeleteNoticeAsync(Guid id, ISender sender, CancellationToken cancellationToken)
     {
         Result result = await sender.Send(new DeleteNoticeCommand(id), cancellationToken);
+        return ToResponse(result);
+    }
+
+    private static async Task<IResult> GetNoticeAttachmentUploadUrlAsync(
+        ClaimsPrincipal principal,
+        MessageAttachmentUploadUrlRequest request,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        Result<Guid> userIdResult = ResolveUserId(principal);
+        if (userIdResult.IsFailed)
+        {
+            return Failure(userIdResult.Errors);
+        }
+
+        Result<MessageAttachmentUploadUrlResultDto> result = await sender.Send(
+            new GetNoticeAttachmentUploadUrlCommand(
+                userIdResult.Value,
+                new MessageAttachmentMetadataDto(
+                    request.FileName,
+                    request.ContentType,
+                    request.SizeBytes,
+                    request.Url)),
+            cancellationToken);
+
         return ToResponse(result);
     }
 
@@ -443,7 +474,8 @@ public sealed record PublishNoticeRequest(
     string Title,
     string Content,
     DateTime? ExpiresAt,
-    IReadOnlyCollection<Guid>? TargetClientIds);
+    IReadOnlyCollection<Guid>? TargetClientIds,
+    IReadOnlyCollection<MessageAttachmentMetadataDto>? Attachments);
 
 public sealed record UpdateNoticeRequest(
     string Title,

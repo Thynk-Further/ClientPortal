@@ -133,6 +133,7 @@ public static class DependencyInjection
         services.AddSingleton<IContractBusinessStaffRecipientProvider, ContractBusinessStaffRecipientProvider>();
         services.AddScoped<IExpiringContractAlertReader, NpgsqlExpiringContractAlertReader>();
         services.AddSingleton<IMessageAttachmentUploadUrlService, MessageAttachmentUploadUrlService>();
+        services.AddSingleton<INoticeAttachmentUploadUrlService, NoticeAttachmentUploadUrlService>();
         services.AddSingleton<IMessageAttachmentMalwareScanService, MessageAttachmentMalwareScanHookService>();
         services.AddScoped<IMessageOfflineFallbackNotifier, NoopMessageOfflineFallbackNotifier>();
         services.AddScoped<IInAppNotificationRepository, InAppNotificationRepository>();

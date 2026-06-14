@@ -7,4 +7,5 @@ public sealed record NoticeListItemDto(
     DateTime PublishedAt,
     DateTime? ExpiresAt,
     bool IsActive,
-    IReadOnlyCollection<Guid>? TargetClientIds);
+    IReadOnlyCollection<Guid>? TargetClientIds,
+    IReadOnlyCollection<MessageAttachmentMetadataDto>? Attachments);

@@ -1,5 +1,6 @@
 using Application.Clients.Abstractions;
 using Application.Clients.Dtos;
+using Application.Messaging;
 using Domain;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -69,6 +70,7 @@ public sealed class NpgsqlClientPortalNoticesReader : IClientPortalNoticesReader
             notice.PublishedAt,
             notice.ExpiresAt,
             isRead,
-            readAtUtc);
+            readAtUtc,
+            NoticeMapping.ToAttachmentDtos(notice.Attachments));
     }
 }

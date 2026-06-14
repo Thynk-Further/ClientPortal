@@ -22,6 +22,7 @@ import {
   CardHeaderComponent,
   CardTitleComponent,
 } from '@/components/ui/card.component';
+import { isImageAttachment } from '@/app/core/messaging/messaging.models';
 
 @Component({
   selector: 'app-client-notices',
@@ -114,6 +115,39 @@ import {
               <article class="space-y-4">
                 <p class="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{{ notice.content }}</p>
 
+                @if (notice.attachments !== null && notice.attachments.length > 0) {
+                  <div class="space-y-2">
+                    <p class="text-xs font-medium text-muted-foreground">Attachments</p>
+                    <div class="flex flex-wrap gap-2">
+                      @for (attachment of notice.attachments; track attachment.url) {
+                        @if (isImageAttachment(attachment.contentType)) {
+                          <a
+                            [href]="attachment.url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="block overflow-hidden rounded-md border"
+                          >
+                            <img
+                              [src]="attachment.url"
+                              [alt]="attachment.fileName"
+                              class="max-h-40 max-w-[220px] object-cover"
+                            />
+                          </a>
+                        } @else {
+                          <a
+                            [href]="attachment.url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs hover:bg-muted/40"
+                          >
+                            📎 {{ attachment.fileName }}
+                          </a>
+                        }
+                      }
+                    </div>
+                  </div>
+                }
+
                 @if (!notice.isRead) {
                   <ui-button
                     label="Mark as read"
@@ -170,6 +204,10 @@ export class ClientNoticesComponent implements OnInit {
     if (notice !== undefined && !notice.isRead) {
       void this.markAsRead(noticeId);
     }
+  }
+
+  protected isImageAttachment(contentType: string): boolean {
+    return isImageAttachment(contentType);
   }
 
   protected formatDateTime(value: string): string {

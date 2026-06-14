@@ -61,6 +61,7 @@ export interface ClientPortalNoticeListItem {
   expiresAt: string | null;
   isRead: boolean;
   readAtUtc: string | null;
+  attachments: MessageAttachmentMetadata[] | null;
 }
 
 export interface ClientPortalNoticesResult {
