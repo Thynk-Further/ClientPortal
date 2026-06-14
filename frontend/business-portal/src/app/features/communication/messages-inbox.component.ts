@@ -161,6 +161,49 @@ interface ThreadPreview {
         background: rgb(63 63 70);
         color: rgb(161 161 170);
       }
+
+      .messages-column-panel {
+        display: flex;
+        height: min(70vh, 640px);
+        max-height: min(70vh, 640px);
+        flex-direction: column;
+      }
+
+      .messages-column-body {
+        display: flex;
+        min-height: 0;
+        flex: 1;
+        flex-direction: column;
+      }
+
+      .clients-scroll,
+      .messages-scroll {
+        min-height: 0;
+        flex: 1;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--border)) transparent;
+      }
+
+      .clients-scroll {
+        padding-right: 0.25rem;
+      }
+
+      .clients-scroll::-webkit-scrollbar,
+      .messages-scroll::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .clients-scroll::-webkit-scrollbar-thumb,
+      .messages-scroll::-webkit-scrollbar-thumb {
+        border-radius: 9999px;
+        background: hsl(var(--border));
+      }
+
+      .clients-scroll::-webkit-scrollbar-track,
+      .messages-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
     `,
   ],
   template: `
@@ -188,15 +231,15 @@ interface ThreadPreview {
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-[360px_1fr]">
           <ui-card
-            class="flex flex-col"
+            class="messages-column-panel"
             [class.hidden]="isMobileView() && selectedClientId() !== null"
           >
-            <ui-card-header>
+            <ui-card-header class="shrink-0">
               <ui-card-title>Clients</ui-card-title>
               <ui-card-description>Select a client to view and reply to messages.</ui-card-description>
             </ui-card-header>
-            <ui-card-content class="flex min-h-0 flex-1 flex-col">
-              <div class="relative mb-4">
+            <ui-card-content class="messages-column-body">
+              <div class="relative mb-4 shrink-0">
                 <svg
                   class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                   viewBox="0 0 24 24"
@@ -221,9 +264,11 @@ interface ThreadPreview {
               </div>
 
               @if (isLoadingThreads()) {
-                <p class="text-sm text-muted-foreground">Loading clients...</p>
+                <div class="flex flex-1 items-center justify-center">
+                  <p class="text-sm text-muted-foreground">Loading clients...</p>
+                </div>
               } @else if (filteredClientChats().length === 0) {
-                <div class="space-y-3 py-4 text-center">
+                <div class="flex flex-1 flex-col items-center justify-center space-y-3 py-4 text-center">
                   <p class="text-sm text-muted-foreground">
                     @if (searchQuery().trim() !== '') {
                       No clients match your search.
@@ -241,7 +286,7 @@ interface ThreadPreview {
                   }
                 </div>
               } @else {
-                <div class="max-h-[560px] space-y-2 overflow-y-auto">
+                <div class="clients-scroll space-y-2">
                   @for (chat of filteredClientChats(); track chat.clientId) {
                     <button
                       type="button"
@@ -283,10 +328,10 @@ interface ThreadPreview {
           </ui-card>
 
           <ui-card
-            class="flex min-h-[640px] flex-col"
+            class="messages-column-panel"
             [class.hidden]="isMobileView() && selectedClientId() === null"
           >
-            <ui-card-header class="border-b border-border">
+            <ui-card-header class="shrink-0 border-b border-border">
               @if (selectedClient() === null) {
                 <ui-card-title>Conversation</ui-card-title>
                 <ui-card-description>Choose a client from the list to start chatting.</ui-card-description>
@@ -325,7 +370,7 @@ interface ThreadPreview {
               }
             </ui-card-header>
 
-            <ui-card-content class="flex min-h-0 flex-1 flex-col p-0">
+            <ui-card-content class="messages-column-body p-0">
               @if (selectedClient() === null) {
                 <div class="flex flex-1 items-center justify-center p-6">
                   <p class="text-sm text-muted-foreground">Select a client from the list.</p>
@@ -333,7 +378,7 @@ interface ThreadPreview {
               } @else {
                 <div
                   #messagesContainer
-                  class="chat-panel flex-1 space-y-3 overflow-y-auto px-4 py-4"
+                  class="messages-scroll chat-panel space-y-3 px-4 py-4"
                   aria-live="polite"
                 >
                   @if (isLoadingMessages()) {
@@ -405,7 +450,7 @@ interface ThreadPreview {
 
                 @if (pendingAttachment() !== null) {
                   <div
-                    class="mx-4 mb-2 flex items-center justify-between rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm"
+                    class="mx-4 mb-2 shrink-0 flex items-center justify-between rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm"
                   >
                     <span class="truncate">📎 {{ pendingAttachment()!.name }}</span>
                     <button
@@ -419,7 +464,7 @@ interface ThreadPreview {
                 }
 
                 <form
-                  class="composer-bar px-3 py-3 sm:px-4"
+                  class="composer-bar shrink-0 px-3 py-3 sm:px-4"
                   [formGroup]="composerForm"
                   (ngSubmit)="sendMessage()"
                 >
