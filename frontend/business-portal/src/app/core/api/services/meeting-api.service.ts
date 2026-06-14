@@ -33,6 +33,7 @@ export interface CreateMeetingRequest {
   scheduledAt: string;
   durationMinutes: number;
   meetingUrl: string;
+  scheduledTimeZoneId: string;
   attendees?: string[];
 }
 

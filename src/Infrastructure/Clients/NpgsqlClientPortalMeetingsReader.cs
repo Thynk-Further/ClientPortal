@@ -35,6 +35,7 @@ public sealed class NpgsqlClientPortalMeetingsReader : IClientPortalMeetingsRead
                 meeting.Title,
                 meeting.Description,
                 meeting.ScheduledAt,
+                meeting.ScheduledTimeZoneId,
                 meeting.DurationMinutes,
                 meeting.MeetingUrl,
                 meeting.Status,

@@ -34,6 +34,7 @@ public sealed class GetMeetingByIdQueryHandler : IRequestHandler<GetMeetingByIdQ
             meeting.Title,
             meeting.Description,
             meeting.ScheduledAt,
+            meeting.ScheduledTimeZoneId,
             meeting.DurationMinutes,
             meeting.MeetingUrl,
             meeting.Status,

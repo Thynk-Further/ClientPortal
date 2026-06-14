@@ -60,7 +60,7 @@ public sealed class MeetingReminderJob
         string body =
             $"Hello {reminder.ClientContactName},\n\n" +
             $"This is a reminder for your meeting \"{reminder.MeetingTitle}\".\n" +
-            $"Starts at: {reminder.ScheduledAtUtc:yyyy-MM-dd HH:mm} UTC\n" +
+            $"Starts at: {MeetingDateTimeFormatter.FormatForEmail(reminder.ScheduledAtUtc, reminder.ScheduledTimeZoneId)}\n" +
             $"Meeting link: {reminder.MeetingUrl}\n\n" +
             $"Reminder window: {leadTimeText} before start.";
 
@@ -104,7 +104,7 @@ public sealed class MeetingReminderJob
         };
         string subject = $"Meeting reminder ({leadTimeText})";
         string body =
-            $"Reminder: \"{reminder.MeetingTitle}\" starts at {reminder.ScheduledAtUtc:yyyy-MM-dd HH:mm} UTC. " +
+            $"Reminder: \"{reminder.MeetingTitle}\" starts at {MeetingDateTimeFormatter.FormatForEmail(reminder.ScheduledAtUtc, reminder.ScheduledTimeZoneId)}. " +
             $"Join: {reminder.MeetingUrl}";
 
         try

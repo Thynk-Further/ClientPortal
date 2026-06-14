@@ -66,6 +66,7 @@ public sealed class MeetingRepository : IMeetingRepository
                 meeting.Title,
                 meeting.Description,
                 meeting.ScheduledAt,
+                meeting.ScheduledTimeZoneId,
                 meeting.DurationMinutes,
                 meeting.MeetingUrl,
                 meeting.Status,

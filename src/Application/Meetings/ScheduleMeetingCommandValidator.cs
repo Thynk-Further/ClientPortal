@@ -30,6 +30,10 @@ public sealed class ScheduleMeetingCommandValidator : AbstractValidator<Schedule
             .Must(BeAbsoluteHttpUrl)
             .WithMessage("MeetingUrl must be a valid absolute HTTP/HTTPS URL.");
 
+        RuleFor(command => command.ScheduledTimeZoneId)
+            .NotEmpty()
+            .MaximumLength(64);
+
         RuleForEach(command => command.Attendees)
             .NotEmpty();
     }

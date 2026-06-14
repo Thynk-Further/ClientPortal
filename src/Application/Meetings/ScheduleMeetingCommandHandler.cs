@@ -34,6 +34,7 @@ public sealed class ScheduleMeetingCommandHandler : IRequestHandler<ScheduleMeet
             durationMinutes: request.DurationMinutes,
             meetingUrl: request.MeetingUrl,
             status: MeetingStatus.Pending,
+            scheduledTimeZoneId: request.ScheduledTimeZoneId,
             attendees: attendees);
 
         meeting.RaiseRequestedEvent(DateTime.UtcNow);

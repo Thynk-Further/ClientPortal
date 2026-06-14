@@ -6,6 +6,7 @@ public sealed record MeetingReminderItem(
     Guid ClientId,
     string MeetingTitle,
     DateTime ScheduledAtUtc,
+    string ScheduledTimeZoneId,
     string MeetingUrl,
     string ClientContactName,
     string ClientEmail,

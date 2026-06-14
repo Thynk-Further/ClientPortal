@@ -130,6 +130,7 @@ public sealed class NpgsqlMeetingReminderReader : IMeetingReminderReader
                 m.client_id,
                 m.title,
                 m.scheduled_at,
+                m.scheduled_time_zone_id,
                 m.meeting_url,
                 c.contact_name,
                 c.email,
@@ -159,6 +160,7 @@ public sealed class NpgsqlMeetingReminderReader : IMeetingReminderReader
                 reader.GetString(5),
                 reader.GetString(6),
                 reader.GetString(7),
+                reader.GetString(8),
                 leadTime));
         }
 

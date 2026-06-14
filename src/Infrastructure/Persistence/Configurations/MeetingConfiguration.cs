@@ -14,6 +14,7 @@ internal sealed class MeetingConfiguration : IEntityTypeConfiguration<Meeting>
         builder.Property(meeting => meeting.Title).HasMaxLength(512).IsRequired();
         builder.Property(meeting => meeting.Description).HasMaxLength(8000).IsRequired();
         builder.Property(meeting => meeting.ScheduledAt).IsRequired();
+        builder.Property(meeting => meeting.ScheduledTimeZoneId).HasMaxLength(64).IsRequired();
         builder.Property(meeting => meeting.DurationMinutes).IsRequired();
         builder.Property(meeting => meeting.MeetingUrl).HasMaxLength(2048).IsRequired();
         builder.Property(meeting => meeting.Status).HasConversion<int>().IsRequired();

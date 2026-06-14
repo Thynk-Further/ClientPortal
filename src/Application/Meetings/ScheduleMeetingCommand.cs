@@ -10,4 +10,5 @@ public sealed record ScheduleMeetingCommand(
     DateTime ScheduledAt,
     int DurationMinutes,
     string MeetingUrl,
+    string ScheduledTimeZoneId,
     IReadOnlyCollection<Guid> Attendees) : IRequest<Result<Guid>>;

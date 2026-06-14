@@ -1,4 +1,5 @@
 using Application.Clients.Abstractions;
+using Application.Meetings;
 using Application.Meetings.Abstractions;
 using Application.Notifications.Abstractions;
 using Domain;
@@ -31,7 +32,7 @@ public sealed class EmailMeetingInvitationService : IMeetingInvitationService
             $"Hello {client.ContactName},\n\n" +
             $"Your business partner has requested a meeting.\n" +
             $"Title: {meeting.Title}\n" +
-            $"Proposed time: {meeting.ScheduledAt:yyyy-MM-dd HH:mm:ss} UTC\n" +
+            $"Proposed time: {MeetingDateTimeFormatter.FormatForEmail(meeting.ScheduledAt, meeting.ScheduledTimeZoneId)}\n" +
             $"Duration: {meeting.DurationMinutes} minutes\n" +
             $"Agenda: {meeting.Description}\n\n" +
             "Please sign in to your client portal to accept or decline this meeting.";
@@ -57,7 +58,7 @@ public sealed class EmailMeetingInvitationService : IMeetingInvitationService
         string body =
             $"Hello {client.ContactName},\n\n" +
             $"A meeting has been scheduled.\n" +
-            $"When: {meeting.ScheduledAt:yyyy-MM-dd HH:mm:ss} UTC\n" +
+            $"When: {MeetingDateTimeFormatter.FormatForEmail(meeting.ScheduledAt, meeting.ScheduledTimeZoneId)}\n" +
             $"Duration: {meeting.DurationMinutes} minutes\n" +
             $"Join link: {meeting.MeetingUrl}\n\n" +
             "A calendar invite is attached.";

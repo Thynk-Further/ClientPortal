@@ -8,6 +8,7 @@ public sealed record MeetingListItemDto(
     string Title,
     string Description,
     DateTime ScheduledAt,
+    string ScheduledTimeZoneId,
     int DurationMinutes,
     string MeetingUrl,
     MeetingStatus Status,

@@ -14,6 +14,8 @@ public sealed class Meeting : AggregateRoot<Guid>
 
     public DateTime ScheduledAt { get; private set; }
 
+    public string ScheduledTimeZoneId { get; private set; } = MeetingTimeZoneDefaults.DefaultId;
+
     public int DurationMinutes { get; private set; }
 
     public string MeetingUrl { get; private set; } = string.Empty;
@@ -35,6 +37,7 @@ public sealed class Meeting : AggregateRoot<Guid>
         int durationMinutes,
         string meetingUrl,
         MeetingStatus status,
+        string scheduledTimeZoneId,
         IEnumerable<Guid> attendees)
         : base(id)
     {
@@ -42,6 +45,7 @@ public sealed class Meeting : AggregateRoot<Guid>
         Title = NormalizeTitle(title);
         Description = NormalizeDescription(description);
         ScheduledAt = NormalizeScheduledAt(scheduledAt);
+        ScheduledTimeZoneId = NormalizeTimeZoneId(scheduledTimeZoneId);
         DurationMinutes = NormalizeDuration(durationMinutes);
         MeetingUrl = NormalizeMeetingUrl(meetingUrl);
         Status = status;
@@ -57,6 +61,7 @@ public sealed class Meeting : AggregateRoot<Guid>
         int durationMinutes,
         string meetingUrl,
         MeetingStatus status = MeetingStatus.Pending,
+        string scheduledTimeZoneId = MeetingTimeZoneDefaults.DefaultId,
         IEnumerable<Guid>? attendees = null)
     {
         return new Meeting(
@@ -68,6 +73,7 @@ public sealed class Meeting : AggregateRoot<Guid>
             durationMinutes,
             meetingUrl,
             status,
+            scheduledTimeZoneId,
             attendees ?? []);
     }
 
@@ -226,6 +232,17 @@ public sealed class Meeting : AggregateRoot<Guid>
         }
 
         return scheduledAt.Kind == DateTimeKind.Utc ? scheduledAt : scheduledAt.ToUniversalTime();
+    }
+
+    private static string NormalizeTimeZoneId(string timeZoneId)
+    {
+        string normalized = Guard.NotEmpty(timeZoneId, nameof(timeZoneId)).Trim();
+        if (normalized.Length > 64)
+        {
+            throw new ArgumentException("ScheduledTimeZoneId cannot exceed 64 characters.", nameof(timeZoneId));
+        }
+
+        return normalized;
     }
 
     private static int NormalizeDuration(int durationMinutes)

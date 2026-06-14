@@ -357,6 +357,7 @@ public static class CommunicationEndpoints
                 request.ScheduledAt,
                 request.DurationMinutes,
                 request.MeetingUrl,
+                request.ScheduledTimeZoneId,
                 request.Attendees),
             cancellationToken);
 
@@ -491,6 +492,7 @@ public sealed record ScheduleMeetingRequest(
     DateTime ScheduledAt,
     int DurationMinutes,
     string MeetingUrl,
+    string ScheduledTimeZoneId,
     IReadOnlyCollection<Guid> Attendees);
 
 public sealed record UpdateMeetingRequest(

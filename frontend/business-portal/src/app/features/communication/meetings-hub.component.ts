@@ -323,6 +323,7 @@ export class MeetingsHubComponent implements OnInit {
       scheduledAt: this.buildScheduledAtIso(values.date, values.startTime),
       durationMinutes,
       meetingUrl: values.meetingUrl.trim(),
+      scheduledTimeZoneId: this.resolveSchedulerTimeZoneId(),
       attendees: [],
     };
 
@@ -385,6 +386,10 @@ export class MeetingsHubComponent implements OnInit {
 
   private buildScheduledAtIso(date: string, startTime: string): string {
     return new Date(`${date}T${startTime}:00`).toISOString();
+  }
+
+  private resolveSchedulerTimeZoneId(): string {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Harare';
   }
 
   private calculateDurationMinutes(startTime: string, endTime: string): number {
