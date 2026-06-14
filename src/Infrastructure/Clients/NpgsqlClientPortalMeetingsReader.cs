@@ -27,7 +27,7 @@ public sealed class NpgsqlClientPortalMeetingsReader : IClientPortalMeetingsRead
             .Where(meeting =>
                 meeting.ClientId == clientId
                 && meeting.ScheduledAt >= nowUtc
-                && meeting.Status == MeetingStatus.Scheduled)
+                && (meeting.Status == MeetingStatus.Scheduled || meeting.Status == MeetingStatus.Pending))
             .OrderBy(meeting => meeting.ScheduledAt)
             .Select(meeting => new MeetingListItemDto(
                 meeting.Id,

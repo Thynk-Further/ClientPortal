@@ -33,9 +33,10 @@ public sealed class ScheduleMeetingCommandHandler : IRequestHandler<ScheduleMeet
             scheduledAt: request.ScheduledAt,
             durationMinutes: request.DurationMinutes,
             meetingUrl: request.MeetingUrl,
+            status: MeetingStatus.Pending,
             attendees: attendees);
 
-        meeting.RaiseScheduledEvent(DateTime.UtcNow);
+        meeting.RaiseRequestedEvent(DateTime.UtcNow);
         _meetingRepository.Add(meeting);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -49,7 +49,13 @@ public sealed class MeetingReminderJob
             return;
         }
 
-        string leadTimeText = reminder.LeadTime == MeetingReminderLeadTime.OneDay ? "24 hours" : "1 hour";
+        string leadTimeText = reminder.LeadTime switch
+        {
+            MeetingReminderLeadTime.OneDay => "24 hours",
+            MeetingReminderLeadTime.OneHour => "1 hour",
+            MeetingReminderLeadTime.FifteenMinutes => "15 minutes",
+            _ => "soon"
+        };
         string subject = $"Meeting reminder: {reminder.MeetingTitle} in {leadTimeText}";
         string body =
             $"Hello {reminder.ClientContactName},\n\n" +
@@ -89,7 +95,13 @@ public sealed class MeetingReminderJob
             return;
         }
 
-        string leadTimeText = reminder.LeadTime == MeetingReminderLeadTime.OneDay ? "24h" : "1h";
+        string leadTimeText = reminder.LeadTime switch
+        {
+            MeetingReminderLeadTime.OneDay => "24h",
+            MeetingReminderLeadTime.OneHour => "1h",
+            MeetingReminderLeadTime.FifteenMinutes => "15m",
+            _ => "soon"
+        };
         string subject = $"Meeting reminder ({leadTimeText})";
         string body =
             $"Reminder: \"{reminder.MeetingTitle}\" starts at {reminder.ScheduledAtUtc:yyyy-MM-dd HH:mm} UTC. " +

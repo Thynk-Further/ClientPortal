@@ -24,11 +24,15 @@ import {
 } from '@/components/ui/card.component';
 
 const JOIN_WINDOW_MINUTES = 15;
+const SCHEDULED_STATUS = 1;
+const PENDING_STATUS = 4;
 
 const MEETING_STATUS_LABELS: Record<number, string> = {
   1: 'Scheduled',
   2: 'Completed',
   3: 'Cancelled',
+  4: 'Pending your response',
+  5: 'Declined',
 };
 
 @Component({
@@ -48,7 +52,7 @@ const MEETING_STATUS_LABELS: Record<number, string> = {
       <header class="space-y-1">
         <h1 class="text-[1.75rem] font-semibold tracking-tight text-foreground">Meetings</h1>
         <p class="text-sm text-muted-foreground">
-          Upcoming meetings with live countdowns and join links when your session opens.
+          Review meeting requests, accept invitations, and join sessions when they open.
         </p>
       </header>
 
@@ -60,95 +64,132 @@ const MEETING_STATUS_LABELS: Record<number, string> = {
 
       @if (isLoading()) {
         <p class="text-sm text-muted-foreground">Loading meetings...</p>
-      } @else if (meetings().length === 0) {
-        <ui-card class="border-dashed">
-          <ui-card-header>
-            <ui-card-title>No upcoming meetings</ui-card-title>
-            <ui-card-description>
-              When your business team schedules a meeting with you, it will appear here.
-            </ui-card-description>
-          </ui-card-header>
-        </ui-card>
       } @else {
-        @if (nextMeeting(); as featured) {
-          <ui-card class="border-primary/30 bg-primary/5">
-            <ui-card-header>
-              <ui-card-title>Next meeting</ui-card-title>
-              <ui-card-description>{{ formatDateTime(featured.scheduledAt) }}</ui-card-description>
-            </ui-card-header>
-            <ui-card-content class="space-y-4">
-              <div>
-                <p class="text-lg font-semibold">{{ featured.title }}</p>
-                @if (featured.description.trim() !== '') {
-                  <p class="mt-1 text-sm text-muted-foreground">{{ featured.description }}</p>
-                }
-                <p class="mt-2 text-xs text-muted-foreground">
-                  {{ featured.durationMinutes }} min · {{ meetingStatusLabel(featured.status) }}
-                </p>
-              </div>
-
-              <div class="rounded-xl border bg-card px-4 py-5 text-center">
-                <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {{ countdownHeading(featured) }}
-                </p>
-                <p class="mt-2 font-mono text-3xl font-semibold tracking-tight text-foreground">
-                  {{ countdownText(featured) }}
-                </p>
-              </div>
-
-              @if (hasJoinUrl(featured)) {
-                @if (canJoin(featured)) {
-                  <a
-                    [href]="featured.meetingUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                  >
-                    Join meeting
-                  </a>
-                } @else {
-                  <ui-button class="w-full" [disabled]="true" label="Join meeting" />
-                  <p class="text-center text-xs text-muted-foreground">
-                    Join link opens {{ joinWindowMinutes }} minutes before the meeting starts.
-                  </p>
-                }
-              }
-            </ui-card-content>
-          </ui-card>
-        }
-
-        @if (remainingMeetings().length > 0) {
-          <section class="space-y-3" aria-label="Other upcoming meetings">
-            <h2 class="text-base font-semibold">Later this month</h2>
-            @for (meeting of remainingMeetings(); track meeting.id) {
-              <ui-card>
-                <ui-card-content class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-                  <div class="min-w-0 space-y-1">
-                    <p class="truncate text-sm font-medium">{{ meeting.title }}</p>
+        @if (pendingMeetings().length > 0) {
+          <section class="space-y-3" aria-label="Pending meeting requests">
+            <h2 class="text-base font-semibold">Awaiting your response</h2>
+            @for (meeting of pendingMeetings(); track meeting.id) {
+              <ui-card class="border-amber-500/30 bg-amber-500/5">
+                <ui-card-content class="space-y-4 p-5">
+                  <div class="space-y-1">
+                    <p class="text-sm font-medium">{{ meeting.title }}</p>
                     <p class="text-xs text-muted-foreground">
                       {{ formatDateTime(meeting.scheduledAt) }} · {{ meeting.durationMinutes }} min
                     </p>
-                    <p class="font-mono text-xs text-primary">{{ countdownText(meeting) }}</p>
+                    @if (meeting.description.trim() !== '') {
+                      <p class="text-sm text-muted-foreground">{{ meeting.description }}</p>
+                    }
                   </div>
 
-                  @if (hasJoinUrl(meeting)) {
-                    @if (canJoin(meeting)) {
-                      <a
-                        [href]="meeting.meetingUrl"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="inline-flex h-9 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                      >
-                        Join
-                      </a>
-                    } @else {
-                      <ui-button size="sm" variant="outline" [disabled]="true" label="Join" />
-                    }
-                  }
+                  <div class="flex flex-wrap gap-2">
+                    <ui-button
+                      label="Accept"
+                      [disabled]="respondingMeetingId() === meeting.id"
+                      (clicked)="acceptMeeting(meeting.id)"
+                    />
+                    <ui-button
+                      label="Decline"
+                      variant="outline"
+                      [disabled]="respondingMeetingId() === meeting.id"
+                      (clicked)="declineMeeting(meeting.id)"
+                    />
+                  </div>
                 </ui-card-content>
               </ui-card>
             }
           </section>
+        }
+
+        @if (scheduledMeetings().length === 0 && pendingMeetings().length === 0) {
+          <ui-card class="border-dashed">
+            <ui-card-header>
+              <ui-card-title>No upcoming meetings</ui-card-title>
+              <ui-card-description>
+                When your business team schedules a meeting with you, it will appear here.
+              </ui-card-description>
+            </ui-card-header>
+          </ui-card>
+        } @else if (scheduledMeetings().length > 0) {
+          @if (nextMeeting(); as featured) {
+            <ui-card class="border-primary/30 bg-primary/5">
+              <ui-card-header>
+                <ui-card-title>Next meeting</ui-card-title>
+                <ui-card-description>{{ formatDateTime(featured.scheduledAt) }}</ui-card-description>
+              </ui-card-header>
+              <ui-card-content class="space-y-4">
+                <div>
+                  <p class="text-lg font-semibold">{{ featured.title }}</p>
+                  @if (featured.description.trim() !== '') {
+                    <p class="mt-1 text-sm text-muted-foreground">{{ featured.description }}</p>
+                  }
+                  <p class="mt-2 text-xs text-muted-foreground">
+                    {{ featured.durationMinutes }} min · {{ meetingStatusLabel(featured.status) }}
+                  </p>
+                </div>
+
+                <div class="rounded-xl border bg-card px-4 py-5 text-center">
+                  <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {{ countdownHeading(featured) }}
+                  </p>
+                  <p class="mt-2 font-mono text-3xl font-semibold tracking-tight text-foreground">
+                    {{ countdownText(featured) }}
+                  </p>
+                </div>
+
+                @if (hasJoinUrl(featured)) {
+                  @if (canJoin(featured)) {
+                    <a
+                      [href]="featured.meetingUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                    >
+                      Join meeting
+                    </a>
+                  } @else {
+                    <ui-button class="w-full" [disabled]="true" label="Join meeting" />
+                    <p class="text-center text-xs text-muted-foreground">
+                      Join link opens {{ joinWindowMinutes }} minutes before the meeting starts.
+                    </p>
+                  }
+                }
+              </ui-card-content>
+            </ui-card>
+          }
+
+          @if (remainingMeetings().length > 0) {
+            <section class="space-y-3" aria-label="Other upcoming meetings">
+              <h2 class="text-base font-semibold">Later this month</h2>
+              @for (meeting of remainingMeetings(); track meeting.id) {
+                <ui-card>
+                  <ui-card-content class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="min-w-0 space-y-1">
+                      <p class="truncate text-sm font-medium">{{ meeting.title }}</p>
+                      <p class="text-xs text-muted-foreground">
+                        {{ formatDateTime(meeting.scheduledAt) }} · {{ meeting.durationMinutes }} min
+                      </p>
+                      <p class="font-mono text-xs text-primary">{{ countdownText(meeting) }}</p>
+                    </div>
+
+                    @if (hasJoinUrl(meeting)) {
+                      @if (canJoin(meeting)) {
+                        <a
+                          [href]="meeting.meetingUrl"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="inline-flex h-9 shrink-0 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                        >
+                          Join
+                        </a>
+                      } @else {
+                        <ui-button size="sm" variant="outline" [disabled]="true" label="Join" />
+                      }
+                    }
+                  </ui-card-content>
+                </ui-card>
+              }
+            </section>
+          }
         }
       }
     </div>
@@ -163,11 +204,20 @@ export class ClientMeetingsComponent implements OnInit, OnDestroy {
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly meetings = signal<ClientPortalMeetingCard[]>([]);
+  protected readonly respondingMeetingId = signal<string | null>(null);
   protected readonly now = signal(Date.now());
 
-  protected readonly nextMeeting = computed(() => this.meetings()[0] ?? null);
+  protected readonly pendingMeetings = computed(() =>
+    this.meetings().filter((meeting) => meeting.status === PENDING_STATUS),
+  );
 
-  protected readonly remainingMeetings = computed(() => this.meetings().slice(1));
+  protected readonly scheduledMeetings = computed(() =>
+    this.meetings().filter((meeting) => meeting.status === SCHEDULED_STATUS),
+  );
+
+  protected readonly nextMeeting = computed(() => this.scheduledMeetings()[0] ?? null);
+
+  protected readonly remainingMeetings = computed(() => this.scheduledMeetings().slice(1));
 
   async ngOnInit(): Promise<void> {
     await this.loadMeetings();
@@ -179,6 +229,34 @@ export class ClientMeetingsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.countdownTimer !== null) {
       clearInterval(this.countdownTimer);
+    }
+  }
+
+  protected async acceptMeeting(meetingId: string): Promise<void> {
+    this.respondingMeetingId.set(meetingId);
+    this.errorMessage.set(null);
+
+    try {
+      await firstValueFrom(this.clientPortalApi.acceptMeeting(meetingId));
+      await this.loadMeetings();
+    } catch (error) {
+      this.errorMessage.set(readHttpErrorMessage(error, 'Failed to accept meeting.'));
+    } finally {
+      this.respondingMeetingId.set(null);
+    }
+  }
+
+  protected async declineMeeting(meetingId: string): Promise<void> {
+    this.respondingMeetingId.set(meetingId);
+    this.errorMessage.set(null);
+
+    try {
+      await firstValueFrom(this.clientPortalApi.declineMeeting(meetingId));
+      await this.loadMeetings();
+    } catch (error) {
+      this.errorMessage.set(readHttpErrorMessage(error, 'Failed to decline meeting.'));
+    } finally {
+      this.respondingMeetingId.set(null);
     }
   }
 

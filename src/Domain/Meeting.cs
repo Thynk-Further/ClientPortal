@@ -18,7 +18,7 @@ public sealed class Meeting : AggregateRoot<Guid>
 
     public string MeetingUrl { get; private set; } = string.Empty;
 
-    public MeetingStatus Status { get; private set; } = MeetingStatus.Scheduled;
+    public MeetingStatus Status { get; private set; } = MeetingStatus.Pending;
 
     public IReadOnlyCollection<Guid> Attendees => _attendees.AsReadOnly();
 
@@ -56,7 +56,7 @@ public sealed class Meeting : AggregateRoot<Guid>
         DateTime scheduledAt,
         int durationMinutes,
         string meetingUrl,
-        MeetingStatus status = MeetingStatus.Scheduled,
+        MeetingStatus status = MeetingStatus.Pending,
         IEnumerable<Guid>? attendees = null)
     {
         return new Meeting(
@@ -71,10 +71,40 @@ public sealed class Meeting : AggregateRoot<Guid>
             attendees ?? []);
     }
 
+    public void RaiseRequestedEvent(DateTime requestedAt)
+    {
+        DateTime normalizedRequestedAt = requestedAt.Kind == DateTimeKind.Utc
+            ? requestedAt
+            : requestedAt.ToUniversalTime();
+        AddDomainEvent(new MeetingRequestedEvent(Id, ClientId, ScheduledAt, normalizedRequestedAt));
+    }
+
     public void RaiseScheduledEvent(DateTime scheduledAt)
     {
         DateTime normalizedScheduledAt = NormalizeScheduledAt(scheduledAt);
         AddDomainEvent(new MeetingScheduledEvent(Id, ClientId, normalizedScheduledAt, ScheduledAt));
+    }
+
+    public void Accept()
+    {
+        if (Status != MeetingStatus.Pending)
+        {
+            throw new InvalidOperationException("Only pending meetings can be accepted.");
+        }
+
+        Status = MeetingStatus.Scheduled;
+        MarkUpdated();
+    }
+
+    public void Decline()
+    {
+        if (Status != MeetingStatus.Pending)
+        {
+            throw new InvalidOperationException("Only pending meetings can be declined.");
+        }
+
+        Status = MeetingStatus.Declined;
+        MarkUpdated();
     }
 
     public void UpdateDetails(string title, string description, int durationMinutes, string meetingUrl)

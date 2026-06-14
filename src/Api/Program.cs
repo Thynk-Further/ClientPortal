@@ -376,7 +376,7 @@ try
     RecurringJob.AddOrUpdate<MeetingReminderJob>(
         "meeting-reminder-job",
         job => job.RunAsync(CancellationToken.None),
-        "0 * * * *",
+        "*/5 * * * *",
         new RecurringJobOptions
         {
             TimeZone = TimeZoneInfo.Local

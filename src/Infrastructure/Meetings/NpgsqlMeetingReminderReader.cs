@@ -101,6 +101,17 @@ public sealed class NpgsqlMeetingReminderReader : IMeetingReminderReader
             MeetingReminderLeadTime.OneHour,
             cancellationToken));
 
+        DateTime fifteenMinuteWindowStart = nowUtc.AddMinutes(15);
+        DateTime fifteenMinuteWindowEnd = nowUtc.AddMinutes(20);
+        reminders.AddRange(await QueryWindowAsync(
+            connection,
+            schema,
+            tenantSlug,
+            fifteenMinuteWindowStart,
+            fifteenMinuteWindowEnd,
+            MeetingReminderLeadTime.FifteenMinutes,
+            cancellationToken));
+
         return reminders;
     }
 

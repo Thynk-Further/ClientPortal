@@ -18,6 +18,33 @@ public sealed class EmailMeetingInvitationService : IMeetingInvitationService
         _notificationService = notificationService;
     }
 
+    public async Task SendMeetingRequestAsync(Meeting meeting, CancellationToken cancellationToken = default)
+    {
+        Client? client = await _clientRepository.FindByIdAsync(meeting.ClientId, cancellationToken);
+        if (client is null)
+        {
+            return;
+        }
+
+        string subject = $"Meeting request: {meeting.Title}";
+        string body =
+            $"Hello {client.ContactName},\n\n" +
+            $"Your business partner has requested a meeting.\n" +
+            $"Title: {meeting.Title}\n" +
+            $"Proposed time: {meeting.ScheduledAt:yyyy-MM-dd HH:mm:ss} UTC\n" +
+            $"Duration: {meeting.DurationMinutes} minutes\n" +
+            $"Agenda: {meeting.Description}\n\n" +
+            "Please sign in to your client portal to accept or decline this meeting.";
+
+        await _notificationService.SendAsync(
+            new NotificationMessage(
+                NotificationChannel.Email,
+                client.Email.Value,
+                subject,
+                body),
+            cancellationToken);
+    }
+
     public async Task SendCalendarInviteAsync(Meeting meeting, CancellationToken cancellationToken = default)
     {
         Client? client = await _clientRepository.FindByIdAsync(meeting.ClientId, cancellationToken);

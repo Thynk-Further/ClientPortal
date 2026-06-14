@@ -718,6 +718,24 @@ export class ClientPortalApiService {
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
+  acceptMeeting(meetingId: string): Observable<void> {
+    return this.apiClient
+      .post<ApiEnvelope<null>, Record<string, never>>(
+        `${this.basePath}/meetings/${meetingId}/accept`,
+        {},
+      )
+      .pipe(map(() => undefined));
+  }
+
+  declineMeeting(meetingId: string): Observable<void> {
+    return this.apiClient
+      .post<ApiEnvelope<null>, Record<string, never>>(
+        `${this.basePath}/meetings/${meetingId}/decline`,
+        {},
+      )
+      .pipe(map(() => undefined));
+  }
+
   getNoticesSummary(): Observable<ClientPortalNoticesSummary> {
     return this.apiClient
       .get<ApiEnvelope<ClientPortalNoticesSummary>>(`${this.basePath}/notices/summary`)

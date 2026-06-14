@@ -13,6 +13,15 @@ public sealed class NoopMeetingInvitationService : IMeetingInvitationService
         _logger = logger;
     }
 
+    public Task SendMeetingRequestAsync(Meeting meeting, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation(
+            "Meeting request notification is not configured yet for meeting {MeetingId}.",
+            meeting.Id);
+
+        return Task.CompletedTask;
+    }
+
     public Task SendCalendarInviteAsync(Meeting meeting, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation(

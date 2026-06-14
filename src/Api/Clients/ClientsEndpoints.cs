@@ -134,6 +134,12 @@ public static class ClientsEndpoints
         portalGroup.MapGet("/meetings", GetClientPortalMeetingsAsync)
             .WithName("ClientPortalMeetings");
 
+        portalGroup.MapPost("/meetings/{id:guid}/accept", AcceptClientPortalMeetingAsync)
+            .WithName("ClientPortalMeetingsAccept");
+
+        portalGroup.MapPost("/meetings/{id:guid}/decline", DeclineClientPortalMeetingAsync)
+            .WithName("ClientPortalMeetingsDecline");
+
         portalGroup.MapGet("/notices/summary", GetClientPortalNoticesSummaryAsync)
             .WithName("ClientPortalNoticesSummary");
 
@@ -475,6 +481,22 @@ public static class ClientsEndpoints
             cancellationToken);
 
         return ToResponse(result);
+    }
+
+    private static async Task<IResult> AcceptClientPortalMeetingAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(new AcceptClientPortalMeetingCommand(id), cancellationToken));
+    }
+
+    private static async Task<IResult> DeclineClientPortalMeetingAsync(
+        Guid id,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await sender.Send(new DeclineClientPortalMeetingCommand(id), cancellationToken));
     }
 
     private static async Task<IResult> GetClientPortalNoticesSummaryAsync(
