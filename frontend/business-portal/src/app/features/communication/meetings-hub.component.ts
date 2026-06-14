@@ -22,14 +22,15 @@ import {
 } from '@/app/core/api/services/meeting-api.service';
 import { ClientApiService } from '@/app/core/api/services/client-api.service';
 import { ToastNotificationService } from '@/app/core/notifications/toast-notification.service';
+import { StatusBadgeComponent } from '@/components/ui/status-badge.component';
 
-const MEETING_STATUS_LABELS: Record<number, string> = {
-  1: 'Scheduled',
-  2: 'Completed',
-  3: 'Cancelled',
-  4: 'Pending acceptance',
-  5: 'Declined',
-};
+import {
+  formatMeetingDate,
+  formatMeetingDuration,
+  formatMeetingTime,
+  meetingStatusAccentClass,
+  meetingStatusLabel,
+} from './meeting-display.util';
 
 const SCHEDULED_STATUS = 1;
 
@@ -57,6 +58,7 @@ interface CalendarCell {
     InputComponent,
     SelectComponent,
     TextareaComponent,
+    StatusBadgeComponent,
   ],
   template: `
     <main class="min-h-screen bg-muted/30 p-4 sm:p-6">
@@ -83,7 +85,7 @@ interface CalendarCell {
               </ui-card-description>
             </ui-card-header>
             <ui-card-content>
-              <div class="mb-4 flex gap-2">
+              <div class="mb-4 flex shrink-0 gap-2">
                 <ui-button
                   label="Calendar View"
                   [variant]="activeView() === 'calendar' ? 'default' : 'outline'"
@@ -96,6 +98,12 @@ interface CalendarCell {
                 />
               </div>
 
+              <div
+                class="max-h-[min(32rem,calc(100vh-14rem))] overflow-y-auto overscroll-y-contain pr-1"
+                tabindex="0"
+                role="region"
+                aria-label="Meeting view content"
+              >
               @if (isLoading()) {
                 <p class="text-sm text-muted-foreground">Loading meetings...</p>
               } @else if (activeView() === 'calendar') {
@@ -122,23 +130,97 @@ interface CalendarCell {
               } @else if (meetings().length === 0) {
                 <p class="text-sm text-muted-foreground">No meetings scheduled yet.</p>
               } @else {
-                <ul class="space-y-2">
+                <ul class="space-y-3">
                   @for (meeting of meetings(); track meeting.id) {
-                    <li class="rounded-lg border p-3">
-                      <div class="flex flex-wrap items-center justify-between gap-2">
-                        <p class="text-sm font-medium">{{ meeting.title }}</p>
-                        <span class="rounded-full border px-2 py-0.5 text-xs">
-                          {{ meetingStatusLabel(meeting.status) }}
-                        </span>
+                    <li
+                      class="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm"
+                    >
+                      <div class="flex">
+                        <div
+                          class="w-1 shrink-0 self-stretch"
+                          [class]="meetingStatusAccentClass(meeting.status)"
+                          aria-hidden="true"
+                        ></div>
+
+                        <div class="min-w-0 flex-1 p-4">
+                          <div class="flex items-start justify-between gap-3">
+                            <h3 class="truncate text-base font-semibold tracking-tight text-foreground">
+                              {{ meeting.title }}
+                            </h3>
+                            <ui-status-badge
+                              class="shrink-0"
+                              [status]="meetingStatusLabel(meeting.status)"
+                            />
+                          </div>
+
+                          <dl class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                            <div class="rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
+                              <dt
+                                class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                              >
+                                Date
+                              </dt>
+                              <dd class="mt-1 text-sm font-medium leading-snug text-foreground">
+                                {{ formatMeetingDate(meeting.scheduledAt) }}
+                              </dd>
+                            </div>
+
+                            <div class="rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
+                              <dt
+                                class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                              >
+                                Time
+                              </dt>
+                              <dd class="mt-1 font-mono text-sm font-medium tabular-nums text-foreground">
+                                {{ formatMeetingTime(meeting.scheduledAt) }}
+                              </dd>
+                            </div>
+
+                            <div class="rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
+                              <dt
+                                class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                              >
+                                Duration
+                              </dt>
+                              <dd class="mt-1 text-sm font-medium text-foreground">
+                                {{ formatMeetingDuration(meeting.durationMinutes) }}
+                              </dd>
+                            </div>
+
+                            <div class="rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
+                              <dt
+                                class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground"
+                              >
+                                Client
+                              </dt>
+                              <dd
+                                class="mt-1 flex items-center gap-1.5 truncate text-sm font-medium text-foreground"
+                              >
+                                <svg
+                                  class="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.75"
+                                    d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"
+                                  />
+                                </svg>
+                                <span class="truncate">{{ clientName(meeting.clientId) }}</span>
+                              </dd>
+                            </div>
+                          </dl>
+                        </div>
                       </div>
-                      <p class="mt-1 text-xs text-muted-foreground">
-                        {{ formatDateTime(meeting.scheduledAt) }} · {{ meeting.durationMinutes }} min ·
-                        {{ clientName(meeting.clientId) }}
-                      </p>
                     </li>
                   }
                 </ul>
               }
+              </div>
             </ui-card-content>
           </ui-card>
 
@@ -276,26 +358,14 @@ export class MeetingsHubComponent implements OnInit {
     await Promise.all([this.loadClients(), this.loadMeetings()]);
   }
 
-  protected meetingStatusLabel(status: number): string {
-    return MEETING_STATUS_LABELS[status] ?? 'Unknown';
-  }
+  protected readonly meetingStatusLabel = meetingStatusLabel;
+  protected readonly meetingStatusAccentClass = meetingStatusAccentClass;
+  protected readonly formatMeetingDate = formatMeetingDate;
+  protected readonly formatMeetingTime = formatMeetingTime;
+  protected readonly formatMeetingDuration = formatMeetingDuration;
 
   protected clientName(clientId: string): string {
     return this.clientNamesById()[clientId] ?? 'Unknown client';
-  }
-
-  protected formatDateTime(value: string): string {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-
-    return new Intl.DateTimeFormat(undefined, {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(date);
   }
 
   protected async onSchedule(): Promise<void> {
