@@ -118,29 +118,42 @@ public sealed class SendMessageCommandHandler : IRequestHandler<SendMessageComma
             ? null
             : sentAt.AddDays(Math.Max(1, _currentTenant.Settings?.AttachmentExpiryDays ?? 90));
 
-        long sequenceNumber = await _messageRepository.GetNextSequenceNumberAsync(request.ThreadId, cancellationToken);
+        await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
-        Message message = Message.Create(
-            id: Guid.CreateVersion7(),
-            threadId: request.ThreadId,
-            senderId: request.SenderId,
-            senderRole: request.SenderRole,
-            clientMessageId: request.ClientMessageId,
-            sequenceNumber: sequenceNumber,
-            content: request.Content,
-            sentAt: sentAt,
-            replyToMessageId: request.ReplyToMessageId,
-            emojiReaction: request.EmojiReaction,
-            attachment: attachment,
-            attachmentExpiresAt: attachmentExpiresAt);
+        try
+        {
+            long sequenceNumber = await _messageRepository.GetNextSequenceNumberAsync(
+                request.ThreadId,
+                cancellationToken);
 
-        thread.TouchLastMessageAt(sentAt);
-        thread.RaiseMessageSent(message.Id, request.SenderId, sentAt);
+            Message message = Message.Create(
+                id: Guid.CreateVersion7(),
+                threadId: request.ThreadId,
+                senderId: request.SenderId,
+                senderRole: request.SenderRole,
+                clientMessageId: request.ClientMessageId,
+                sequenceNumber: sequenceNumber,
+                content: request.Content,
+                sentAt: sentAt,
+                replyToMessageId: request.ReplyToMessageId,
+                emojiReaction: request.EmojiReaction,
+                attachment: attachment,
+                attachmentExpiresAt: attachmentExpiresAt);
 
-        _messageRepository.Add(message);
-        _messageThreadRepository.Update(thread);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+            thread.TouchLastMessageAt(sentAt);
+            thread.RaiseMessageSent(message.Id, request.SenderId, sentAt);
 
-        return Result<Guid>.Success(message.Id);
+            _messageRepository.Add(message);
+            _messageThreadRepository.Update(thread);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.CommitAsync(cancellationToken);
+
+            return Result<Guid>.Success(message.Id);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 }

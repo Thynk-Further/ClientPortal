@@ -6,6 +6,7 @@ import {
   forwardRef,
   inject,
   input,
+  output,
   viewChild,
 } from '@angular/core';
 import {
@@ -33,6 +34,7 @@ import { cn } from '@/components/lib/utils';
       [disabled]="disabled"
       [class]="classes()"
       (input)="onInput($event)"
+      (keydown)="keydown.emit($event)"
       (blur)="onBlur()"
     ></textarea>
   `,
@@ -44,6 +46,8 @@ export class TextareaComponent implements ControlValueAccessor {
   readonly placeholder = input('');
   readonly rows = input(4);
   readonly class = input('');
+
+  keydown = output<KeyboardEvent>();
 
   value = '';
   disabled = false;

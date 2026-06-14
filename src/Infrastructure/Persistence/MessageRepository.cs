@@ -35,6 +35,17 @@ public sealed class MessageRepository : IMessageRepository
 
     public async Task<long> GetNextSequenceNumberAsync(Guid threadId, CancellationToken cancellationToken = default)
     {
+        if (_tenantDbContext.Database.CurrentTransaction is null)
+        {
+            throw new InvalidOperationException(
+                "GetNextSequenceNumberAsync must be called within an active database transaction.");
+        }
+
+        // Serialize concurrent sends on the same thread so two requests cannot read the same MAX(sequence_number).
+        await _tenantDbContext.Database.ExecuteSqlRawAsync(
+            "SELECT 1 FROM message_threads WHERE id = {0} FOR UPDATE",
+            threadId);
+
         long? currentMax = await _tenantDbContext.Set<Message>()
             .Where(message => message.ThreadId == threadId)
             .Select(message => (long?)message.SequenceNumber)
