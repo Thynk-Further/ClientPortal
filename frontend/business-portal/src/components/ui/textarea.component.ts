@@ -1,8 +1,13 @@
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
+  ElementRef,
   forwardRef,
+  inject,
   input,
+  output,
+  viewChild,
 } from '@angular/core';
 import {
   ControlValueAccessor,
@@ -23,20 +28,26 @@ import { cn } from '@/components/lib/utils';
   ],
   template: `
     <textarea
-      [value]="value"
+      #textareaElement
       [placeholder]="placeholder()"
       [rows]="rows()"
       [disabled]="disabled"
       [class]="classes()"
       (input)="onInput($event)"
+      (keydown)="keydown.emit($event)"
       (blur)="onBlur()"
     ></textarea>
   `,
 })
 export class TextareaComponent implements ControlValueAccessor {
+  private readonly changeDetectorRef = inject(ChangeDetectorRef);
+  private readonly textareaElement = viewChild<ElementRef<HTMLTextAreaElement>>('textareaElement');
+
   readonly placeholder = input('');
   readonly rows = input(4);
   readonly class = input('');
+
+  keydown = output<KeyboardEvent>();
 
   value = '';
   disabled = false;
@@ -55,6 +66,11 @@ export class TextareaComponent implements ControlValueAccessor {
 
   writeValue(value: string | null): void {
     this.value = value ?? '';
+    const textarea = this.textareaElement();
+    if (textarea !== undefined) {
+      textarea.nativeElement.value = this.value;
+    }
+    this.changeDetectorRef.markForCheck();
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -67,6 +83,7 @@ export class TextareaComponent implements ControlValueAccessor {
 
   setDisabledState(disabled: boolean): void {
     this.disabled = disabled;
+    this.changeDetectorRef.markForCheck();
   }
 
   onInput(event: Event): void {

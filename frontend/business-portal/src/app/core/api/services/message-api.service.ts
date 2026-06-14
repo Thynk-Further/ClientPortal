@@ -1,35 +1,56 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
+import {
+  MessageAttachmentMetadata,
+  MessageHistoryItem,
+  MessageThreadListItem,
+} from '../../messaging/messaging.models';
+import { unwrapApiEnvelopeData } from '../api-envelope.util';
 import { ApiClientService } from '../api-client.service';
-import { ApiOperationResult, PagedResult } from '../models';
+import { ApiEnvelope } from '../models';
 
-export interface MessageThreadSummary {
-  id: string;
-  subject?: string;
-  unreadCount: number;
-  updatedAtUtc: string;
-  [key: string]: unknown;
+export interface PagedMessagesResult {
+  items: MessageHistoryItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
 }
 
-export interface MessageItem {
-  id: string;
-  threadId: string;
-  body: string;
-  sentAtUtc: string;
-  senderUserId: string;
-  [key: string]: unknown;
-}
-
-export interface MessageThreadQuery {
-  search?: string;
-  pageNumber?: number;
-  pageSize?: number;
+export interface PagedThreadsResult {
+  items: MessageThreadListItem[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface SendMessageRequest {
-  body: string;
-  attachmentKeys?: string[];
+  senderRole: string;
+  clientMessageId: string;
+  content: string;
+  replyToMessageId?: string | null;
+  emojiReaction?: string | null;
+  attachment?: MessageAttachmentMetadata | null;
+}
+
+export interface MessageAttachmentUploadUrlRequest {
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  url?: string;
+}
+
+export interface MessageAttachmentUploadUrlResult {
+  uploadUrl: string;
+  fileUrl: string;
+  expiresAtUtc: string;
+}
+
+export interface CreateMessageThreadRequest {
+  clientId: string;
+  projectId?: string | null;
+  participantIds: string[];
+  subject: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -38,33 +59,63 @@ export class MessageApiService {
 
   constructor(private readonly apiClient: ApiClientService) {}
 
-  getThreads(query?: MessageThreadQuery): Observable<PagedResult<MessageThreadSummary>> {
-    return this.apiClient.get<PagedResult<MessageThreadSummary>>(
-      `${this.basePath}/threads`,
-      query,
-    );
+  getThreads(page = 1, pageSize = 20): Observable<PagedThreadsResult> {
+    return this.apiClient
+      .get<ApiEnvelope<PagedThreadsResult>>(`${this.basePath}/threads`, { page, pageSize })
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
-  getThreadMessages(threadId: string): Observable<MessageItem[]> {
-    return this.apiClient.get<MessageItem[]>(
-      `${this.basePath}/threads/${threadId}/messages`,
-    );
+  createThread(request: CreateMessageThreadRequest): Observable<string> {
+    return this.apiClient
+      .post<ApiEnvelope<string>, CreateMessageThreadRequest>(`${this.basePath}/threads`, {
+        ...request,
+        participantIds: request.participantIds ?? [],
+        projectId: request.projectId ?? null,
+      })
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
-  sendMessage(
+  getThreadMessages(
     threadId: string,
-    request: SendMessageRequest,
-  ): Observable<ApiOperationResult> {
-    return this.apiClient.post<ApiOperationResult, SendMessageRequest>(
-      `${this.basePath}/threads/${threadId}/messages`,
-      request,
-    );
+    page = 1,
+    pageSize = 50,
+    includeSoftDeleted = false,
+  ): Observable<PagedMessagesResult> {
+    return this.apiClient
+      .get<ApiEnvelope<PagedMessagesResult>>(
+        `${this.basePath}/threads/${threadId}/messages`,
+        { page, pageSize, includeSoftDeleted },
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
-  markThreadRead(threadId: string): Observable<ApiOperationResult> {
-    return this.apiClient.put<ApiOperationResult, Record<string, never>>(
-      `${this.basePath}/threads/${threadId}/read`,
-      {},
-    );
+  sendMessage(threadId: string, request: SendMessageRequest): Observable<string> {
+    return this.apiClient
+      .post<ApiEnvelope<string>, SendMessageRequest>(
+        `${this.basePath}/threads/${threadId}/messages`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  getAttachmentUploadUrl(
+    threadId: string,
+    request: MessageAttachmentUploadUrlRequest,
+  ): Observable<MessageAttachmentUploadUrlResult> {
+    return this.apiClient
+      .post<ApiEnvelope<MessageAttachmentUploadUrlResult>, MessageAttachmentUploadUrlRequest>(
+        `${this.basePath}/threads/${threadId}/attachments/upload-url`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  markThreadRead(threadId: string): Observable<number> {
+    return this.apiClient
+      .put<ApiEnvelope<number>, Record<string, never>>(
+        `${this.basePath}/threads/${threadId}/read`,
+        {},
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 }

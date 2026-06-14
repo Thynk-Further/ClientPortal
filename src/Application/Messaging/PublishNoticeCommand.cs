@@ -1,3 +1,4 @@
+using Application.Messaging.Dtos;
 using MediatR;
 using Shared;
 
@@ -7,4 +8,5 @@ public sealed record PublishNoticeCommand(
     string Title,
     string Content,
     DateTime? ExpiresAt,
-    IReadOnlyCollection<Guid>? TargetClientIds) : IRequest<Result<Guid>>;
+    IReadOnlyCollection<Guid>? TargetClientIds,
+    IReadOnlyCollection<MessageAttachmentMetadataDto>? Attachments) : IRequest<Result<Guid>>;

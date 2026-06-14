@@ -4,7 +4,10 @@ namespace Domain;
 
 public sealed class Notice : AggregateRoot<Guid>
 {
+    public const int MaxAttachments = 5;
+
     private List<Guid>? _targetClientIds;
+    private List<MessageAttachmentMetadata>? _attachments;
 
     public string Title { get; private set; } = string.Empty;
 
@@ -18,6 +21,8 @@ public sealed class Notice : AggregateRoot<Guid>
 
     public IReadOnlyCollection<Guid>? TargetClientIds => _targetClientIds?.AsReadOnly();
 
+    public IReadOnlyCollection<MessageAttachmentMetadata>? Attachments => _attachments?.AsReadOnly();
+
     private Notice()
     {
     }
@@ -29,7 +34,8 @@ public sealed class Notice : AggregateRoot<Guid>
         DateTime publishedAt,
         DateTime? expiresAt,
         bool isActive,
-        IEnumerable<Guid>? targetClientIds)
+        IEnumerable<Guid>? targetClientIds,
+        IEnumerable<MessageAttachmentMetadata>? attachments)
         : base(id)
     {
         Title = NormalizeTitle(title);
@@ -38,6 +44,7 @@ public sealed class Notice : AggregateRoot<Guid>
         ExpiresAt = NormalizeExpiry(PublishedAt, expiresAt);
         IsActive = isActive;
         SetTargetClientIds(targetClientIds);
+        SetAttachments(attachments);
     }
 
     public static Notice Create(
@@ -47,9 +54,10 @@ public sealed class Notice : AggregateRoot<Guid>
         DateTime publishedAt,
         DateTime? expiresAt,
         bool isActive,
-        IEnumerable<Guid>? targetClientIds)
+        IEnumerable<Guid>? targetClientIds,
+        IEnumerable<MessageAttachmentMetadata>? attachments = null)
     {
-        return new Notice(id, title, content, publishedAt, expiresAt, isActive, targetClientIds);
+        return new Notice(id, title, content, publishedAt, expiresAt, isActive, targetClientIds, attachments);
     }
 
     public void UpdateDetails(string title, string content, DateTime? expiresAt, IEnumerable<Guid>? targetClientIds)
@@ -80,6 +88,58 @@ public sealed class Notice : AggregateRoot<Guid>
     {
         IsActive = false;
         MarkUpdated();
+    }
+
+    private void SetAttachments(IEnumerable<MessageAttachmentMetadata>? attachments)
+    {
+        if (attachments is null)
+        {
+            _attachments = null;
+            return;
+        }
+
+        List<MessageAttachmentMetadata> normalizedAttachments = [];
+        foreach (MessageAttachmentMetadata attachment in attachments)
+        {
+            normalizedAttachments.Add(NormalizeAttachment(attachment));
+        }
+
+        if (normalizedAttachments.Count > MaxAttachments)
+        {
+            throw new ArgumentException($"A notice cannot have more than {MaxAttachments} attachments.", nameof(attachments));
+        }
+
+        _attachments = normalizedAttachments;
+    }
+
+    private static MessageAttachmentMetadata NormalizeAttachment(MessageAttachmentMetadata attachment)
+    {
+        ArgumentNullException.ThrowIfNull(attachment);
+
+        string fileName = Guard.NotEmpty(attachment.FileName, nameof(attachment.FileName)).Trim();
+        if (fileName.Length > 256)
+        {
+            throw new ArgumentOutOfRangeException(nameof(attachment), "Attachment file name length cannot exceed 256 characters.");
+        }
+
+        string contentType = Guard.NotEmpty(attachment.ContentType, nameof(attachment.ContentType)).Trim();
+        if (contentType.Length > 128)
+        {
+            throw new ArgumentOutOfRangeException(nameof(attachment), "Attachment content type length cannot exceed 128 characters.");
+        }
+
+        if (attachment.SizeBytes <= 0 || attachment.SizeBytes > 25 * 1024 * 1024)
+        {
+            throw new ArgumentOutOfRangeException(nameof(attachment), "Attachment size must be between 1 byte and 25 MB.");
+        }
+
+        string url = Guard.NotEmpty(attachment.Url, nameof(attachment.Url)).Trim();
+        if (url.Length > 2048 || !Uri.IsWellFormedUriString(url, UriKind.Absolute))
+        {
+            throw new ArgumentException("Attachment URL is invalid.", nameof(attachment));
+        }
+
+        return new MessageAttachmentMetadata(fileName, contentType, attachment.SizeBytes, url);
     }
 
     private void SetTargetClientIds(IEnumerable<Guid>? targetClientIds)

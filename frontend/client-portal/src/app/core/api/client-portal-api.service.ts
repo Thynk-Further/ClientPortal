@@ -61,6 +61,7 @@ export interface ClientPortalNoticeListItem {
   expiresAt: string | null;
   isRead: boolean;
   readAtUtc: string | null;
+  attachments: MessageAttachmentMetadata[] | null;
 }
 
 export interface ClientPortalNoticesResult {
@@ -435,6 +436,21 @@ export interface ClientPortalMessage {
   content: string;
   status: number;
   sentAt: string;
+  attachment: MessageAttachmentMetadata | null;
+  attachmentExpiresAt: string | null;
+}
+
+export interface MessageAttachmentMetadata {
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  url: string;
+}
+
+export interface ClientPortalMessageAttachmentUpload {
+  uploadUrl: string;
+  fileUrl: string;
+  expiresAtUtc: string;
 }
 
 export interface ClientPortalThreadMessagesResult {
@@ -447,6 +463,7 @@ export interface ClientPortalThreadMessagesResult {
 export interface SendClientPortalMessage {
   clientMessageId: string;
   content: string;
+  attachment?: MessageAttachmentMetadata | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -674,6 +691,18 @@ export class ClientPortalApiService {
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
+  getMessageAttachmentUploadUrl(
+    threadId: string,
+    request: { fileName: string; contentType: string; sizeBytes: number },
+  ): Observable<ClientPortalMessageAttachmentUpload> {
+    return this.apiClient
+      .post<ApiEnvelope<ClientPortalMessageAttachmentUpload>, typeof request>(
+        `${this.basePath}/messages/threads/${threadId}/attachments/upload-url`,
+        request,
+      )
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
   markThreadRead(threadId: string): Observable<number> {
     return this.apiClient
       .put<ApiEnvelope<number>, Record<string, never>>(
@@ -687,6 +716,24 @@ export class ClientPortalApiService {
     return this.apiClient
       .get<ApiEnvelope<ClientPortalMeetingsResult>>(`${this.basePath}/meetings`)
       .pipe(map((response) => unwrapApiEnvelopeData(response)));
+  }
+
+  acceptMeeting(meetingId: string): Observable<void> {
+    return this.apiClient
+      .post<ApiEnvelope<null>, Record<string, never>>(
+        `${this.basePath}/meetings/${meetingId}/accept`,
+        {},
+      )
+      .pipe(map(() => undefined));
+  }
+
+  declineMeeting(meetingId: string): Observable<void> {
+    return this.apiClient
+      .post<ApiEnvelope<null>, Record<string, never>>(
+        `${this.basePath}/meetings/${meetingId}/decline`,
+        {},
+      )
+      .pipe(map(() => undefined));
   }
 
   getNoticesSummary(): Observable<ClientPortalNoticesSummary> {

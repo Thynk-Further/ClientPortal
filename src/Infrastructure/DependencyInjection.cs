@@ -92,6 +92,7 @@ public static class DependencyInjection
         services.AddScoped<IClientUserAccountRepository, ClientUserAccountRepository>();
         services.AddScoped<IClientWorkspaceReader, NpgsqlClientWorkspaceReader>();
         services.AddScoped<ICurrentClientResolver, CurrentClientResolver>();
+        services.AddScoped<IClientPortalThreadAccessService, ClientPortalThreadAccessService>();
         services.AddScoped<IClientPortalDashboardReader, NpgsqlClientPortalDashboardReader>();
         services.AddScoped<IClientPortalProjectsReader, NpgsqlClientPortalProjectsReader>();
         services.AddScoped<IClientPortalRequestsReader, NpgsqlClientPortalRequestsReader>();
@@ -132,6 +133,7 @@ public static class DependencyInjection
         services.AddSingleton<IContractBusinessStaffRecipientProvider, ContractBusinessStaffRecipientProvider>();
         services.AddScoped<IExpiringContractAlertReader, NpgsqlExpiringContractAlertReader>();
         services.AddSingleton<IMessageAttachmentUploadUrlService, MessageAttachmentUploadUrlService>();
+        services.AddSingleton<INoticeAttachmentUploadUrlService, NoticeAttachmentUploadUrlService>();
         services.AddSingleton<IMessageAttachmentMalwareScanService, MessageAttachmentMalwareScanHookService>();
         services.AddScoped<IMessageOfflineFallbackNotifier, NoopMessageOfflineFallbackNotifier>();
         services.AddScoped<IInAppNotificationRepository, InAppNotificationRepository>();

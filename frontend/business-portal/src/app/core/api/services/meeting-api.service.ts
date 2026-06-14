@@ -1,45 +1,49 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
+import { unwrapApiEnvelopeData } from '../api-envelope.util';
 import { ApiClientService } from '../api-client.service';
-import { ApiOperationResult, PagedResult } from '../models';
+import { ApiEnvelope, PagedResult } from '../models';
 
-export interface MeetingSummary {
+export interface MeetingListItem {
   id: string;
+  clientId: string;
   title: string;
-  startsAtUtc: string;
-  endsAtUtc: string;
-  status: string;
-  [key: string]: unknown;
-}
-
-export interface MeetingDetail extends MeetingSummary {
-  description?: string;
-  joinUrl?: string;
+  description: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  meetingUrl: string;
+  status: number;
+  attendees: string[];
 }
 
 export interface MeetingListQuery {
-  fromUtc?: string;
-  toUtc?: string;
-  status?: string;
-  pageNumber?: number;
+  page?: number;
   pageSize?: number;
+  clientId?: string;
+  scheduledFrom?: string;
+  scheduledTo?: string;
+  status?: number;
 }
 
 export interface CreateMeetingRequest {
+  clientId: string;
   title: string;
-  startsAtUtc: string;
-  endsAtUtc: string;
-  participantClientIds?: string[];
-  description?: string;
+  description: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  meetingUrl: string;
+  scheduledTimeZoneId: string;
+  attendees?: string[];
 }
 
 export interface UpdateMeetingRequest {
-  title?: string;
-  startsAtUtc?: string;
-  endsAtUtc?: string;
-  description?: string;
-  status?: string;
+  title: string;
+  description: string;
+  scheduledAt: string;
+  durationMinutes: number;
+  meetingUrl: string;
+  attendees: string[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -48,32 +52,33 @@ export class MeetingApiService {
 
   constructor(private readonly apiClient: ApiClientService) {}
 
-  getMeetings(query?: MeetingListQuery): Observable<PagedResult<MeetingSummary>> {
-    return this.apiClient.get<PagedResult<MeetingSummary>>(`${this.basePath}/`, query);
+  getMeetings(query?: MeetingListQuery): Observable<PagedResult<MeetingListItem>> {
+    return this.apiClient
+      .get<ApiEnvelope<PagedResult<MeetingListItem>>>(`${this.basePath}/`, query)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
-  getMeetingById(meetingId: string): Observable<MeetingDetail> {
-    return this.apiClient.get<MeetingDetail>(`${this.basePath}/${meetingId}`);
+  getMeetingById(meetingId: string): Observable<MeetingListItem> {
+    return this.apiClient
+      .get<ApiEnvelope<MeetingListItem>>(`${this.basePath}/${meetingId}`)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
-  scheduleMeeting(request: CreateMeetingRequest): Observable<MeetingDetail> {
-    return this.apiClient.post<MeetingDetail, CreateMeetingRequest>(
-      `${this.basePath}/`,
-      request,
-    );
+  scheduleMeeting(request: CreateMeetingRequest): Observable<string> {
+    return this.apiClient
+      .post<ApiEnvelope<string>, CreateMeetingRequest>(`${this.basePath}/`, request)
+      .pipe(map((response) => unwrapApiEnvelopeData(response)));
   }
 
-  updateMeeting(
-    meetingId: string,
-    request: UpdateMeetingRequest,
-  ): Observable<ApiOperationResult> {
-    return this.apiClient.put<ApiOperationResult, UpdateMeetingRequest>(
-      `${this.basePath}/${meetingId}`,
-      request,
-    );
+  updateMeeting(meetingId: string, request: UpdateMeetingRequest): Observable<void> {
+    return this.apiClient
+      .put<ApiEnvelope<null>, UpdateMeetingRequest>(`${this.basePath}/${meetingId}`, request)
+      .pipe(map(() => undefined));
   }
 
-  cancelMeeting(meetingId: string): Observable<ApiOperationResult> {
-    return this.apiClient.delete<ApiOperationResult>(`${this.basePath}/${meetingId}`);
+  cancelMeeting(meetingId: string): Observable<void> {
+    return this.apiClient
+      .delete<ApiEnvelope<null>>(`${this.basePath}/${meetingId}`)
+      .pipe(map(() => undefined));
   }
 }

@@ -1,5 +1,7 @@
 namespace Application.Clients.Dtos;
 
+using Application.Messaging.Dtos;
+
 public sealed record ClientPortalNoticeListItemDto(
     Guid Id,
     string Title,
@@ -7,7 +9,8 @@ public sealed record ClientPortalNoticeListItemDto(
     DateTime PublishedAt,
     DateTime? ExpiresAt,
     bool IsRead,
-    DateTime? ReadAtUtc);
+    DateTime? ReadAtUtc,
+    IReadOnlyCollection<MessageAttachmentMetadataDto>? Attachments);
 
 public sealed record ClientPortalNoticesResultDto(
     IReadOnlyList<ClientPortalNoticeListItemDto> Notices,

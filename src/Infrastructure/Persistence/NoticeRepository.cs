@@ -1,3 +1,4 @@
+using Application.Messaging;
 using Application.Messaging.Abstractions;
 using Application.Messaging.Dtos;
 using Domain;
@@ -53,14 +54,7 @@ public sealed class NoticeRepository : INoticeRepository
         IReadOnlyList<NoticeListItemDto> items = notices
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(notice => new NoticeListItemDto(
-                notice.Id,
-                notice.Title,
-                notice.Content,
-                notice.PublishedAt,
-                notice.ExpiresAt,
-                notice.IsActive,
-                notice.TargetClientIds))
+            .Select(NoticeMapping.ToListItemDto)
             .ToList();
 
         return new PagedResult<NoticeListItemDto>(items, totalCount, page, pageSize);

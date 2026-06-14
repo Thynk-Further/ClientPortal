@@ -28,14 +28,7 @@ public sealed class GetNoticeByIdQueryHandler : IRequestHandler<GetNoticeByIdQue
             return Result<NoticeListItemDto>.Failure(NoticeNotFoundError);
         }
 
-        NoticeListItemDto dto = new(
-            notice.Id,
-            notice.Title,
-            notice.Content,
-            notice.PublishedAt,
-            notice.ExpiresAt,
-            notice.IsActive,
-            notice.TargetClientIds);
+        NoticeListItemDto dto = NoticeMapping.ToListItemDto(notice);
 
         return Result<NoticeListItemDto>.Success(dto);
     }

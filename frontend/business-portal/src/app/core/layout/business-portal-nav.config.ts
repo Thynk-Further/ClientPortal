@@ -119,34 +119,34 @@ export const BUSINESS_PORTAL_NAV_SECTIONS: ReadonlyArray<BusinessPortalNavSectio
       },
     ],
   },
-  {
-    id: 'documents',
-    label: 'Documents & Contracts',
-    breadcrumbLabel: 'Documents',
-    pathPrefix: 'documents',
-    items: [
-      {
-        id: 'document-library',
-        label: 'Document Library',
-        route: '/documents',
-        iconPath: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm0 0v6h6',
-      },
-      {
-        id: 'contracts-signing',
-        label: 'Contracts & E-Sign',
-        route: '/documents',
-        iconPath:
-          'M8 2h8m-9 4h10M7 10h10M7 14h10M7 18h6M5 2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z',
-      },
-      {
-        id: 'contract-expiry',
-        label: 'Expiry Tracking',
-        route: '/documents',
-        iconPath:
-          'M8 2v4m8-4v4M3 10h18M5 5h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z',
-      },
-    ],
-  },
+  // {
+  //   id: 'documents',
+  //   label: 'Documents & Contracts',
+  //   breadcrumbLabel: 'Documents',
+  //   pathPrefix: 'documents',
+  //   items: [
+  //     {
+  //       id: 'document-library',
+  //       label: 'Document Library',
+  //       route: '/documents',
+  //       iconPath: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm0 0v6h6',
+  //     },
+  //     {
+  //       id: 'contracts-signing',
+  //       label: 'Contracts & E-Sign',
+  //       route: '/documents',
+  //       iconPath:
+  //         'M8 2h8m-9 4h10M7 10h10M7 14h10M7 18h6M5 2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z',
+  //     },
+  //     {
+  //       id: 'contract-expiry',
+  //       label: 'Expiry Tracking',
+  //       route: '/documents',
+  //       iconPath:
+  //         'M8 2v4m8-4v4M3 10h18M5 5h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z',
+  //     },
+  //   ],
+  // },
   {
     id: 'communication',
     label: 'Communication & Meetings',

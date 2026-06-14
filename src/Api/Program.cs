@@ -134,7 +134,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(AuthorizationPolicies.RequireAdmin, policy => policy.RequireRole("Admin"));
     options.AddPolicy(AuthorizationPolicies.RequireStaff, policy => policy.RequireRole("Staff"));
     options.AddPolicy(AuthorizationPolicies.RequireAnyStaff, policy => policy.RequireRole("Owner", "Admin", "Staff"));
-    options.AddPolicy(AuthorizationPolicies.RequireClientUser, policy => policy.RequireRole("ClientUser"));
+    options.AddPolicy(AuthorizationPolicies.RequireClientUser, policy => policy.RequireRole("ClientUser", "ClientAdmin"));
     options.AddPolicy(
         AuthorizationPolicies.RequireTenantAccess,
         policy => policy.Requirements.Add(new TenantAccessRequirement()));
@@ -376,7 +376,7 @@ try
     RecurringJob.AddOrUpdate<MeetingReminderJob>(
         "meeting-reminder-job",
         job => job.RunAsync(CancellationToken.None),
-        "0 * * * *",
+        "*/5 * * * *",
         new RecurringJobOptions
         {
             TimeZone = TimeZoneInfo.Local

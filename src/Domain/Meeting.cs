@@ -14,11 +14,13 @@ public sealed class Meeting : AggregateRoot<Guid>
 
     public DateTime ScheduledAt { get; private set; }
 
+    public string ScheduledTimeZoneId { get; private set; } = MeetingTimeZoneDefaults.DefaultId;
+
     public int DurationMinutes { get; private set; }
 
     public string MeetingUrl { get; private set; } = string.Empty;
 
-    public MeetingStatus Status { get; private set; } = MeetingStatus.Scheduled;
+    public MeetingStatus Status { get; private set; } = MeetingStatus.Pending;
 
     public IReadOnlyCollection<Guid> Attendees => _attendees.AsReadOnly();
 
@@ -35,6 +37,7 @@ public sealed class Meeting : AggregateRoot<Guid>
         int durationMinutes,
         string meetingUrl,
         MeetingStatus status,
+        string scheduledTimeZoneId,
         IEnumerable<Guid> attendees)
         : base(id)
     {
@@ -42,6 +45,7 @@ public sealed class Meeting : AggregateRoot<Guid>
         Title = NormalizeTitle(title);
         Description = NormalizeDescription(description);
         ScheduledAt = NormalizeScheduledAt(scheduledAt);
+        ScheduledTimeZoneId = NormalizeTimeZoneId(scheduledTimeZoneId);
         DurationMinutes = NormalizeDuration(durationMinutes);
         MeetingUrl = NormalizeMeetingUrl(meetingUrl);
         Status = status;
@@ -56,7 +60,8 @@ public sealed class Meeting : AggregateRoot<Guid>
         DateTime scheduledAt,
         int durationMinutes,
         string meetingUrl,
-        MeetingStatus status = MeetingStatus.Scheduled,
+        MeetingStatus status = MeetingStatus.Pending,
+        string scheduledTimeZoneId = MeetingTimeZoneDefaults.DefaultId,
         IEnumerable<Guid>? attendees = null)
     {
         return new Meeting(
@@ -68,13 +73,44 @@ public sealed class Meeting : AggregateRoot<Guid>
             durationMinutes,
             meetingUrl,
             status,
+            scheduledTimeZoneId,
             attendees ?? []);
+    }
+
+    public void RaiseRequestedEvent(DateTime requestedAt)
+    {
+        DateTime normalizedRequestedAt = requestedAt.Kind == DateTimeKind.Utc
+            ? requestedAt
+            : requestedAt.ToUniversalTime();
+        AddDomainEvent(new MeetingRequestedEvent(Id, ClientId, ScheduledAt, normalizedRequestedAt));
     }
 
     public void RaiseScheduledEvent(DateTime scheduledAt)
     {
         DateTime normalizedScheduledAt = NormalizeScheduledAt(scheduledAt);
         AddDomainEvent(new MeetingScheduledEvent(Id, ClientId, normalizedScheduledAt, ScheduledAt));
+    }
+
+    public void Accept()
+    {
+        if (Status != MeetingStatus.Pending)
+        {
+            throw new InvalidOperationException("Only pending meetings can be accepted.");
+        }
+
+        Status = MeetingStatus.Scheduled;
+        MarkUpdated();
+    }
+
+    public void Decline()
+    {
+        if (Status != MeetingStatus.Pending)
+        {
+            throw new InvalidOperationException("Only pending meetings can be declined.");
+        }
+
+        Status = MeetingStatus.Declined;
+        MarkUpdated();
     }
 
     public void UpdateDetails(string title, string description, int durationMinutes, string meetingUrl)
@@ -196,6 +232,17 @@ public sealed class Meeting : AggregateRoot<Guid>
         }
 
         return scheduledAt.Kind == DateTimeKind.Utc ? scheduledAt : scheduledAt.ToUniversalTime();
+    }
+
+    private static string NormalizeTimeZoneId(string timeZoneId)
+    {
+        string normalized = Guard.NotEmpty(timeZoneId, nameof(timeZoneId)).Trim();
+        if (normalized.Length > 64)
+        {
+            throw new ArgumentException("ScheduledTimeZoneId cannot exceed 64 characters.", nameof(timeZoneId));
+        }
+
+        return normalized;
     }
 
     private static int NormalizeDuration(int durationMinutes)

@@ -103,6 +103,7 @@ public sealed class NpgsqlClientPortalDashboardReader : IClientPortalDashboardRe
                 meeting.Title,
                 meeting.Description,
                 meeting.ScheduledAt,
+                meeting.ScheduledTimeZoneId,
                 meeting.DurationMinutes,
                 meeting.MeetingUrl,
                 meeting.Status,

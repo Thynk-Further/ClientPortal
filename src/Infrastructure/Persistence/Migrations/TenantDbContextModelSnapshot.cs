@@ -484,6 +484,12 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("scheduled_at");
 
+                    b.Property<string>("ScheduledTimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("scheduled_time_zone_id");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
@@ -782,6 +788,10 @@ namespace Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
+
+                    b.Property<string>("_attachments")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("attachments_json");
 
                     b.Property<string>("_targetClientIds")
                         .HasColumnType("jsonb")

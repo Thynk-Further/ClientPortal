@@ -71,10 +71,10 @@ import { UserAccountMenuComponent } from './user-account-menu.component';
           </div>
           @if (!sidebarCollapsed()) {
             <div class="leading-none">
-              <p class="text-sm font-semibold tracking-tight text-foreground">Zenith</p>
-              <p class="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+              <p class="text-sm font-semibold tracking-tight text-foreground">Client Portal</p>
+              <!-- <p class="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
                 Dashboard
-              </p>
+              </p> -->
             </div>
           }
         </a>

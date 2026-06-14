@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Domain;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Infrastructure.Persistence.Configurations;
@@ -21,4 +22,8 @@ internal static class JsonListConverters
     public static ValueConverter<List<Guid>?, string?> NullableGuidListToJsonb { get; } = new(
         v => v == null ? null : JsonSerializer.Serialize(v, Options),
         v => string.IsNullOrEmpty(v) ? null : JsonSerializer.Deserialize<List<Guid>>(v, Options));
+
+    public static ValueConverter<List<MessageAttachmentMetadata>?, string?> NullableAttachmentListToJsonb { get; } = new(
+        v => v == null ? null : JsonSerializer.Serialize(v, Options),
+        v => string.IsNullOrEmpty(v) ? null : JsonSerializer.Deserialize<List<MessageAttachmentMetadata>>(v, Options));
 }

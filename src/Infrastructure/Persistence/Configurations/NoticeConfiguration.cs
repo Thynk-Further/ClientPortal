@@ -19,10 +19,16 @@ internal sealed class NoticeConfiguration : IEntityTypeConfiguration<Notice>
         builder.Property(notice => notice.UpdatedAt).IsRequired();
         builder.Ignore(notice => notice.DomainEvents);
         builder.Ignore(notice => notice.TargetClientIds);
+        builder.Ignore(notice => notice.Attachments);
 
         builder.Property<List<Guid>?>("_targetClientIds")
             .HasColumnName("target_client_ids_json")
             .HasColumnType("jsonb")
             .HasConversion(JsonListConverters.NullableGuidListToJsonb);
+
+        builder.Property<List<MessageAttachmentMetadata>?>("_attachments")
+            .HasColumnName("attachments_json")
+            .HasColumnType("jsonb")
+            .HasConversion(JsonListConverters.NullableAttachmentListToJsonb);
     }
 }
