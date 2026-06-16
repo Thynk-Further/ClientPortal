@@ -63,7 +63,7 @@ const PRIORITY_OPTIONS = [
     TextareaComponent,
   ],
   template: `
-    <div class="space-y-6">
+    <main class="space-y-6 px-5 pb-10 sm:px-8">
       <header class="space-y-1">
         <h1 class="text-[1.75rem] font-semibold tracking-tight text-foreground">Requests</h1>
         <p class="text-sm text-muted-foreground">
@@ -205,7 +205,7 @@ const PRIORITY_OPTIONS = [
           </ui-card-content>
         </ui-card>
       </div>
-    </div>
+    </main>
   `,
 })
 export class ClientRequestsPageComponent implements OnInit {

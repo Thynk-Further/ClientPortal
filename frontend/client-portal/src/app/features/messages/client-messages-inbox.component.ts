@@ -158,10 +158,9 @@ interface ThreadPreview {
     `,
   ],
   template: `
-    <main class="chat-shell p-4 sm:p-6">
-      <section class="mx-auto max-w-7xl space-y-6">
-        <header class="space-y-1">
-          <h1 class="text-2xl font-semibold tracking-tight text-foreground">Messages</h1>
+    <main class="space-y-6 px-5 pb-10 sm:px-8">
+        <header class="pb-1">
+          <h1 class="text-[1.75rem] font-semibold tracking-tight text-foreground">Messages</h1>
           <p class="text-sm text-muted-foreground">
             Chat with {{ businessDisplayName() }} in real time, including photos and documents.
           </p>
@@ -499,7 +498,6 @@ interface ThreadPreview {
             </ui-card-content>
           </ui-card>
         </section>
-      </section>
     </main>
   `,
 })

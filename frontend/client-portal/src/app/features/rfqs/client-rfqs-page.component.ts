@@ -49,10 +49,10 @@ import {
     TextareaComponent,
   ],
   template: `
-    <div class="space-y-6">
-      <header>
-        <h1 class="text-2xl font-semibold tracking-tight">Requests for quotation</h1>
-        <p class="text-sm text-muted-foreground">Submit item lists and review quotations from your provider.</p>
+    <main class="space-y-6 px-5 pb-10 sm:px-8">
+      <header class="pb-1">
+        <h1 class="text-[1.75rem] font-semibold tracking-tight text-foreground">Requests for quotation</h1>
+        <p class="mt-1 text-sm text-muted-foreground">Submit item lists and review quotations from your provider.</p>
       </header>
 
       <ui-card>
@@ -128,7 +128,7 @@ import {
           }
         </ui-card-content>
       </ui-card>
-    </div>
+    </main>
   `,
 })
 export class ClientRfqsPageComponent implements OnInit {

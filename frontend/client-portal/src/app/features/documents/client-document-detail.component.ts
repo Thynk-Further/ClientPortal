@@ -56,7 +56,7 @@ const CONTRACT_STATUS_CLASSES: Record<number, string> = {
     InputComponent,
   ],
   template: `
-    <div class="space-y-6">
+    <main class="space-y-6 px-5 pb-10 sm:px-8">
       <div>
         <a
           routerLink="/documents"
@@ -191,7 +191,7 @@ const CONTRACT_STATUS_CLASSES: Record<number, string> = {
           </ui-card>
         }
       }
-    </div>
+    </main>
   `,
 })
 export class ClientDocumentDetailComponent implements OnInit {

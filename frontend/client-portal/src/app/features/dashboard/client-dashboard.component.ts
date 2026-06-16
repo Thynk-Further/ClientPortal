@@ -15,6 +15,7 @@ import {
 } from '@/app/core/api/client-portal-api.service';
 import { readHttpErrorMessage } from '@/app/core/api/api-envelope.util';
 import { StatCardComponent } from '@/components/ui/stat-card.component';
+import { StatusBadgeComponent } from '@/components/ui/status-badge.component';
 
 const PROJECT_STATUS_LABELS: Record<number, string> = {
   1: 'Planned',
@@ -38,9 +39,9 @@ const INVOICE_STATUS_LABELS: Record<number, string> = {
   selector: 'app-client-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, StatCardComponent],
+  imports: [RouterLink, StatCardComponent, StatusBadgeComponent],
   template: `
-    <div class="space-y-6">
+    <main class="space-y-6 p-5 sm:p-8">
       <header class="space-y-1">
         <h1 class="text-[1.75rem] font-semibold tracking-tight text-foreground">Dashboard</h1>
         <p class="text-sm text-muted-foreground">
@@ -98,10 +99,13 @@ const INVOICE_STATUS_LABELS: Record<number, string> = {
         </section>
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <article class="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
-            <div class="mb-4 flex items-center justify-between gap-3">
-              <h2 class="text-base font-semibold">Active projects</h2>
-              <a routerLink="/projects" class="text-sm text-primary underline-offset-4 hover:underline">
+          <article class="rounded-2xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+            <div class="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <h2 class="text-base font-semibold">Active projects</h2>
+                <p class="mt-0.5 text-sm text-muted-foreground">Projects currently in progress</p>
+              </div>
+              <a routerLink="/projects" class="text-sm font-medium text-primary hover:underline">
                 View all
               </a>
             </div>
@@ -111,24 +115,30 @@ const INVOICE_STATUS_LABELS: Record<number, string> = {
             } @else {
               <ul class="space-y-3">
                 @for (project of data.activeProjects; track project.id) {
-                  <li class="flex items-start justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-medium">{{ project.name }}</p>
-                      <p class="text-xs text-muted-foreground">Due {{ formatDate(project.endDate) }}</p>
+                  <li class="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm transition-shadow hover:shadow-md">
+                    <div class="flex">
+                      <div class="w-1 shrink-0 bg-blue-500"></div>
+                      <div class="flex flex-1 items-start justify-between gap-3 p-4">
+                        <div class="min-w-0">
+                          <p class="truncate text-sm font-medium">{{ project.name }}</p>
+                          <p class="mt-1 text-xs text-muted-foreground">Due {{ formatDate(project.endDate) }}</p>
+                        </div>
+                        <ui-status-badge [status]="projectStatusLabel(project.status)" />
+                      </div>
                     </div>
-                    <span class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      {{ projectStatusLabel(project.status) }}
-                    </span>
                   </li>
                 }
               </ul>
             }
           </article>
 
-          <article class="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
-            <div class="mb-4 flex items-center justify-between gap-3">
-              <h2 class="text-base font-semibold">Outstanding invoices</h2>
-              <a routerLink="/invoices" class="text-sm text-primary underline-offset-4 hover:underline">
+          <article class="rounded-2xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+            <div class="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <h2 class="text-base font-semibold">Outstanding invoices</h2>
+                <p class="mt-0.5 text-sm text-muted-foreground">Open balances requiring attention</p>
+              </div>
+              <a routerLink="/invoices" class="text-sm font-medium text-primary hover:underline">
                 View all
               </a>
             </div>
@@ -138,16 +148,23 @@ const INVOICE_STATUS_LABELS: Record<number, string> = {
             } @else {
               <ul class="space-y-3">
                 @for (invoice of data.outstandingInvoices.recentOpenInvoices; track invoice.id) {
-                  <li class="flex items-start justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-medium">{{ invoice.invoiceNumber }}</p>
-                      <p class="text-xs text-muted-foreground">Due {{ formatDate(invoice.dueDate) }}</p>
-                    </div>
-                    <div class="text-right">
-                      <p class="text-sm font-medium">
-                        {{ formatCurrency(invoice.outstandingAmount, invoice.currency) }}
-                      </p>
-                      <p class="text-xs text-muted-foreground">{{ invoiceStatusLabel(invoice.status) }}</p>
+                  <li class="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm transition-shadow hover:shadow-md">
+                    <div class="flex">
+                      <div class="w-1 shrink-0 bg-amber-500"></div>
+                      <div class="flex flex-1 items-start justify-between gap-3 p-4">
+                        <div class="min-w-0">
+                          <p class="truncate text-sm font-medium">{{ invoice.invoiceNumber }}</p>
+                          <p class="mt-1 text-xs text-muted-foreground">Due {{ formatDate(invoice.dueDate) }}</p>
+                        </div>
+                        <div class="text-right">
+                          <p class="text-sm font-semibold">
+                            {{ formatCurrency(invoice.outstandingAmount, invoice.currency) }}
+                          </p>
+                          <div class="mt-1 flex justify-end">
+                            <ui-status-badge [status]="invoiceStatusLabel(invoice.status)" />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </li>
                 }
@@ -155,10 +172,13 @@ const INVOICE_STATUS_LABELS: Record<number, string> = {
             }
           </article>
 
-          <article class="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
-            <div class="mb-4 flex items-center justify-between gap-3">
-              <h2 class="text-base font-semibold">Recent documents</h2>
-              <a routerLink="/documents" class="text-sm text-primary underline-offset-4 hover:underline">
+          <article class="rounded-2xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+            <div class="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <h2 class="text-base font-semibold">Recent documents</h2>
+                <p class="mt-0.5 text-sm text-muted-foreground">Files and contracts shared with you</p>
+              </div>
+              <a routerLink="/documents" class="text-sm font-medium text-primary hover:underline">
                 View all
               </a>
             </div>
@@ -168,22 +188,27 @@ const INVOICE_STATUS_LABELS: Record<number, string> = {
             } @else {
               <ul class="space-y-3">
                 @for (document of data.recentDocuments; track document.id) {
-                  <li class="flex items-start justify-between gap-3 rounded-lg border border-border/60 px-3 py-2.5">
+                  <li class="flex items-start justify-between gap-3 rounded-xl border border-border/50 bg-muted/20 p-4">
                     <div class="min-w-0">
                       <p class="truncate text-sm font-medium">{{ document.name }}</p>
-                      <p class="text-xs capitalize text-muted-foreground">{{ document.type }}</p>
+                      <p class="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        {{ document.type }}
+                      </p>
                     </div>
-                    <p class="text-xs text-muted-foreground">{{ formatDateTime(document.updatedAtUtc) }}</p>
+                    <p class="shrink-0 text-xs text-muted-foreground">{{ formatDateTime(document.updatedAtUtc) }}</p>
                   </li>
                 }
               </ul>
             }
           </article>
 
-          <article class="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
-            <div class="mb-4 flex items-center justify-between gap-3">
-              <h2 class="text-base font-semibold">Upcoming meetings</h2>
-              <a routerLink="/meetings" class="text-sm text-primary underline-offset-4 hover:underline">
+          <article class="rounded-2xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+            <div class="mb-5 flex items-center justify-between gap-3">
+              <div>
+                <h2 class="text-base font-semibold">Upcoming meetings</h2>
+                <p class="mt-0.5 text-sm text-muted-foreground">Scheduled sessions with your team</p>
+              </div>
+              <a routerLink="/meetings" class="text-sm font-medium text-primary hover:underline">
                 View all
               </a>
             </div>
@@ -193,11 +218,11 @@ const INVOICE_STATUS_LABELS: Record<number, string> = {
             } @else {
               <ul class="space-y-3">
                 @for (meeting of data.upcomingMeetings; track meeting.id) {
-                  <li class="rounded-lg border border-border/60 px-3 py-2.5">
+                  <li class="rounded-xl border border-border/50 bg-muted/20 p-4">
                     <div class="flex items-start justify-between gap-3">
                       <div class="min-w-0">
                         <p class="truncate text-sm font-medium">{{ meeting.title }}</p>
-                        <p class="text-xs text-muted-foreground">
+                        <p class="mt-1 text-xs text-muted-foreground">
                           {{ formatDateTime(meeting.scheduledAt) }} · {{ meeting.durationMinutes }} min
                         </p>
                       </div>
@@ -206,7 +231,7 @@ const INVOICE_STATUS_LABELS: Record<number, string> = {
                           [href]="meeting.meetingUrl"
                           target="_blank"
                           rel="noopener noreferrer"
-                          class="shrink-0 text-xs font-medium text-primary underline-offset-4 hover:underline"
+                          class="inline-flex h-8 shrink-0 items-center rounded-lg bg-foreground px-3 text-xs font-medium text-background transition-colors hover:bg-foreground/90"
                         >
                           Join
                         </a>
@@ -219,7 +244,7 @@ const INVOICE_STATUS_LABELS: Record<number, string> = {
           </article>
         </section>
       }
-    </div>
+    </main>
   `,
 })
 export class ClientDashboardComponent implements OnInit {

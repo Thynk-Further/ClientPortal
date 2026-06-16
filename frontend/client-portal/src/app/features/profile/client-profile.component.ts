@@ -44,7 +44,7 @@ const NOTIFICATION_FREQUENCY_OPTIONS = [
     InputComponent,
   ],
   template: `
-    <div class="space-y-6">
+    <main class="space-y-6 px-5 pb-10 sm:px-8">
       <header class="space-y-1">
         <h1 class="text-[1.75rem] font-semibold tracking-tight text-foreground">Profile</h1>
         <p class="text-sm text-muted-foreground">
@@ -216,7 +216,7 @@ const NOTIFICATION_FREQUENCY_OPTIONS = [
           </ui-card-content>
         </ui-card>
       }
-    </div>
+    </main>
   `,
 })
 export class ClientProfileComponent implements OnInit {

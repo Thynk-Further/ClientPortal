@@ -68,7 +68,7 @@ interface StoredPaymentSession {
     CardContentComponent,
   ],
   template: `
-    <div class="space-y-6">
+    <main class="space-y-6 px-5 pb-10 sm:px-8">
       <div>
         <a
           routerLink="/invoices"
@@ -214,7 +214,7 @@ interface StoredPaymentSession {
           </ui-card>
         }
       }
-    </div>
+    </main>
   `,
 })
 export class ClientInvoiceDetailComponent implements OnInit {

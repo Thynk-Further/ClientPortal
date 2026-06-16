@@ -91,7 +91,7 @@ const REQUEST_PRIORITY_LABELS: Record<number, string> = {
     CardContentComponent,
   ],
   template: `
-    <div class="space-y-6">
+    <main class="space-y-6 px-5 pb-10 sm:px-8">
       <div>
         <a
           routerLink="/projects"
@@ -337,7 +337,7 @@ const REQUEST_PRIORITY_LABELS: Record<number, string> = {
           }
         }
       }
-    </div>
+    </main>
   `,
 })
 export class ClientProjectDetailComponent implements OnInit {

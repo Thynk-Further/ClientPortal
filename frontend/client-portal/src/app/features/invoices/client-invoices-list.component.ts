@@ -13,13 +13,8 @@ import {
   ClientPortalInvoiceListItem,
 } from '@/app/core/api/client-portal-api.service';
 import { readHttpErrorMessage } from '@/app/core/api/api-envelope.util';
-import {
-  CardComponent,
-  CardContentComponent,
-  CardDescriptionComponent,
-  CardHeaderComponent,
-  CardTitleComponent,
-} from '@/components/ui/card.component';
+import { EmptyStateComponent } from '@/components/ui/empty-state.component';
+import { StatusBadgeComponent } from '@/components/ui/status-badge.component';
 
 const INVOICE_STATUS_LABELS: Record<number, string> = {
   1: 'Draft',
@@ -31,39 +26,22 @@ const INVOICE_STATUS_LABELS: Record<number, string> = {
   7: 'Cancelled',
 };
 
-const INVOICE_STATUS_CLASSES: Record<number, string> = {
-  1: 'bg-muted text-muted-foreground',
-  2: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  3: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  4: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  5: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-  6: 'bg-destructive/10 text-destructive',
-  7: 'bg-muted text-muted-foreground',
-};
-
 @Component({
   selector: 'app-client-invoices-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterLink,
-    CardComponent,
-    CardHeaderComponent,
-    CardTitleComponent,
-    CardDescriptionComponent,
-    CardContentComponent,
-  ],
+  imports: [RouterLink, EmptyStateComponent, StatusBadgeComponent],
   template: `
-    <div class="space-y-6">
-      <header class="space-y-1">
+    <main class="space-y-6 px-5 pb-10 sm:px-8">
+      <header class="pb-1">
         <h1 class="text-[1.75rem] font-semibold tracking-tight text-foreground">Invoices</h1>
-        <p class="text-sm text-muted-foreground">
+        <p class="mt-1 text-sm text-muted-foreground">
           View invoice status, amounts due, and pay outstanding balances online.
         </p>
       </header>
 
       @if (errorMessage() !== null) {
-        <p class="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p class="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {{ errorMessage() }}
         </p>
       }
@@ -71,57 +49,53 @@ const INVOICE_STATUS_CLASSES: Record<number, string> = {
       @if (isLoading()) {
         <p class="text-sm text-muted-foreground">Loading invoices...</p>
       } @else if (invoices().length === 0) {
-        <ui-card class="border-dashed">
-          <ui-card-header>
-            <ui-card-title>No invoices yet</ui-card-title>
-            <ui-card-description>
-              When invoices are issued for your account, they will appear here.
-            </ui-card-description>
-          </ui-card-header>
-        </ui-card>
+        <ui-empty-state
+          title="No invoices yet"
+          message="When invoices are issued for your account, they will appear here."
+        />
       } @else {
         <section class="space-y-3" aria-label="Invoice list">
           @for (invoice of invoices(); track invoice.id) {
-            <ui-card class="transition-shadow hover:shadow-md">
-              <ui-card-content class="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="min-w-0 space-y-1">
-                  <p class="font-medium text-foreground">
-                    <a
-                      [routerLink]="['/invoices', invoice.id]"
-                      class="hover:text-primary hover:underline underline-offset-4"
-                    >
+            <a
+              [routerLink]="['/invoices', invoice.id]"
+              class="group flex overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm transition-shadow hover:shadow-md"
+            >
+              <div
+                class="w-1 shrink-0"
+                [class.bg-emerald-500]="invoice.status === 5"
+                [class.bg-amber-500]="invoice.status === 4 || invoice.status === 6"
+                [class.bg-blue-500]="invoice.status === 2 || invoice.status === 3"
+                [class.bg-muted-foreground]="invoice.status === 1 || invoice.status === 7"
+              ></div>
+              <div class="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0 space-y-2">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="font-medium text-foreground group-hover:text-primary">
                       {{ invoice.invoiceNumber }}
-                    </a>
-                  </p>
-                  <p class="text-sm text-muted-foreground">
+                    </p>
+                    <ui-status-badge [status]="statusLabel(invoice.status)" />
+                  </div>
+                  <p class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Due {{ formatDate(invoice.dueDate) }}
                   </p>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-3 sm:justify-end">
-                  <span
-                    class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
-                    [class]="statusClass(invoice.status)"
-                  >
-                    {{ statusLabel(invoice.status) }}
-                  </span>
-                  <div class="text-right">
-                    <p class="text-sm font-semibold text-foreground">
-                      {{ formatMoney(invoice.outstandingAmount, invoice.currency) }}
+                <div class="text-left sm:text-right">
+                  <p class="text-sm font-semibold text-foreground">
+                    {{ formatMoney(invoice.outstandingAmount, invoice.currency) }}
+                  </p>
+                  @if (invoice.outstandingAmount < invoice.total) {
+                    <p class="text-xs text-muted-foreground">
+                      of {{ formatMoney(invoice.total, invoice.currency) }}
                     </p>
-                    @if (invoice.outstandingAmount < invoice.total) {
-                      <p class="text-xs text-muted-foreground">
-                        of {{ formatMoney(invoice.total, invoice.currency) }}
-                      </p>
-                    }
-                  </div>
+                  }
                 </div>
-              </ui-card-content>
-            </ui-card>
+              </div>
+            </a>
           }
         </section>
       }
-    </div>
+    </main>
   `,
 })
 export class ClientInvoicesListComponent implements OnInit {
@@ -137,10 +111,6 @@ export class ClientInvoicesListComponent implements OnInit {
 
   protected statusLabel(status: number): string {
     return INVOICE_STATUS_LABELS[status] ?? 'Unknown';
-  }
-
-  protected statusClass(status: number): string {
-    return INVOICE_STATUS_CLASSES[status] ?? INVOICE_STATUS_CLASSES[1];
   }
 
   protected formatDate(value: string): string {
