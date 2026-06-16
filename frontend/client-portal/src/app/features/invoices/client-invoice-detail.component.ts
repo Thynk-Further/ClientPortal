@@ -16,33 +16,11 @@ import {
 import { readHttpErrorMessage } from '@/app/core/api/api-envelope.util';
 import { ButtonComponent } from '@/components/ui/button.component';
 import { InputComponent } from '@/components/ui/input.component';
+import { StatusBadgeComponent } from '@/components/ui/status-badge.component';
 import {
-  CardComponent,
-  CardContentComponent,
-  CardDescriptionComponent,
-  CardHeaderComponent,
-  CardTitleComponent,
-} from '@/components/ui/card.component';
-
-const INVOICE_STATUS_LABELS: Record<number, string> = {
-  1: 'Draft',
-  2: 'Sent',
-  3: 'Viewed',
-  4: 'Partially paid',
-  5: 'Paid',
-  6: 'Overdue',
-  7: 'Cancelled',
-};
-
-const INVOICE_STATUS_CLASSES: Record<number, string> = {
-  1: 'bg-muted text-muted-foreground',
-  2: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  3: 'bg-sky-500/10 text-sky-700 dark:text-sky-300',
-  4: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  5: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-  6: 'bg-destructive/10 text-destructive',
-  7: 'bg-muted text-muted-foreground',
-};
+  clientInvoiceStatusAccentClass,
+  clientInvoiceStatusLabel,
+} from './invoice-display.util';
 
 const PAYMENT_SESSION_STORAGE_PREFIX = 'cp_invoice_payment_';
 
@@ -61,32 +39,26 @@ interface StoredPaymentSession {
     RouterLink,
     ButtonComponent,
     InputComponent,
-    CardComponent,
-    CardHeaderComponent,
-    CardTitleComponent,
-    CardDescriptionComponent,
-    CardContentComponent,
+    StatusBadgeComponent,
   ],
   template: `
     <main class="space-y-6 px-5 pb-10 sm:px-8">
-      <div>
-        <a
-          routerLink="/invoices"
-          class="text-sm text-primary underline-offset-4 hover:underline"
-        >
-          ← Back to invoices
-        </a>
-      </div>
+      <a
+        routerLink="/invoices"
+        class="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+      >
+        ← Back to invoices
+      </a>
 
       @if (errorMessage() !== null) {
-        <p class="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p class="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {{ errorMessage() }}
         </p>
       }
 
       @if (successMessage() !== null) {
         <p
-          class="rounded-md border border-primary/25 bg-primary/5 px-3 py-2 text-sm text-foreground"
+          class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
           role="status"
         >
           {{ successMessage() }}
@@ -97,122 +69,260 @@ interface StoredPaymentSession {
         <p class="text-sm text-muted-foreground">Loading invoice...</p>
       } @else if (invoice(); as detail) {
         <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div class="space-y-2">
-            <h1 class="text-[1.75rem] font-semibold tracking-tight text-foreground">
+          <div class="min-w-0 space-y-2">
+            <h1 class="font-mono text-[1.75rem] font-semibold tracking-tight text-foreground">
               {{ detail.invoiceNumber }}
             </h1>
             <p class="text-sm text-muted-foreground">
               Issued {{ formatDateTime(detail.createdAt) }} · Due {{ formatDate(detail.dueDate) }}
             </p>
-            <span
-              class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium"
-              [class]="statusClass(detail.status)"
-            >
-              {{ statusLabel(detail.status) }}
-            </span>
+            <ui-status-badge [status]="statusLabel(detail.status)" />
           </div>
 
           @if (canPay(detail)) {
             <ui-button
               type="button"
+              class="bg-neutral-950 text-white hover:bg-neutral-800"
               [disabled]="isPaying()"
-              (click)="payOnline(detail.id)"
-            >
-              {{ isPaying() ? 'Starting payment...' : 'Pay online' }}
-            </ui-button>
+              [label]="isPaying() ? 'Starting payment...' : 'Pay online'"
+              (clicked)="payOnline(detail.id)"
+            />
           }
         </header>
 
-        <ui-card>
-          <ui-card-header>
-            <ui-card-title>Line items</ui-card-title>
-            <ui-card-description>Summary of charges on this invoice.</ui-card-description>
-          </ui-card-header>
-          <ui-card-content class="overflow-x-auto p-0">
-            <table class="w-full min-w-[32rem] text-sm">
-              <thead class="border-b border-border/70 bg-muted/40 text-left text-muted-foreground">
-                <tr>
-                  <th class="px-4 py-2 font-medium">Description</th>
-                  <th class="px-4 py-2 font-medium text-right">Qty</th>
-                  <th class="px-4 py-2 font-medium text-right">Unit price</th>
-                  <th class="px-4 py-2 font-medium text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (item of detail.lineItems; track item.description + item.amount) {
-                  <tr class="border-b border-border/50">
-                    <td class="px-4 py-2 text-foreground">{{ item.description }}</td>
-                    <td class="px-4 py-2 text-right text-muted-foreground">{{ item.quantity }}</td>
-                    <td class="px-4 py-2 text-right text-muted-foreground">
-                      {{ formatMoney(item.unitPrice, detail.currency) }}
-                    </td>
-                    <td class="px-4 py-2 text-right font-medium text-foreground">
-                      {{ formatMoney(item.amount, detail.currency) }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </ui-card-content>
-        </ui-card>
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(280px,340px)_1fr]">
+          <aside class="space-y-4 xl:sticky xl:top-6 xl:self-start">
+            <section class="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
+              <div class="flex">
+                <div
+                  class="w-1 shrink-0 self-stretch"
+                  [class]="statusAccentClass(detail.status)"
+                  aria-hidden="true"
+                ></div>
+                <div class="min-w-0 flex-1 p-4">
+                  <h2 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Invoice summary
+                  </h2>
 
-        <ui-card>
-          <ui-card-content class="space-y-2 p-4 text-sm">
-            <div class="flex justify-between text-muted-foreground">
-              <span>Subtotal</span>
-              <span>{{ formatMoney(detail.subtotal, detail.currency) }}</span>
-            </div>
-            <div class="flex justify-between text-muted-foreground">
-              <span>Tax</span>
-              <span>{{ formatMoney(detail.taxAmount, detail.currency) }}</span>
-            </div>
-            <div class="flex justify-between font-medium text-foreground">
-              <span>Total</span>
-              <span>{{ formatMoney(detail.total, detail.currency) }}</span>
-            </div>
-            <div class="flex justify-between text-muted-foreground">
-              <span>Paid</span>
-              <span>{{ formatMoney(detail.amountPaid, detail.currency) }}</span>
-            </div>
-            <div class="flex justify-between border-t border-border/70 pt-2 text-base font-semibold text-foreground">
-              <span>Outstanding</span>
-              <span>{{ formatMoney(detail.outstandingAmount, detail.currency) }}</span>
-            </div>
-          </ui-card-content>
-        </ui-card>
+                  <dl class="mt-3 space-y-3 text-sm">
+                    <div>
+                      <dt class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Invoice number
+                      </dt>
+                      <dd class="mt-0.5 font-mono font-medium text-foreground">{{ detail.invoiceNumber }}</dd>
+                    </div>
+                    <div>
+                      <dt class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Currency
+                      </dt>
+                      <dd class="mt-0.5 font-medium text-foreground">{{ detail.currency }}</dd>
+                    </div>
+                    <div class="rounded-lg border border-border/50 bg-muted/20 px-3 py-2.5">
+                      <dt class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Dates
+                      </dt>
+                      <dd class="mt-1 font-medium text-foreground">
+                        Issued {{ formatDate(detail.createdAt) }}
+                      </dd>
+                      <dd class="mt-0.5 text-xs text-muted-foreground">
+                        Due {{ formatDate(detail.dueDate) }}
+                      </dd>
+                      @if (detail.paidAt) {
+                        <dd class="mt-0.5 text-xs text-emerald-700 dark:text-emerald-400">
+                          Paid {{ formatDate(detail.paidAt) }}
+                        </dd>
+                      }
+                    </div>
+                    <div
+                      class="rounded-lg border px-3 py-2.5"
+                      [class.border-emerald-200]="detail.outstandingAmount <= 0"
+                      [class.bg-emerald-50/50]="detail.outstandingAmount <= 0"
+                      [class.dark:border-emerald-500/20]="detail.outstandingAmount <= 0"
+                      [class.dark:bg-emerald-500/5]="detail.outstandingAmount <= 0"
+                      [class.border-amber-200]="detail.outstandingAmount > 0"
+                      [class.bg-amber-50/50]="detail.outstandingAmount > 0"
+                      [class.dark:border-amber-500/20]="detail.outstandingAmount > 0"
+                      [class.dark:bg-amber-500/5]="detail.outstandingAmount > 0"
+                    >
+                      <dt class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Amount due
+                      </dt>
+                      <dd class="mt-1 text-lg font-semibold tabular-nums text-foreground">
+                        {{ formatMoney(detail.outstandingAmount, detail.currency) }}
+                      </dd>
+                      <dd class="mt-0.5 text-xs text-muted-foreground">
+                        Total {{ formatMoney(detail.total, detail.currency) }}
+                        @if (detail.amountPaid > 0) {
+                          · Paid {{ formatMoney(detail.amountPaid, detail.currency) }}
+                        }
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              </div>
+            </section>
 
-        @if (detail.notes?.trim()) {
-          <ui-card>
-            <ui-card-header>
-              <ui-card-title>Notes</ui-card-title>
-            </ui-card-header>
-            <ui-card-content>
-              <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ detail.notes }}</p>
-            </ui-card-content>
-          </ui-card>
-        }
+            @if (canPay(detail)) {
+              <section class="rounded-xl border border-border/70 bg-card p-4 shadow-sm">
+                <h2 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  Submit payment with proof
+                </h2>
+                <p class="mt-1 text-xs text-muted-foreground">
+                  Upload proof of payment for your provider to review and confirm.
+                </p>
+                <form [formGroup]="paymentForm" class="mt-4 space-y-3" (ngSubmit)="submitPaymentWithProof(detail)">
+                  <div class="space-y-1.5">
+                    <label class="text-sm font-medium" for="payment-amount">Amount</label>
+                    <ui-input id="payment-amount" formControlName="amount" type="number" placeholder="0.00" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <label class="text-sm font-medium" for="payment-method">Payment method</label>
+                    <ui-input id="payment-method" formControlName="method" placeholder="e.g. EFT" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <label class="text-sm font-medium" for="payment-reference">Reference</label>
+                    <ui-input id="payment-reference" formControlName="reference" placeholder="Payment reference" />
+                  </div>
+                  <div class="space-y-1.5">
+                    <label class="text-sm font-medium" for="payment-proof">Proof of payment</label>
+                    <input
+                      id="payment-proof"
+                      type="file"
+                      accept="image/*,application/pdf"
+                      class="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground"
+                      (change)="onProofSelected($event)"
+                    />
+                  </div>
+                  <ui-button
+                    type="submit"
+                    variant="outline"
+                    class="w-full"
+                    [disabled]="isSubmittingPayment()"
+                    [label]="isSubmittingPayment() ? 'Submitting...' : 'Submit for review'"
+                  />
+                </form>
+              </section>
+            }
+          </aside>
 
-        @if (canPay(detail)) {
-          <ui-card>
-            <ui-card-header>
-              <ui-card-title>Submit payment with proof</ui-card-title>
-              <ui-card-description>
-                Upload proof of payment. Your provider will review and confirm before the invoice status updates.
-              </ui-card-description>
-            </ui-card-header>
-            <ui-card-content>
-              <form [formGroup]="paymentForm" class="space-y-3" (ngSubmit)="submitPaymentWithProof(detail)">
-                <ui-input formControlName="amount" type="number" placeholder="Amount" />
-                <ui-input formControlName="method" placeholder="Payment method (e.g. EFT)" />
-                <ui-input formControlName="reference" placeholder="Payment reference" />
-                <input type="file" accept="image/*,application/pdf" (change)="onProofSelected($event)" />
-                <ui-button type="submit" [disabled]="isSubmittingPayment()">
-                  {{ isSubmittingPayment() ? 'Submitting...' : 'Submit for review' }}
-                </ui-button>
-              </form>
-            </ui-card-content>
-          </ui-card>
-        }
+          <section class="overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm">
+            <div class="border-b border-blue-600/20 bg-gradient-to-r from-blue-700 to-blue-600 px-6 py-5 text-white">
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p class="text-lg font-semibold">Tax invoice</p>
+                  <p class="text-sm text-white/80">{{ detail.invoiceNumber }}</p>
+                </div>
+                <p class="text-sm text-white/90">
+                  {{ detail.currency }} · {{ statusLabel(detail.status) }}
+                </p>
+              </div>
+            </div>
+
+            <div class="space-y-6 p-6">
+              <div class="grid gap-4 text-sm sm:grid-cols-2">
+                <dl class="space-y-2">
+                  <div class="grid grid-cols-[5.5rem_1fr] gap-2">
+                    <dt class="font-medium text-muted-foreground">Issued</dt>
+                    <dd>{{ formatDate(detail.createdAt) }}</dd>
+                  </div>
+                  <div class="grid grid-cols-[5.5rem_1fr] gap-2">
+                    <dt class="font-medium text-muted-foreground">Due</dt>
+                    <dd>{{ formatDate(detail.dueDate) }}</dd>
+                  </div>
+                </dl>
+                <div class="rounded-lg border border-border/50 bg-muted/20 p-3">
+                  <p class="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Balance summary
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold tabular-nums text-foreground">
+                    {{ formatMoney(detail.outstandingAmount, detail.currency) }}
+                  </p>
+                  <p class="mt-1 text-xs text-muted-foreground">Outstanding balance</p>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto rounded-lg border border-border/70">
+                <table class="w-full min-w-[36rem] border-collapse text-sm">
+                  <thead>
+                    <tr class="border-b border-border/70 bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
+                      <th class="px-3 py-2.5 font-semibold">#</th>
+                      <th class="px-3 py-2.5 font-semibold">Description</th>
+                      <th class="px-3 py-2.5 font-semibold text-right">Qty</th>
+                      <th class="px-3 py-2.5 font-semibold text-right">Unit price</th>
+                      <th class="px-3 py-2.5 font-semibold text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of detail.lineItems; track item.description + item.amount; let index = $index) {
+                      <tr class="border-b border-border/50 last:border-b-0">
+                        <td class="px-3 py-3 text-muted-foreground">{{ index + 1 }}</td>
+                        <td class="px-3 py-3 font-medium text-foreground">{{ item.description }}</td>
+                        <td class="px-3 py-3 text-right tabular-nums text-muted-foreground">{{ item.quantity }}</td>
+                        <td class="px-3 py-3 text-right tabular-nums">
+                          {{ formatMoney(item.unitPrice, detail.currency) }}
+                        </td>
+                        <td class="px-3 py-3 text-right font-medium tabular-nums">
+                          {{ formatMoney(item.amount, detail.currency) }}
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="5" class="px-3 py-8 text-center text-muted-foreground">
+                          No line items on this invoice.
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                  <tfoot>
+                    <tr class="border-t border-border/70 bg-muted/20">
+                      <td colspan="4" class="px-3 py-2.5 text-right text-sm text-muted-foreground">Subtotal</td>
+                      <td class="px-3 py-2.5 text-right text-sm font-medium tabular-nums">
+                        {{ formatMoney(detail.subtotal, detail.currency) }}
+                      </td>
+                    </tr>
+                    <tr class="bg-muted/20">
+                      <td colspan="4" class="px-3 py-2.5 text-right text-sm text-muted-foreground">Tax</td>
+                      <td class="px-3 py-2.5 text-right text-sm font-medium tabular-nums">
+                        {{ formatMoney(detail.taxAmount, detail.currency) }}
+                      </td>
+                    </tr>
+                    <tr class="bg-muted/30">
+                      <td colspan="4" class="px-3 py-3 text-right text-sm font-semibold">Invoice total</td>
+                      <td class="px-3 py-3 text-right text-base font-bold tabular-nums">
+                        {{ formatMoney(detail.total, detail.currency) }}
+                      </td>
+                    </tr>
+                    @if (detail.amountPaid > 0) {
+                      <tr class="bg-muted/20">
+                        <td colspan="4" class="px-3 py-2.5 text-right text-sm text-muted-foreground">Amount paid</td>
+                        <td class="px-3 py-2.5 text-right text-sm font-medium tabular-nums text-emerald-700 dark:text-emerald-400">
+                          − {{ formatMoney(detail.amountPaid, detail.currency) }}
+                        </td>
+                      </tr>
+                    }
+                    <tr class="bg-amber-50/50 dark:bg-amber-500/5">
+                      <td colspan="4" class="px-3 py-3 text-right text-sm font-semibold">Outstanding</td>
+                      <td class="px-3 py-3 text-right text-base font-bold tabular-nums">
+                        {{ formatMoney(detail.outstandingAmount, detail.currency) }}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              @if (detail.notes?.trim()) {
+                <div class="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes & terms</p>
+                  <div class="mt-3 space-y-2 whitespace-pre-wrap text-foreground">
+                    @for (line of noteLines(detail.notes); track line) {
+                      <p>{{ line }}</p>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </section>
+        </div>
       }
     </main>
   `,
@@ -254,11 +364,22 @@ export class ClientInvoiceDetailComponent implements OnInit {
   }
 
   protected statusLabel(status: number): string {
-    return INVOICE_STATUS_LABELS[status] ?? 'Unknown';
+    return clientInvoiceStatusLabel(status);
   }
 
-  protected statusClass(status: number): string {
-    return INVOICE_STATUS_CLASSES[status] ?? INVOICE_STATUS_CLASSES[1];
+  protected statusAccentClass(status: number): string {
+    return clientInvoiceStatusAccentClass(status);
+  }
+
+  protected noteLines(notes: string | null): string[] {
+    if (notes === null || notes.trim() === '') {
+      return [];
+    }
+
+    return notes
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
   }
 
   protected canPay(invoice: ClientPortalInvoiceDetail): boolean {
