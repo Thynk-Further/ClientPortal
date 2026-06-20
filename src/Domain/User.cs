@@ -98,6 +98,26 @@ public sealed class User : AggregateRoot<Guid>
         MarkUpdated();
     }
 
+    public void RaiseStaffInvitedEvent(
+        string inviteToken,
+        string tenantSlug,
+        DateTime invitedAtUtc)
+    {
+        string normalizedInviteToken = Guard.NotEmpty(inviteToken, nameof(inviteToken)).Trim();
+        string normalizedTenantSlug = Guard.NotEmpty(tenantSlug, nameof(tenantSlug)).Trim().ToLowerInvariant();
+        DateTime invitedAt = invitedAtUtc.Kind == DateTimeKind.Utc
+            ? invitedAtUtc
+            : invitedAtUtc.ToUniversalTime();
+
+        AddDomainEvent(new StaffInvitedEvent(
+            Id,
+            Email.Value,
+            FullName,
+            normalizedInviteToken,
+            normalizedTenantSlug,
+            invitedAt));
+    }
+
     public void Deactivate()
     {
         IsActive = false;

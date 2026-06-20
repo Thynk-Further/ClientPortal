@@ -1,3 +1,4 @@
+using Application.Abstractions;
 using Application.Notifications.Abstractions;
 using Infrastructure.Persistence;
 using Microsoft.Extensions.Configuration;
@@ -9,14 +10,17 @@ namespace Infrastructure.Notifications;
 public sealed class NpgsqlWeeklyDigestReader : IWeeklyDigestReader
 {
     private readonly string _postgresConnectionString;
+    private readonly ITenantPublicRecordLookup _tenantPublicRecordLookup;
     private readonly ILogger<NpgsqlWeeklyDigestReader> _logger;
 
     public NpgsqlWeeklyDigestReader(
         IConfiguration configuration,
+        ITenantPublicRecordLookup tenantPublicRecordLookup,
         ILogger<NpgsqlWeeklyDigestReader> logger)
     {
         _postgresConnectionString = configuration.GetConnectionString("Postgres")
             ?? throw new InvalidOperationException("ConnectionStrings:Postgres must be configured.");
+        _tenantPublicRecordLookup = tenantPublicRecordLookup;
         _logger = logger;
     }
 
@@ -32,6 +36,16 @@ public sealed class NpgsqlWeeklyDigestReader : IWeeklyDigestReader
         IReadOnlyList<string> tenantSlugs = await GetActiveTenantSlugsAsync(connection, cancellationToken);
         foreach (string tenantSlug in tenantSlugs)
         {
+            TenantPublicRecord? tenantRecord = await _tenantPublicRecordLookup.FindBySlugAsync(
+                tenantSlug,
+                cancellationToken);
+
+            if (tenantRecord is null
+                || !tenantRecord.Settings.NotificationChannels.Contains("weekly_digest", StringComparer.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             string schema = BuildTenantSchemaName(tenantSlug);
             try
             {

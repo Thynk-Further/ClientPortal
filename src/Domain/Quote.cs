@@ -45,6 +45,8 @@ public sealed class Quote : AggregateRoot<Guid>
 
     public QuoteOrigin Origin { get; private set; } = QuoteOrigin.BusinessInitiated;
 
+    public TaxPricingMode PricingMode { get; private set; } = TaxPricingMode.Exclusive;
+
     private Quote()
     {
     }
@@ -64,7 +66,8 @@ public sealed class Quote : AggregateRoot<Guid>
         string? recipientCompanyName,
         string? recipientContactName,
         string? recipientEmail,
-        string? recipientPhone)
+        string? recipientPhone,
+        TaxPricingMode pricingMode = TaxPricingMode.Exclusive)
         : base(id)
     {
         ValidateClientProjectPair(clientId, projectId, origin);
@@ -85,6 +88,7 @@ public sealed class Quote : AggregateRoot<Guid>
         Origin = origin;
         RfqId = NormalizeOptionalId(rfqId);
         PurchaseOrderId = null;
+        PricingMode = pricingMode;
 
         ReplaceLineItemsInternal(lineItems);
     }
@@ -97,7 +101,8 @@ public sealed class Quote : AggregateRoot<Guid>
         IEnumerable<LineItem> lineItems,
         string currency,
         DateOnly dueDate,
-        string? notes = null)
+        string? notes = null,
+        TaxPricingMode pricingMode = TaxPricingMode.Exclusive)
     {
         return new Quote(
             id,
@@ -114,7 +119,8 @@ public sealed class Quote : AggregateRoot<Guid>
             recipientCompanyName: null,
             recipientContactName: null,
             recipientEmail: null,
-            recipientPhone: null);
+            recipientPhone: null,
+            pricingMode);
     }
 
     public static Quote CreateForExternalRecipient(
@@ -127,7 +133,8 @@ public sealed class Quote : AggregateRoot<Guid>
         string? recipientContactName = null,
         string? recipientEmail = null,
         string? recipientPhone = null,
-        string? notes = null)
+        string? notes = null,
+        TaxPricingMode pricingMode = TaxPricingMode.Exclusive)
     {
         return new Quote(
             id,
@@ -144,7 +151,8 @@ public sealed class Quote : AggregateRoot<Guid>
             recipientCompanyName,
             recipientContactName,
             recipientEmail,
-            recipientPhone);
+            recipientPhone,
+            pricingMode);
     }
 
     public static Quote CreateFromRfq(
@@ -156,7 +164,8 @@ public sealed class Quote : AggregateRoot<Guid>
         IEnumerable<LineItem> lineItems,
         string currency,
         DateOnly dueDate,
-        string? notes = null)
+        string? notes = null,
+        TaxPricingMode pricingMode = TaxPricingMode.Exclusive)
     {
         if (rfqId == Guid.Empty)
         {
@@ -178,7 +187,8 @@ public sealed class Quote : AggregateRoot<Guid>
             recipientCompanyName: null,
             recipientContactName: null,
             recipientEmail: null,
-            recipientPhone: null);
+            recipientPhone: null,
+            pricingMode);
     }
 
     public void LinkPurchaseOrder(Guid purchaseOrderId)
@@ -362,16 +372,36 @@ public sealed class Quote : AggregateRoot<Guid>
     {
         decimal subtotal = 0m;
         decimal taxAmount = 0m;
+        decimal total = 0m;
 
         foreach (LineItem lineItem in _lineItems)
         {
-            subtotal += lineItem.Amount;
-            taxAmount += lineItem.Amount * lineItem.TaxRate;
+            if (PricingMode == TaxPricingMode.Inclusive)
+            {
+                decimal grossAmount = lineItem.Amount;
+                decimal lineTax = lineItem.TaxRate > 0m
+                    ? grossAmount * lineItem.TaxRate / (1m + lineItem.TaxRate)
+                    : 0m;
+                decimal lineSubtotal = grossAmount - lineTax;
+                subtotal += lineSubtotal;
+                taxAmount += lineTax;
+                total += grossAmount;
+            }
+            else
+            {
+                subtotal += lineItem.Amount;
+                taxAmount += lineItem.Amount * lineItem.TaxRate;
+            }
+        }
+
+        if (PricingMode == TaxPricingMode.Exclusive)
+        {
+            total = subtotal + taxAmount;
         }
 
         Subtotal = decimal.Round(subtotal, 2, MidpointRounding.ToEven);
         TaxAmount = decimal.Round(taxAmount, 2, MidpointRounding.ToEven);
-        Total = decimal.Round(Subtotal + TaxAmount, 2, MidpointRounding.ToEven);
+        Total = decimal.Round(total, 2, MidpointRounding.ToEven);
     }
 
     private static void ValidateClientProjectPair(Guid? clientId, Guid? projectId, QuoteOrigin origin)

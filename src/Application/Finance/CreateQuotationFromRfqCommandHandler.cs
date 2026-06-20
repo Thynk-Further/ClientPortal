@@ -17,15 +17,21 @@ public sealed class CreateQuotationFromRfqCommandHandler
 
     private readonly IRfqRepository _rfqRepository;
     private readonly IQuoteRepository _quoteRepository;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ITaxCalculator _taxCalculator;
     private readonly IUnitOfWork _unitOfWork;
 
     public CreateQuotationFromRfqCommandHandler(
         IRfqRepository rfqRepository,
         IQuoteRepository quoteRepository,
+        ICurrentTenant currentTenant,
+        ITaxCalculator taxCalculator,
         IUnitOfWork unitOfWork)
     {
         _rfqRepository = rfqRepository;
         _quoteRepository = quoteRepository;
+        _currentTenant = currentTenant;
+        _taxCalculator = taxCalculator;
         _unitOfWork = unitOfWork;
     }
 
@@ -42,16 +48,23 @@ public sealed class CreateQuotationFromRfqCommandHandler
             return Result<QuoteDto>.Failure(RfqInvalidStateError);
         }
 
+        decimal defaultTaxRate = _taxCalculator.ResolveDefaultRate(_currentTenant.Settings);
+        TaxPricingMode pricingMode = _taxCalculator.ResolvePricingMode(_currentTenant.Settings);
+        List<LineItem> lineItems = QuoteLineItemFactory.CreateLineItems(
+            request.LineItems.Select(item => (item.Description, item.Quantity, item.UnitPrice, item.TaxRate)),
+            defaultTaxRate);
+
         Quote quote = Quote.CreateFromRfq(
             Guid.CreateVersion7(),
             rfq.ClientId,
             rfq.ProjectId,
             rfq.Id,
             request.QuoteNumber,
-            request.LineItems.Select(item => new LineItem(item.Description, item.Quantity, item.UnitPrice, item.TaxRate)),
+            lineItems,
             rfq.Currency,
             request.DueDate,
-            request.Notes);
+            request.Notes,
+            pricingMode);
 
         try
         {

@@ -52,6 +52,24 @@ public sealed class QuoteTests
     }
 
     [Fact]
+    public void Create_WithInclusivePricing_ComputesTotalsFromGrossAmounts()
+    {
+        Quote quote = Quote.Create(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Q-INC-001",
+            [new LineItem("Service", 1m, 115m, 0.15m)],
+            "USD",
+            new DateOnly(2026, 06, 01),
+            pricingMode: TaxPricingMode.Inclusive);
+
+        Assert.Equal(100m, quote.Subtotal);
+        Assert.Equal(15m, quote.TaxAmount);
+        Assert.Equal(115m, quote.Total);
+    }
+
+    [Fact]
     public void MarkAccepted_WhenNotSent_ThrowsInvalidOperationException()
     {
         Quote quote = Quote.Create(

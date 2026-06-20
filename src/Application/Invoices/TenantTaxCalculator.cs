@@ -1,5 +1,5 @@
-using System.Text.Json;
 using Application.Invoices.Abstractions;
+using Application.Tenancy;
 using Domain;
 
 namespace Application.Invoices;
@@ -15,30 +15,24 @@ public sealed class TenantTaxCalculator : ITaxCalculator
             return 0m;
         }
 
-        TaxConfigModel? taxConfig = ParseTaxConfig(tenantSettings.TaxConfig);
-        if (taxConfig is null)
+        TaxConfiguration taxConfiguration = TaxConfiguration.Parse(tenantSettings.TaxConfig);
+        if (taxConfiguration.Rate > 0m)
         {
-            return 0m;
+            return taxConfiguration.Rate;
         }
 
-        string countryCode = NormalizeCountryCode(taxConfig.CountryCode);
-        decimal? configuredCountryRate = ResolveConfiguredCountryRate(countryCode, taxConfig);
-        decimal? configuredDefaultRate = NormalizeRate(taxConfig.DefaultRate ?? taxConfig.VatRate);
-
-        return configuredCountryRate
-            ?? configuredDefaultRate
-            ?? ResolveRegionalDefaultRate(countryCode);
+        string countryCode = taxConfiguration.CountryCode;
+        return ResolveRegionalDefaultRate(countryCode);
     }
 
-    private static decimal? ResolveConfiguredCountryRate(string countryCode, TaxConfigModel config)
+    public TaxPricingMode ResolvePricingMode(TenantSettings? tenantSettings)
     {
-        return countryCode switch
+        if (tenantSettings is null || string.IsNullOrWhiteSpace(tenantSettings.TaxConfig))
         {
-            "ZA" => NormalizeRate(config.ZaVatRate ?? config.VatRate),
-            "ZW" => NormalizeRate(config.ZwZimraRate),
-            "ZM" => NormalizeRate(config.ZmZraRate),
-            _ => null,
-        };
+            return TaxPricingMode.Exclusive;
+        }
+
+        return TaxConfiguration.Parse(tenantSettings.TaxConfig).PricingMode;
     }
 
     private static decimal ResolveRegionalDefaultRate(string countryCode)
@@ -51,54 +45,4 @@ public sealed class TenantTaxCalculator : ITaxCalculator
             _ => 0m,
         };
     }
-
-    private static string NormalizeCountryCode(string? countryCode)
-    {
-        if (string.IsNullOrWhiteSpace(countryCode))
-        {
-            return string.Empty;
-        }
-
-        return countryCode.Trim().ToUpperInvariant();
-    }
-
-    private static decimal? NormalizeRate(decimal? rate)
-    {
-        if (!rate.HasValue)
-        {
-            return null;
-        }
-
-        if (rate < 0m || rate > 1m)
-        {
-            return null;
-        }
-
-        return decimal.Round(rate.Value, 4, MidpointRounding.ToEven);
-    }
-
-    private static TaxConfigModel? ParseTaxConfig(string taxConfigJson)
-    {
-        try
-        {
-            return JsonSerializer.Deserialize<TaxConfigModel>(
-                taxConfigJson,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true,
-                });
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
-
-    private sealed record TaxConfigModel(
-        string? CountryCode,
-        decimal? DefaultRate,
-        decimal? VatRate,
-        decimal? ZaVatRate,
-        decimal? ZwZimraRate,
-        decimal? ZmZraRate);
 }

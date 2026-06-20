@@ -31,6 +31,17 @@ export const AUTH_ROUTES: Routes = [
     },
   },
   {
+    path: 'accept-staff-invitation',
+    loadComponent: () =>
+      import('./accept-staff-invitation-screen.component').then(
+        (m) => m.AcceptStaffInvitationScreenComponent,
+      ),
+    data: {
+      title: 'Accept team invitation',
+      description: 'Set account password from a staff invitation link.',
+    },
+  },
+  {
     path: 'forgot-password',
     loadComponent: () =>
       import('../feature-shell/feature-shell.component').then(

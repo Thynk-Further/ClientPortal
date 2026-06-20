@@ -4,15 +4,19 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  computed,
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormArray, FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 
 import { RfqDetail, RfqLineItem } from '@/app/core/api/services/rfq-api.service';
 import { ClientDetail } from '@/app/core/api/services/client-api.service';
+import { TenantSettingsApiService } from '@/app/core/api/services/tenant-settings-api.service';
 import { UserSessionService } from '@/app/core/auth/user-session.service';
 import { ButtonComponent } from '@/components/ui/button.component';
 import { InputComponent } from '@/components/ui/input.component';
@@ -137,10 +141,10 @@ export interface QuotationDocumentSubmitPayload {
                 <th class="px-3 py-2.5 font-semibold">Description</th>
                 <th class="px-3 py-2.5 font-semibold text-right">Qty</th>
                 <th class="px-3 py-2.5 font-semibold text-right">
-                  Unit price {{ rfq().currency }} incl. VAT
+                  Unit price {{ rfq().currency }} {{ priceBasisLabel() }}
                 </th>
                 <th class="px-3 py-2.5 font-semibold text-right">
-                  Total {{ rfq().currency }} incl. VAT
+                  Total {{ rfq().currency }} {{ priceBasisLabel() }}
                 </th>
               </tr>
             </thead>
@@ -212,7 +216,7 @@ export interface QuotationDocumentSubmitPayload {
 
       <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 bg-muted/20 px-6 py-4">
         <p class="text-xs text-muted-foreground">
-          Prices are VAT-inclusive. Quotation valid until {{ computedDueDateLabel() }}.
+          Prices are {{ priceBasisDescription() }}. Quotation valid until {{ computedDueDateLabel() }}.
         </p>
         <ui-button type="submit" [disabled]="isSaving() || grandTotal() <= 0">Create quotation</ui-button>
       </div>
@@ -222,8 +226,24 @@ export interface QuotationDocumentSubmitPayload {
 export class RfqQuotationDocumentComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly userSession = inject(UserSessionService);
+  private readonly settingsApi = inject(TenantSettingsApiService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly destroyRef = inject(DestroyRef);
+
+  private readonly taxRate = signal(0);
+  private readonly taxLabel = signal('VAT');
+  private readonly pricingMode = signal('Inclusive');
+
+  protected readonly priceBasisLabel = computed(() =>
+    this.pricingMode().toLowerCase() === 'inclusive' ? 'incl. tax' : 'excl. tax',
+  );
+
+  protected readonly priceBasisDescription = computed(() => {
+    const label = this.taxLabel();
+    return this.pricingMode().toLowerCase() === 'inclusive'
+      ? `${label}-inclusive`
+      : `${label}-exclusive`;
+  });
 
   readonly rfq = input.required<RfqDetail>();
   readonly client = input<ClientDetail | null>(null);
@@ -254,6 +274,11 @@ export class RfqQuotationDocumentComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    void this.initializeComponent();
+  }
+
+  private async initializeComponent(): Promise<void> {
+    await this.loadTaxSettings();
     this.initializeFromRfq();
 
     this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
@@ -342,11 +367,34 @@ export class RfqQuotationDocumentComponent implements OnInit {
           description: rfqItem.description,
           quantity: rfqItem.quantity,
           unitPrice: parseUnitPrice(group.get('unitPrice')?.value),
-          taxRate: 0,
+          taxRate: this.taxRate(),
         };
       }),
       notes,
     });
+  }
+
+  private async loadTaxSettings(): Promise<void> {
+    try {
+      const settings = await firstValueFrom(this.settingsApi.getSettings());
+      this.taxRate.set(settings.tax.taxPercentage / 100);
+      this.taxLabel.set(settings.tax.label);
+      this.pricingMode.set(settings.tax.pricingMode);
+
+      const registration = [
+        settings.tax.label,
+        settings.tax.registrationNumber,
+      ]
+        .filter((part) => part.trim() !== '')
+        .join(' No: ');
+
+      this.form.patchValue({
+        companyName: settings.tenantName,
+        companyRegistration: registration,
+      });
+    } catch {
+      // Keep defaults when settings cannot be loaded.
+    }
   }
 
   private initializeFromRfq(): void {

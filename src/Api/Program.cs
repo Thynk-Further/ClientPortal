@@ -18,6 +18,7 @@ using Api.Invoices;
 using Api.Middleware;
 using Api.Notifications;
 using Api.Projects;
+using Api.Settings;
 using Api.Tenancy;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -132,6 +133,7 @@ builder.Services.AddAuthorization(options =>
 
     options.AddPolicy(AuthorizationPolicies.RequireOwner, policy => policy.RequireRole("Owner"));
     options.AddPolicy(AuthorizationPolicies.RequireAdmin, policy => policy.RequireRole("Admin"));
+    options.AddPolicy(AuthorizationPolicies.RequireOwnerOrAdmin, policy => policy.RequireRole("Owner", "Admin"));
     options.AddPolicy(AuthorizationPolicies.RequireStaff, policy => policy.RequireRole("Staff"));
     options.AddPolicy(AuthorizationPolicies.RequireAnyStaff, policy => policy.RequireRole("Owner", "Admin", "Staff"));
     options.AddPolicy(AuthorizationPolicies.RequireClientUser, policy => policy.RequireRole("ClientUser", "ClientAdmin"));
@@ -336,6 +338,7 @@ if (app.Environment.IsDevelopment())
 
 app.MapAuthEndpoints();
 app.MapTenancyEndpoints();
+app.MapSettingsEndpoints();
 app.MapClientsEndpoints();
 app.MapProjectsEndpoints();
 app.MapDocumentsEndpoints();

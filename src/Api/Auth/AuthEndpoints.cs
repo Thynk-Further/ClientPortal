@@ -3,6 +3,7 @@ using Application.Auth;
 using Application.Auth.Abstractions;
 using Application.Auth.Dtos;
 using Application.Clients;
+using Application.Team;
 using Api.Contracts;
 using Api.Tenancy;
 using Domain;
@@ -46,6 +47,10 @@ public static class AuthEndpoints
 
         group.MapPost("/accept-invitation", AcceptInvitationAsync)
             .WithName("AuthAcceptInvitation")
+            .AllowAnonymous();
+
+        group.MapPost("/accept-staff-invitation", AcceptStaffInvitationAsync)
+            .WithName("AuthAcceptStaffInvitation")
             .AllowAnonymous();
 
         return endpoints;
@@ -181,6 +186,34 @@ public static class AuthEndpoints
         return ToResponse(result);
     }
 
+    private static async Task<IResult> AcceptStaffInvitationAsync(
+        AcceptStaffInvitationRequest request,
+        HttpContext httpContext,
+        ISender sender,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.TenantSlug))
+        {
+            return Failure(
+            [
+                new Error(
+                    "Team.MissingTenantSlug",
+                    "Tenant slug is required to accept an invitation.",
+                    ErrorType.Validation)
+            ]);
+        }
+
+        string tenantSlug = request.TenantSlug.Trim();
+        httpContext.Items[TenantHttpContextKeys.TenantId] = tenantSlug;
+        httpContext.Items[TenantHttpContextKeys.TenantSlug] = tenantSlug;
+        httpContext.Items[TenantHttpContextKeys.TenantSettings] = TenantSettings.Default();
+
+        Result result = await sender.Send(
+            new AcceptStaffInvitationCommand(request.Token, request.Password),
+            cancellationToken);
+        return ToResponse(result);
+    }
+
     private static IResult ToResponse(Result result)
     {
         if (result.IsSuccess)
@@ -280,6 +313,8 @@ public sealed record ForgotPasswordRequest(string Email);
 public sealed record ResetPasswordRequest(string Token, string NewPassword);
 
 public sealed record AcceptInvitationRequest(string Token, string Password, string TenantSlug);
+
+public sealed record AcceptStaffInvitationRequest(string Token, string Password, string TenantSlug);
 
 public sealed record RefreshRequest(string? RefreshToken);
 

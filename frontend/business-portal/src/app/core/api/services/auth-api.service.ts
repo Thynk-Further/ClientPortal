@@ -61,6 +61,12 @@ export interface AcceptInvitationRequest {
   tenantSlug: string;
 }
 
+export interface AcceptStaffInvitationRequest {
+  token: string;
+  password: string;
+  tenantSlug: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthApiService {
   private readonly basePath = '/api/v1/auth';
@@ -133,6 +139,15 @@ export class AuthApiService {
   ): Observable<ApiOperationResult> {
     return this.apiClient.post<ApiOperationResult, AcceptInvitationRequest>(
       `${this.basePath}/accept-invitation`,
+      request,
+    );
+  }
+
+  acceptStaffInvitation(
+    request: AcceptStaffInvitationRequest,
+  ): Observable<ApiOperationResult> {
+    return this.apiClient.post<ApiOperationResult, AcceptStaffInvitationRequest>(
+      `${this.basePath}/accept-staff-invitation`,
       request,
     );
   }

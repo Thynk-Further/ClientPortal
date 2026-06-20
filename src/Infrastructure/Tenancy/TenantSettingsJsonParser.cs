@@ -4,13 +4,34 @@ using Domain;
 
 namespace Infrastructure.Tenancy;
 
-internal static class TenantSettingsJsonParser
+public static class TenantSettingsJsonParser
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
+
+    public static string ToJson(TenantSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        TenantSettingsPayload payload = new()
+        {
+            MessageRetentionDays = settings.MessageRetentionDays,
+            AttachmentExpiryDays = settings.AttachmentExpiryDays,
+            EnableMessageModerationAudit = settings.EnableMessageModerationAudit,
+            OfflineFallbackThresholdSeconds = settings.OfflineFallbackThresholdSeconds,
+            BrandColour = settings.BrandColour,
+            LogoUrl = settings.LogoUrl,
+            DefaultCurrency = settings.DefaultCurrency,
+            NotificationChannels = settings.NotificationChannels.ToList(),
+            TaxConfig = settings.TaxConfig,
+        };
+
+        return JsonSerializer.Serialize(payload, JsonOptions);
+    }
 
     public static TenantSettings Parse(string? settingsJson)
     {
